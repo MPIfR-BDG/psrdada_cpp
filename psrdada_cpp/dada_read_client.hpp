@@ -3,6 +3,7 @@
 
 #include "psrdada_cpp/dada_client_base.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
+#include "psrdada_cpp/common.hpp"
 
 namespace psrdada_cpp {
 
@@ -15,7 +16,7 @@ namespace psrdada_cpp {
         std::size_t _current_data_block_idx;
 
     public:
-        DadaReadClient(key_t key, MultiLog const& log);
+        DadaReadClient(key_t key, MultiLog& log);
         DadaReadClient(DadaReadClient const&) = delete;
         ~DadaReadClient();
         RawBytes& acquire_header_block();

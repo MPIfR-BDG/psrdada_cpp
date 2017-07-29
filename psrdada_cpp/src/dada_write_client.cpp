@@ -2,7 +2,7 @@
 
 namespace psrdada_cpp {
 
-    DadaWriteClient::DadaWriteClient(key_t key, MultiLog const& log)
+    DadaWriteClient::DadaWriteClient(key_t key, MultiLog& log)
     : DadaClientBase(key, log)
     , _locked(false)
     , _current_header_block(nullptr)
@@ -58,7 +58,7 @@ namespace psrdada_cpp {
             throw std::runtime_error("No header block to be released");
         }
 
-        if (ipcbuf_mark_filled(_hdu->header_block) < 0)
+        if (ipcbuf_mark_filled(_hdu->header_block, _current_header_block->used_bytes()) < 0)
         {
             _log.write(LOG_ERR, "Could not mark filled header block\n");
             throw std::runtime_error("Could not mark filled header block");
@@ -88,7 +88,7 @@ namespace psrdada_cpp {
         {
             if (ipcio_update_block_write (_hdu->data_block, _current_data_block->used_bytes()) < 0)
             {
-                log.write(LOG_ERR, "close_buffer: ipcio_update_block_write failed\n");
+                _log.write(LOG_ERR, "close_buffer: ipcio_update_block_write failed\n");
                 throw std::runtime_error("Could not close ipcio data block");
             }
         }
@@ -96,7 +96,7 @@ namespace psrdada_cpp {
         {
             if (ipcio_close_block_write (_hdu->data_block, _current_data_block->used_bytes()) < 0)
             {
-                log.write(LOG_ERR, "close_buffer: ipcio_close_block_write failed\n");
+                _log.write(LOG_ERR, "close_buffer: ipcio_close_block_write failed\n");
                 throw std::runtime_error("Could not close ipcio data block");
             }
             _current_data_block.reset(nullptr);

@@ -2,7 +2,7 @@
 
 namespace psrdada_cpp {
 
-    DadaReadClient::DadaReadClient(key_t key, MultiLog const& log)
+    DadaReadClient::DadaReadClient(key_t key, MultiLog& log)
     : DadaClientBase(key, log)
     , _locked(false)
     , _current_header_block(nullptr)
@@ -97,7 +97,7 @@ namespace psrdada_cpp {
         }
         if (ipcio_close_block_read (_hdu->data_block, _current_data_block->used_bytes()) < 0)
         {
-            log.write(LOG_ERR, "close_buffer: ipcio_close_block_read failed\n");
+            _log.write(LOG_ERR, "close_buffer: ipcio_close_block_read failed\n");
             throw std::runtime_error("Could not close ipcio data block");
         }
         _current_data_block.reset(nullptr);
@@ -109,7 +109,7 @@ namespace psrdada_cpp {
         {
              throw std::runtime_error("No data block currently acquired");
         }
-        return _current_data_block_idx
+        return _current_data_block_idx;
     }
 
 } //namespace psrdada_cpp

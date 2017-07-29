@@ -3,7 +3,7 @@
 
 #include "psrdada_cpp/dada_client_base.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
-#include <memory>
+#include "psrdada_cpp/common.hpp"
 
 namespace psrdada_cpp {
 
@@ -15,7 +15,7 @@ namespace psrdada_cpp {
         std::unique_ptr<RawBytes> _current_data_block;
 
     public:
-        DadaWriteClient(key_t key, MultiLog const& log);
+        DadaWriteClient(key_t key, MultiLog& log);
         DadaWriteClient(DadaWriteClient const&) = delete;
         ~DadaWriteClient();
         RawBytes& acquire_header_block();

@@ -2,7 +2,7 @@
 
 namespace psrdada_cpp {
 
-    RawBytes::RawBytes(char* ptr, std::size_t total, std::size_t used=0)
+    RawBytes::RawBytes(char* ptr, std::size_t total, std::size_t used)
     : _ptr(ptr)
     , _total_bytes(total)
     , _used_bytes(used)
@@ -23,12 +23,12 @@ namespace psrdada_cpp {
         return _used_bytes;
     }
 
-    void RawBytes::used_bytes(std::sizt_t used)
+    void RawBytes::used_bytes(std::size_t used)
     {
-        _used_bytes = n;
+        _used_bytes = used;
     }
 
-    char* ptr()
+    char* RawBytes::ptr()
     {
         return _ptr;
     }

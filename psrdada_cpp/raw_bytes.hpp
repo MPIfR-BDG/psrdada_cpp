@@ -1,6 +1,8 @@
 #ifndef PSRDADA_CPP_RAW_BYTES_HPP
 #define PSRDADA_CPP_RAW_BYTES_HPP
 
+#include "psrdada_cpp/common.hpp"
+
 namespace psrdada_cpp {
 
     class RawBytes

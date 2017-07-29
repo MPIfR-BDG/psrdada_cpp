@@ -1,9 +1,8 @@
 #include "psrdada_cpp/dada_client_base.hpp"
-#include <exception>
 
 namespace psrdada_cpp {
 
-    DadaClientBase::DadaClientBase(key_t key, MultiLog const& log)
+    DadaClientBase::DadaClientBase(key_t key, MultiLog& log)
     : _key(key)
     , _log(log)
     {

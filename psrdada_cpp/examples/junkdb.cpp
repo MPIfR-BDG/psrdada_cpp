@@ -1,6 +1,6 @@
-//#include "psrdada_cpp/multilog.hpp"
-//#include "psrdada_cpp/raw_bytes.hpp"
-//#include "psrdada_cpp/dada_write_client.hpp"
+#include "psrdada_cpp/multilog.hpp"
+#include "psrdada_cpp/raw_bytes.hpp"
+#include "psrdada_cpp/dada_write_client.hpp"
 
 #include "boost/program_options.hpp"
 

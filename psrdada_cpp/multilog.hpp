@@ -1,8 +1,8 @@
 #ifndef PSRDADA_CPP_MULTILOG_HPP
 #define PSRDADA_CPP_MULTILOG_HPP
 
-#include <string>
 #include "multilog.h"
+#include "psrdada_cpp/common.hpp"
 
 namespace psrdada_cpp {
 
@@ -35,7 +35,7 @@ namespace psrdada_cpp {
         {
             throw std::runtime_error("MultiLog must be opened before writing");
         }
-        multilog(_log, format, std::forward<Args>(args)...);
+        multilog(_log, priority, format, std::forward<Args>(args)...);
     }
 
 } //namespace psrdada_cpp
