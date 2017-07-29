@@ -18,11 +18,13 @@ namespace psrdada_cpp {
     void MultiLog::open()
     {
         _log = multilog_open(_name.c_str(),0);
+        _open = true;
     }
 
     void MultiLog::close()
     {
         multilog_close(_log);
+        _open = false;
     }
 
     multilog_t* MultiLog::native_handle()

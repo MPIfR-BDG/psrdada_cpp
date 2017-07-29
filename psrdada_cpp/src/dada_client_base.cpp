@@ -24,7 +24,17 @@ namespace psrdada_cpp {
 
     std::size_t DadaClientBase::header_buffer_size()
     {
-        return ipcbuf_get_bufsz (_hdu->header_block);
+        return ipcbuf_get_bufsz(_hdu->header_block);
+    }
+
+    std::size_t DadaClientBase::data_buffer_count()
+    {
+        return ipcbuf_get_nbufs((ipcbuf_t *) _hdu->data_block);
+    }
+
+    std::size_t DadaClientBase::header_buffer_count()
+    {
+        return ipcbuf_get_nbufs(_hdu->header_block);
     }
 
     void DadaClientBase::connect()

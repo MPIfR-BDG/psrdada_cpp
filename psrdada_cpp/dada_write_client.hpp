@@ -22,6 +22,7 @@ namespace psrdada_cpp {
         void release_header_block();
         RawBytes& acquire_data_block();
         void release_data_block(bool eod=false);
+        bool is_locked() const;
 
     private:
         void lock();

@@ -1,6 +1,6 @@
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
-#include "psrdada_cpp/dada_write_client.hpp"
+#include "psrdada_cpp/dada_read_client.hpp"
 
 #include "boost/program_options.hpp"
 
@@ -31,18 +31,18 @@ key_t string_to_key(std::string const& in)
 
 int main(int argc, char** argv)
 {
-    std::size_t nbytes;
-    key_t key;
-
     try
     {
+        std::size_t nbytes = 1<<17;
+        key_t key;
+
         /** Define and parse the program options
         */
         namespace po = boost::program_options;
         po::options_description desc("Options");
         desc.add_options()
         ("help,h", "Print help messages")
-        ("nbytes,n", po::value<std::size_t>(&nbytes)->default_value(1<<17),"Total number of bytes to write")
+        ("nbytes,n", po::value<std::size_t>(&nbytes)->default_value(1<<17),"Total number of bytes to read")
         ("key,k", po::value<std::string>()->default_value("dada")->notifier([&key](std::string in){key = string_to_key(in);}),
            "The shared memory key for the dada buffer to connect to (hex string)");
 
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
             po::store(po::parse_command_line(argc, argv, desc), vm);
             if ( vm.count("help")  )
             {
-                std::cout << "JunkDB -- write garbage into a DADA ring buffer" << std::endl
+                std::cout << "JunkDB -- read from DADA ring buffer" << std::endl
                 << desc << std::endl;
                 return SUCCESS;
             }
@@ -65,33 +65,28 @@ int main(int argc, char** argv)
             return ERROR_IN_COMMAND_LINE;
         }
 
-        MultiLog log("junkdb");
-        DadaWriteClient client(key,log);
+        MultiLog log("dbnull");
+        DadaReadClient client(key,log);
         std::cout << "Opening header block" << std::endl;
         RawBytes& header = client.acquire_header_block();
         std::cout << "Header block is of size " << header.total_bytes() << " bytes ("<< header.used_bytes()
         << " bytes currently used)" << std::endl;
         std::cout << "There are a total of " << client.header_buffer_count() << " header buffers" << std::endl;
-        std::fill(header.ptr(),header.ptr()+header.total_bytes(),1);
-        header.used_bytes(header.total_bytes());
-        std::cout << "Wrote " << header.used_bytes() << " bytes to header block" << std::endl;
         std::cout << "Closing header block" << std::endl;
         client.release_header_block();
-        std::size_t bytes_written = 0;
-        while (bytes_written < nbytes)
+        std::size_t bytes_read = 0;
+        while (bytes_read < nbytes)
         {
             std::cout << "Opening data block" << std::endl;
             RawBytes& block = client.acquire_data_block();
             std::cout << "Data block is of size " << block.total_bytes() << " bytes ("<< block.used_bytes()
             << " bytes currently used)" << std::endl;
             std::cout << "There are a total of " << client.data_buffer_count() << " data buffers" << std::endl;
-            std::size_t bytes_to_write = std::min(nbytes-bytes_written,block.total_bytes());
-            std::fill(block.ptr(),block.ptr()+bytes_to_write,3);
-            block.used_bytes(bytes_to_write);
-            std::cout << "Wrote " << block.used_bytes() << " bytes to data block" << std::endl;
-            bytes_written += block.used_bytes();
+            std::size_t bytes_to_read = std::min(nbytes-bytes_read, block.used_bytes());
+            bytes_read += bytes_to_read;
+            std::cout << "Read " << bytes_to_read << " bytes from data block" << std::endl;
             std::cout << "Closing data block" << std::endl;
-            client.release_data_block(bytes_written >= nbytes);
+            client.release_data_block();
         }
     }
     catch(std::exception& e)

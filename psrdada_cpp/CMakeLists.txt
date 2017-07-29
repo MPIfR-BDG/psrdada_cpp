@@ -14,7 +14,14 @@ set(psrdada_cpp_src
 
 # -- the main library target
 add_library(${CMAKE_PROJECT_NAME} ${psrdada_cpp_src})
+
+#junkdb
 add_executable(junkdb examples/junkdb.cpp)
 target_link_libraries (junkdb ${PSRDADA_CPP_LIBRARIES})
-install (TARGETS junkdb DESTINATION bin)
+
+#dbnull
+add_executable(dbnull examples/dbnull.cpp)
+target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
+
+install (TARGETS junkdb dbnull DESTINATION bin)
 #install (FILES MathFunctions.h DESTINATION include)

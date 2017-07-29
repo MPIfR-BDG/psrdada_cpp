@@ -24,6 +24,8 @@ namespace psrdada_cpp {
         ~DadaClientBase();
         std::size_t data_buffer_size();
         std::size_t header_buffer_size();
+        std::size_t data_buffer_count();
+        std::size_t header_buffer_count();
 
     private:
         void connect();

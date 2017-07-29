@@ -28,6 +28,11 @@ namespace psrdada_cpp {
         _locked = true;
     }
 
+    bool DadaWriteClient::is_locked() const
+    {
+        return _locked;
+    }
+
     void DadaWriteClient::release()
     {
        if (!_locked)
