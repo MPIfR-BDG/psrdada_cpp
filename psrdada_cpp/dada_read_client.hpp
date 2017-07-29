@@ -9,23 +9,50 @@ namespace psrdada_cpp {
 
     class DadaReadClient: public DadaClientBase
     {
+    public:
+        class HeaderStream
+        {
+        private:
+            DadaReadClient& _parent;
+            std::unique_ptr<RawBytes> _current_block;
+
+        public:
+            HeaderStream(DadaReadClient& parent);
+            HeaderStream(HeaderStream const&) = delete;
+            ~HeaderStream();
+            RawBytes& next();
+            void release();
+            bool at_end() const;
+        };
+
+        class DataStream
+        {
+        private:
+            DadaReadClient& _parent;
+            std::unique_ptr<RawBytes> _current_block;
+            std::size_t _block_idx;
+
+        public:
+            DataStream(DadaReadClient& parent);
+            DataStream(DataStream const&) = delete;
+            ~DataStream();
+            RawBytes& next();
+            void release();
+            bool at_end() const;
+            std::size_t block_idx() const;
+        };
+
     private:
         bool _locked;
-        std::unique_ptr<RawBytes> _current_header_block;
-        std::unique_ptr<RawBytes> _current_data_block;
-        std::size_t _current_data_block_idx;
+        HeaderStream _header_stream;
+        DataStream _data_stream;
 
     public:
         DadaReadClient(key_t key, MultiLog& log);
         DadaReadClient(DadaReadClient const&) = delete;
         ~DadaReadClient();
-        RawBytes& acquire_header_block();
-        void release_header_block();
-        RawBytes& acquire_data_block();
-        void release_data_block();
-        std::size_t current_data_block_idx() const;
-        bool is_final_data_block() const;
-        bool is_final_header_block() const;
+        HeaderStream& header_stream();
+        DataStream& data_stream();
 
     private:
         void lock();

@@ -67,19 +67,22 @@ int main(int argc, char** argv)
 
         MultiLog log("dbnull");
         DadaReadClient client(key,log);
+        auto& header_stream = client.header_stream();
         std::cout << "Opening header block" << std::endl;
-        RawBytes& header = client.acquire_header_block();
+        RawBytes& header = header_stream.next();
         std::cout << "Header block is of size " << header.total_bytes() << " bytes ("<< header.used_bytes()
         << " bytes currently used)" << std::endl;
         std::cout << "There are a total of " << client.header_buffer_count() << " header buffers" << std::endl;
         std::cout << "Closing header block" << std::endl;
-        client.release_header_block();
+        header_stream.release();
+
+        auto& data_stream = client.data_stream();
         std::size_t bytes_read = 0;
         bool _exit = false;
-        while (bytes_read < nbytes  && !client.is_final_data_block())
+        while (bytes_read < nbytes  && !data_stream.at_end())
         {
             std::cout << "Opening data block" << std::endl;
-            RawBytes& block = client.acquire_data_block();
+            RawBytes& block = data_stream.next();
             std::cout << "Data block is of size " << block.total_bytes() << " bytes ("<< block.used_bytes()
             << " bytes currently used)" << std::endl;
             std::cout << "There are a total of " << client.data_buffer_count() << " data buffers" << std::endl;
@@ -87,7 +90,7 @@ int main(int argc, char** argv)
             bytes_read += bytes_to_read;
             std::cout << "Read " << bytes_to_read << " bytes from data block" << std::endl;
             std::cout << "Closing data block" << std::endl;
-            client.release_data_block();
+            data_stream.release();
         }
     }
     catch(std::exception& e)
