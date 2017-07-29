@@ -5,8 +5,8 @@ namespace psrdada_cpp {
     DadaWriteClient::DadaWriteClient(key_t key, MultiLog& log)
     : DadaClientBase(key, log)
     , _locked(false)
-    , _current_header_block(nullptr)
-    , _current_data_block(nullptr)
+    , _header_stream(*this)
+    , _data_stream(*this)
     {
         lock();
     }
@@ -28,11 +28,6 @@ namespace psrdada_cpp {
         _locked = true;
     }
 
-    bool DadaWriteClient::is_locked() const
-    {
-        return _locked;
-    }
-
     void DadaWriteClient::release()
     {
        if (!_locked)
@@ -45,67 +40,102 @@ namespace psrdada_cpp {
         _locked = false;
     }
 
-    RawBytes& DadaWriteClient::acquire_header_block()
+    DadaWriteClient::HeaderStream& DadaWriteClient::header_stream()
     {
-        if (_current_header_block)
+        return _header_stream;
+    }
+
+    DadaWriteClient::DataStream& DadaWriteClient::data_stream()
+    {
+        return _data_stream;
+    }
+
+    DadaWriteClient::HeaderStream::HeaderStream(DadaWriteClient& parent)
+    : _parent(parent)
+    , _current_block(nullptr)
+    {
+    }
+
+    DadaWriteClient::HeaderStream::~HeaderStream()
+    {
+    }
+
+    RawBytes& DadaWriteClient::HeaderStream::next()
+    {
+        if (_current_block)
         {
             throw std::runtime_error("Previous header block not released");
         }
-        char* tmp = ipcbuf_get_next_write(_hdu->header_block);
-        _current_header_block.reset(new RawBytes(tmp, header_buffer_size()));
-        return *_current_header_block;
+        char* tmp = ipcbuf_get_next_write(_parent._hdu->header_block);
+        _current_block.reset(new RawBytes(tmp, _parent.header_buffer_size()));
+        return *_current_block;
     }
 
-    void  DadaWriteClient::release_header_block()
+    void  DadaWriteClient::HeaderStream::release()
     {
-        if (!_current_header_block)
+        if (!_current_block)
         {
             throw std::runtime_error("No header block to be released");
         }
 
-        if (ipcbuf_mark_filled(_hdu->header_block, _current_header_block->used_bytes()) < 0)
+        if (ipcbuf_mark_filled(_parent._hdu->header_block, _current_block->used_bytes()) < 0)
         {
-            _log.write(LOG_ERR, "Could not mark filled header block\n");
+            _parent._log.write(LOG_ERR, "Could not mark filled header block\n");
             throw std::runtime_error("Could not mark filled header block");
         }
-        _current_header_block.reset(nullptr);
+        _current_block.reset(nullptr);
     }
 
-    RawBytes& DadaWriteClient::acquire_data_block()
+    DadaWriteClient::DataStream::DataStream(DadaWriteClient& parent)
+    : _parent(parent)
+    , _current_block(nullptr)
+    , _block_idx(0)
     {
-        if (_current_data_block)
+    }
+
+    DadaWriteClient::DataStream::~DataStream()
+    {
+    }
+
+    RawBytes& DadaWriteClient::DataStream::next()
+    {
+        if (_current_block)
         {
             throw std::runtime_error("Previous data block not released");
         }
-        std::size_t block_idx = 0;
-        char* tmp = ipcio_open_block_write(_hdu->data_block, &block_idx);
-        _current_data_block.reset(new RawBytes(tmp,data_buffer_size()));
-        return *_current_data_block;
+        char* tmp = ipcio_open_block_write(_parent._hdu->data_block, &_block_idx);
+        _current_block.reset(new RawBytes(tmp, _parent.data_buffer_size()));
+        return *_current_block;
     }
 
-    void DadaWriteClient::release_data_block(bool eod)
+    void DadaWriteClient::DataStream::release(bool eod)
     {
-        if (!_current_data_block)
+        if (!_current_block)
         {
              throw std::runtime_error("No data block to be released");
         }
         if (eod)
         {
-            if (ipcio_update_block_write (_hdu->data_block, _current_data_block->used_bytes()) < 0)
+            if (ipcio_update_block_write (_parent._hdu->data_block, _current_block->used_bytes()) < 0)
             {
-                _log.write(LOG_ERR, "close_buffer: ipcio_update_block_write failed\n");
+                _parent._log.write(LOG_ERR, "close_buffer: ipcio_update_block_write failed\n");
                 throw std::runtime_error("Could not close ipcio data block");
             }
         }
         else
         {
-            if (ipcio_close_block_write (_hdu->data_block, _current_data_block->used_bytes()) < 0)
+            if (ipcio_close_block_write (_parent._hdu->data_block, _current_block->used_bytes()) < 0)
             {
-                _log.write(LOG_ERR, "close_buffer: ipcio_close_block_write failed\n");
+                _parent._log.write(LOG_ERR, "close_buffer: ipcio_close_block_write failed\n");
                 throw std::runtime_error("Could not close ipcio data block");
             }
-            _current_data_block.reset(nullptr);
+            _current_block.reset(nullptr);
         }
+    }
+
+    std::size_t DadaWriteClient::DataStream::block_idx() const
+    {
+        return _block_idx;
     }
 
 } //namespace psrdada_cpp

@@ -9,24 +9,50 @@ namespace psrdada_cpp {
 
     class DadaWriteClient: public DadaClientBase
     {
-    private:
-        bool _locked;
-        std::unique_ptr<RawBytes> _current_header_block;
-        std::unique_ptr<RawBytes> _current_data_block;
+    public:
+        class HeaderStream
+        {
+        private:
+            DadaWriteClient& _parent;
+            std::unique_ptr<RawBytes> _current_block;
+
+        public:
+            HeaderStream(DadaWriteClient& parent);
+            HeaderStream(HeaderStream const&) = delete;
+            ~HeaderStream();
+            RawBytes& next();
+            void release();
+        };
+
+        class DataStream
+        {
+        private:
+            DadaWriteClient& _parent;
+            std::unique_ptr<RawBytes> _current_block;
+            std::size_t _block_idx;
+
+        public:
+            DataStream(DadaWriteClient& parent);
+            DataStream(DataStream const&) = delete;
+            ~DataStream();
+            RawBytes& next();
+            void release(bool eod=false);
+            std::size_t block_idx() const;
+        };
 
     public:
         DadaWriteClient(key_t key, MultiLog& log);
         DadaWriteClient(DadaWriteClient const&) = delete;
         ~DadaWriteClient();
-        RawBytes& acquire_header_block();
-        void release_header_block();
-        RawBytes& acquire_data_block();
-        void release_data_block(bool eod=false);
-        bool is_locked() const;
+        HeaderStream& header_stream();
+        DataStream& data_stream();
 
     private:
         void lock();
         void release();
+        bool _locked;
+        HeaderStream _header_stream;
+        DataStream _data_stream;
     };
 
 } //namespace psrdada_cpp

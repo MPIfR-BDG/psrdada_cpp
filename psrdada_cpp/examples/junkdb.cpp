@@ -68,7 +68,8 @@ int main(int argc, char** argv)
         MultiLog log("junkdb");
         DadaWriteClient client(key,log);
         std::cout << "Opening header block" << std::endl;
-        RawBytes& header = client.acquire_header_block();
+        auto& header_stream = client.header_stream();
+        RawBytes& header = header_stream.next();
         std::cout << "Header block is of size " << header.total_bytes() << " bytes ("<< header.used_bytes()
         << " bytes currently used)" << std::endl;
         std::cout << "There are a total of " << client.header_buffer_count() << " header buffers" << std::endl;
@@ -76,12 +77,15 @@ int main(int argc, char** argv)
         header.used_bytes(header.total_bytes());
         std::cout << "Wrote " << header.used_bytes() << " bytes to header block" << std::endl;
         std::cout << "Closing header block" << std::endl;
-        client.release_header_block();
+        header_stream.release();
+
+        auto& data_stream = client.data_stream();
+
         std::size_t bytes_written = 0;
         while (bytes_written < nbytes)
         {
             std::cout << "Opening data block" << std::endl;
-            RawBytes& block = client.acquire_data_block();
+            RawBytes& block = data_stream.next();
             std::cout << "Data block is of size " << block.total_bytes() << " bytes ("<< block.used_bytes()
             << " bytes currently used)" << std::endl;
             std::cout << "There are a total of " << client.data_buffer_count() << " data buffers" << std::endl;
@@ -91,7 +95,7 @@ int main(int argc, char** argv)
             std::cout << "Wrote " << block.used_bytes() << " bytes to data block" << std::endl;
             bytes_written += block.used_bytes();
             std::cout << "Closing data block" << std::endl;
-            client.release_data_block(bytes_written >= nbytes);
+            data_stream.release(bytes_written >= nbytes);
         }
     }
     catch(std::exception& e)
