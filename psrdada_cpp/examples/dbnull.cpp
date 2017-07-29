@@ -75,7 +75,8 @@ int main(int argc, char** argv)
         std::cout << "Closing header block" << std::endl;
         client.release_header_block();
         std::size_t bytes_read = 0;
-        while (bytes_read < nbytes)
+        bool _exit = false;
+        while (bytes_read < nbytes  && !client.is_final_data_block())
         {
             std::cout << "Opening data block" << std::endl;
             RawBytes& block = client.acquire_data_block();

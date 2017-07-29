@@ -23,7 +23,9 @@ namespace psrdada_cpp {
         void release_header_block();
         RawBytes& acquire_data_block();
         void release_data_block();
-        std::size_t current_data_block_idx();
+        std::size_t current_data_block_idx() const;
+        bool is_final_data_block() const;
+        bool is_final_header_block() const;
 
     private:
         void lock();

@@ -103,13 +103,23 @@ namespace psrdada_cpp {
         _current_data_block.reset(nullptr);
     }
 
-    std::size_t DadaReadClient::current_data_block_idx()
+    std::size_t DadaReadClient::current_data_block_idx() const
     {
         if (!_current_data_block)
         {
              throw std::runtime_error("No data block currently acquired");
         }
         return _current_data_block_idx;
+    }
+
+    bool DadaReadClient::is_final_data_block() const
+    {
+        return (bool) ipcbuf_eod((ipcbuf_t *)_hdu->data_block);
+    }
+
+    bool DadaReadClient::is_final_header_block() const
+    {
+        return (bool) ipcbuf_eod(_hdu->header_block);
     }
 
 } //namespace psrdada_cpp
