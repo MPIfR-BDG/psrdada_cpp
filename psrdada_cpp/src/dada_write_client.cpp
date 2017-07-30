@@ -19,7 +19,11 @@ namespace psrdada_cpp {
     void DadaWriteClient::lock()
     {
         if (!_connected)
+        {
             throw std::runtime_error("Lock requested on unconnected HDU\n");
+        }
+        BOOST_LOG_TRIVIAL(debug) << "Acquiring writing lock on dada buffer ["
+        << std::hex << _key << std::dec << "]";
         if (dada_hdu_lock_write (_hdu) < 0)
         {
             _log.write(LOG_ERR, "open_hdu: could not lock write\n");
@@ -30,8 +34,12 @@ namespace psrdada_cpp {
 
     void DadaWriteClient::release()
     {
-       if (!_locked)
+        if (!_locked)
+        {
             throw std::runtime_error("Release requested on unlocked HDU\n");
+        }
+        BOOST_LOG_TRIVIAL(debug) << "Releasing writing lock on dada buffer ["
+        << std::hex << _key << std::dec << "]";
         if (dada_hdu_unlock_write (_hdu) < 0)
         {
             _log.write(LOG_ERR, "open_hdu: could not release write\n");
@@ -66,6 +74,7 @@ namespace psrdada_cpp {
         {
             throw std::runtime_error("Previous header block not released");
         }
+        BOOST_LOG_TRIVIAL(debug) << "Acquiring next header block";
         char* tmp = ipcbuf_get_next_write(_parent._hdu->header_block);
         _current_block.reset(new RawBytes(tmp, _parent.header_buffer_size()));
         return *_current_block;
@@ -77,7 +86,7 @@ namespace psrdada_cpp {
         {
             throw std::runtime_error("No header block to be released");
         }
-
+        BOOST_LOG_TRIVIAL(debug) << "Releasing header block";
         if (ipcbuf_mark_filled(_parent._hdu->header_block, _current_block->used_bytes()) < 0)
         {
             _parent._log.write(LOG_ERR, "Could not mark filled header block\n");
@@ -103,8 +112,10 @@ namespace psrdada_cpp {
         {
             throw std::runtime_error("Previous data block not released");
         }
+        BOOST_LOG_TRIVIAL(debug) << "Acquiring next header block";
         char* tmp = ipcio_open_block_write(_parent._hdu->data_block, &_block_idx);
         _current_block.reset(new RawBytes(tmp, _parent.data_buffer_size()));
+        BOOST_LOG_TRIVIAL(debug) << "Acquired data block " << _block_idx;
         return *_current_block;
     }
 
@@ -114,8 +125,10 @@ namespace psrdada_cpp {
         {
              throw std::runtime_error("No data block to be released");
         }
+        BOOST_LOG_TRIVIAL(debug) << "Releasing data block";
         if (eod)
         {
+            BOOST_LOG_TRIVIAL(debug) << "Setting EOD markers";
             if (ipcio_update_block_write (_parent._hdu->data_block, _current_block->used_bytes()) < 0)
             {
                 _parent._log.write(LOG_ERR, "close_buffer: ipcio_update_block_write failed\n");

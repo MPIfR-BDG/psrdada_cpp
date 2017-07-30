@@ -26,17 +26,9 @@ namespace psrdada_cpp
         {
             BOOST_LOG_TRIVIAL(info) << "Attaching new read client to buffer";
             DadaReadClient client(_key,_log);
-            BOOST_LOG_TRIVIAL(debug) << "Header buffer is " << client.header_buffer_count()
-            << " x " << client.header_buffer_size() << " bytes";
-            BOOST_LOG_TRIVIAL(debug) << "Data buffer is " << client.data_buffer_count()
-            << " x " << client.data_buffer_size() << " bytes";
             auto& header_stream = client.header_stream();
-            auto& block = header_stream.next();
-            BOOST_LOG_TRIVIAL(debug) << "Acquired header block ("
-            << block.used_bytes() <<"/"<<block.total_bytes() << " bytes)";
-            static_cast<ApplicationType*>(this)->on_connect(block);
+            static_cast<ApplicationType*>(this)->on_connect(header_stream.next());
             header_stream.release();
-            BOOST_LOG_TRIVIAL(debug) << "Released header block";
             auto& data_stream = client.data_stream();
             while (!_stop)
             {
@@ -45,12 +37,8 @@ namespace psrdada_cpp
                     BOOST_LOG_TRIVIAL(info) << "Reached end of data";
                     break;
                 }
-                auto& data_block = data_stream.next();
-                BOOST_LOG_TRIVIAL(debug) << "Acquired data block ("
-                << block.used_bytes() <<"/"<<block.total_bytes() << " bytes)";
-                static_cast<ApplicationType*>(this)->on_next(data_block);
+                static_cast<ApplicationType*>(this)->on_next(data_stream.next());
                 data_stream.release();
-                BOOST_LOG_TRIVIAL(debug) << "Released data block";
             }
         }
         _running = false;

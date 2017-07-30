@@ -10,10 +10,8 @@ namespace psrdada_cpp {
 
     class DadaClientBase
     {
-    private:
-        key_t _key;
-
     protected:
+        key_t _key;
         dada_hdu_t* _hdu;
         bool _connected;
         MultiLog& _log;

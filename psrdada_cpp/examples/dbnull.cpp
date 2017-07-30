@@ -52,7 +52,6 @@ int main(int argc, char** argv)
                     set_log_level(level);
                 }),
             "The logging level to use (debug, info, warning, error)");
-
         po::variables_map vm;
         try
         {
@@ -71,7 +70,6 @@ int main(int argc, char** argv)
             std::cerr << desc << std::endl;
             return ERROR_IN_COMMAND_LINE;
         }
-
         MultiLog log("dbnull");
         DbNull proc(key, log, nbytes);
         proc.run();

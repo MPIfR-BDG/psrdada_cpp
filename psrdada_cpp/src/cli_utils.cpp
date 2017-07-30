@@ -13,7 +13,6 @@ namespace psrdada_cpp {
     void set_log_level(std::string level)
     {
         using namespace boost::log;
-
         if (level == "debug")
         {
             std::cout << "debug" << std::endl;

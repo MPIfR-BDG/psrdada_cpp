@@ -17,6 +17,7 @@ namespace psrdada_cpp
 
     void DadaIoLoop::stop()
     {
+        BOOST_LOG_TRIVIAL(debug) << "Stop requested on IO loop";
         _stop = true;
     }
 
