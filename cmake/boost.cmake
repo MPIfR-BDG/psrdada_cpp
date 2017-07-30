@@ -1,5 +1,5 @@
 # find the usual boost
-find_package(Boost COMPONENTS filesystem system program_options REQUIRED)
+find_package(Boost COMPONENTS log program_options REQUIRED)
 if(Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 58)
     # -- pick up boost::endiam from the local copy
     list(APPEND Boost_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/thirdparty/boost")

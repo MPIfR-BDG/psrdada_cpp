@@ -10,6 +10,10 @@ set(psrdada_cpp_src
     src/dada_client_base.cpp
     src/dada_write_client.cpp
     src/dada_read_client.cpp
+    src/dada_io_loop.cpp
+    src/dada_junkdb.cpp
+    src/dada_dbnull.cpp
+    src/cli_utils.cpp
    )
 
 # -- the main library target
