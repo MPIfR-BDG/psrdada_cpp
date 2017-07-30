@@ -6,6 +6,11 @@
 
 namespace psrdada_cpp {
 
+    /**
+     * @brief      A class for wrapping multilog_t instances
+     *             required for logging with the underlying
+     *             DADA API.
+     */
     class MultiLog
     {
     private:
@@ -14,12 +19,29 @@ namespace psrdada_cpp {
         bool _open;
 
     public:
+        /**
+         * @brief      Create a new instance
+         *
+         * @param[in]  name  The name to give this logger
+         */
         explicit MultiLog(std::string name);
         MultiLog(MultiLog const&) = delete;
         ~MultiLog();
 
+        /**
+         * @brief      Get a native handle to the wrapped multilog_t pointer
+         */
         multilog_t* native_handle();
 
+        /**
+         * @brief      Write to the log
+         *
+         * @param[in]  priority   The priority (0, 1, 2...)
+         * @param[in]  format     The format string
+         * @param[in]  ...        Parameters for the format string
+         *
+         * @tparam     Args       The types of the parameters for the format string
+         */
         template<class... Args>
         void write(int priority, const char* format, Args&&... args);
 

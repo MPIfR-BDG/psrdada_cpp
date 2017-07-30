@@ -16,10 +16,25 @@ namespace psrdada_cpp
         bool _running;
 
     public:
+
+        /**
+         * @brief      Create new instance
+         *
+         * @param[in]  key   A hexadecimal shared memory key
+         * @param      log   A MultiLog instance
+         */
         DadaIoLoop(key_t key, MultiLog& log);
         DadaIoLoop(DadaIoLoop const&) = delete;
         ~DadaIoLoop();
+
+        /**
+         * @brief      Stop the IO loop processing
+         */
         void stop();
+
+        /**
+         * @brief      Start the IO loop processing
+         */
         virtual void run()=0;
     };
 

@@ -17,12 +17,34 @@ namespace psrdada_cpp {
         MultiLog& _log;
 
     public:
+        /**
+         * @brief      Create a new basic DADA client instance
+         *
+         * @param[in]  key   The hexidecimal shared memory key
+         * @param      log   A MultiLog instance for logging buffer transactions
+         */
         DadaClientBase(key_t key, MultiLog& log);
         DadaClientBase(DadaClientBase const&) = delete;
         ~DadaClientBase();
+
+        /**
+         * @brief      Get the sizes of each data block in the ring buffer
+         */
         std::size_t data_buffer_size();
+
+        /**
+         * @brief      Get the sizes of each header block in the ring buffer
+         */
         std::size_t header_buffer_size();
+
+        /**
+         * @brief      Get the number of data blocks in the ring buffer
+         */
         std::size_t data_buffer_count();
+
+        /**
+         * @brief      Get the number of header blocks in the ring buffer
+         */
         std::size_t header_buffer_count();
 
     private:

@@ -69,9 +69,18 @@ int main(int argc, char** argv)
             std::cerr << desc << std::endl;
             return ERROR_IN_COMMAND_LINE;
         }
+
+        /**
+         * All the application code goes here
+         */
+
         MultiLog log("junkdb");
         JunkDb proc(key, log, nbytes);
         proc.run();
+
+        /**
+         * End of application code
+         */
     }
     catch(std::exception& e)
     {

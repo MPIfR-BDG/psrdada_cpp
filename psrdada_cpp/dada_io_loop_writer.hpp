@@ -11,8 +11,18 @@ namespace psrdada_cpp
     class DadaIoLoopWriter: public DadaIoLoop
     {
     public:
+        /**
+         * @brief      Create a IO loop for writing to a DADA buffer
+         *
+         * @param[in]  key   The hexidecimal shared memory key
+         * @param      log   A MultiLog instance for logging buffer transactions
+         */
         DadaIoLoopWriter(key_t key, MultiLog& log);
         ~DadaIoLoopWriter();
+
+        /**
+         * @brief      Start the IO loop processing
+         */
         void run();
     };
 } //namespace psrdada_cpp
