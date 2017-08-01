@@ -1,3 +1,4 @@
+include(cuda)
 include(compiler_settings)
 include(cmake/boost.cmake)
 include(cmake/psrdada.cmake)

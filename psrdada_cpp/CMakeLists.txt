@@ -29,3 +29,5 @@ target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 
 install (TARGETS junkdb dbnull DESTINATION bin)
 #install (FILES MathFunctions.h DESTINATION include)
+
+add_subdirectory(meerkat)
