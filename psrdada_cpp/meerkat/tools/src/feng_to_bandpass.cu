@@ -19,8 +19,8 @@ namespace kernels {
         __shared__ float time_pol_ar[MEERKAT_FENG_NPOL_PER_HEAP*MEERKAT_FENG_NSAMPS_PER_HEAP];
 
         float total_sum = 0.0f;
-        int antenna_idx = gridDim.x;
-        int channel_idx = gridDim.y;
+        int antenna_idx = gridIdx.x;
+        int channel_idx = gridIdx.y;
         for (int heap_idx=0; heap_idx<ntimestamps; ++heap_idx)
         {
 
