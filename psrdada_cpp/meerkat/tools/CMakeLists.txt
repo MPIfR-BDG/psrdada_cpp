@@ -9,6 +9,7 @@ set(psrdada_cpp_meerkat_tools_src
 #feng2pb
 cuda_add_executable(feng2pb ${psrdada_cpp_meerkat_tools_src})
 target_link_libraries(feng2pb ${PSRDADA_CPP_LIBRARIES})
+install(TARGETS feng2pb DESTINATION bin)
 
 set(psrdada_cpp_meerkat_tools_test_src
     src/feng_to_bandpass.cu
