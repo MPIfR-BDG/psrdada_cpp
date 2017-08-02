@@ -13,7 +13,7 @@ namespace psrdada_cpp
     {
     }
 
-    void DbNull::on_connect(RawBytes& block)
+    void DbNull::on_connect(RawBytes& /*block*/)
     {
     }
 

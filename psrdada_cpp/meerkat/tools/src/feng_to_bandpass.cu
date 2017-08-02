@@ -1,12 +1,10 @@
 #include "psrdada_cpp/meerkat/tools/feng_to_bandpass.cuh"
+#include "psrdada_cpp/meerkat/constants.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include "psrdada_cpp/common.hpp"
 #include "cuComplex.h"
 #include <fstream>
 #include <iomanip>
-
-#define NSAMPS_PER_HEAP 256
-#define NPOL_PER_HEAP 2
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -46,7 +44,7 @@ namespace kernels {
         int nchans, int nants,
         int ntimestamps)
     {
-        __shared__ float time_pol_ar[NPOL_PER_HEAP*NSAMPS_PER_HEAP];
+        __shared__ float time_pol_ar[MEERKAT_FENG_NPOL_PER_HEAP*MEERKAT_FENG_NSAMPS_PER_HEAP];
 
         float total_sum = 0.0f;
         int antenna_idx = gridDim.x;
@@ -54,7 +52,7 @@ namespace kernels {
         for (int heap_idx=0; heap_idx<ntimestamps; ++heap_idx)
         {
 
-            int offset = NSAMPS_PER_HEAP * NPOL_PER_HEAP * (
+            int offset = MEERKAT_FENG_NSAMPS_PER_HEAP * MEERKAT_FENG_NPOL_PER_HEAP * (
                 nchans * (heap_idx * nants + antenna_idx)
                 + channel_idx);
 
@@ -66,7 +64,7 @@ namespace kernels {
 
             for (int ii=0; ii<9; ++ii)
             {
-                if ((threadIdx.x + (1<<ii)) < (NSAMPS_PER_HEAP*NPOL_PER_HEAP))
+                if ((threadIdx.x + (1<<ii)) < (MEERKAT_FENG_NSAMPS_PER_HEAP*MEERKAT_FENG_NPOL_PER_HEAP))
                 {
                     val += time_pol_ar[threadIdx.x + (1<<ii)];
                 }
@@ -101,7 +99,7 @@ namespace kernels {
     {
     }
 
-    void FengToBandpass::on_connect(RawBytes& block)
+    void FengToBandpass::on_connect(RawBytes& /*block*/)
     {
         //null, we currently do not read the headers
     }
@@ -110,8 +108,8 @@ namespace kernels {
     {
         std::size_t used = block.used_bytes();
         std::size_t nbytes_per_timestamp =
-            _natnennas * _nchans * NSAMPS_PER_HEAP
-            * NPOL_PER_HEAP * sizeof(char2);
+            _natnennas * _nchans * MEERKAT_FENG_NSAMPS_PER_HEAP
+            * MEERKAT_FENG_NPOL_PER_HEAP * sizeof(char2);
         if (used%nbytes_per_timestamp != 0)
         {
             throw std::runtime_error("Number of bytes in buffer is not an integer "
@@ -124,7 +122,7 @@ namespace kernels {
         float* d_output_ptr = thrust::raw_pointer_cast(_output.data());
         CUDA_ERROR_CHECK(cudaMemcpy(d_input_ptr, block.ptr(), used, cudaMemcpyHostToDevice));
         dim3 grid(_natnennas,_nchans,1);
-        kernels::feng_heaps_to_bandpass<<<grid,NPOL_PER_HEAP*NSAMPS_PER_HEAP>>>
+        kernels::feng_heaps_to_bandpass<<<grid,MEERKAT_FENG_NPOL_PER_HEAP*MEERKAT_FENG_NSAMPS_PER_HEAP>>>
             (d_input_ptr, d_output_ptr, _nchans, _natnennas, ntimestamps);
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
         thrust::copy(_output.begin(),_output.end(),_h_output.begin());

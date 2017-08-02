@@ -47,8 +47,14 @@ namespace psrdada_cpp {
          */
         std::size_t header_buffer_count();
 
-    private:
+        /**
+         * @brief      Connect to ring buffer
+         */
         void connect();
+
+        /**
+         * @brief      Disconnect from ring buffer
+         */
         void disconnect();
 };
 
