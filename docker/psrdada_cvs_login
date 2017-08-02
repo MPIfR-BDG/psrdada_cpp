@@ -1,0 +1,4 @@
+#!/usr/bin/expect                                                                                                                                           
+spawn cvs -d:pserver:anonymous@psrdada.cvs.sourceforge.net:/cvsroot/psrdada login
+expect "CVS password:"
+send "\r"
