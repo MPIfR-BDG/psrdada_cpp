@@ -30,22 +30,22 @@ namespace psrdada_cpp {
         /**
          * @brief      Get the sizes of each data block in the ring buffer
          */
-        std::size_t data_buffer_size();
+        std::size_t data_buffer_size() const;
 
         /**
          * @brief      Get the sizes of each header block in the ring buffer
          */
-        std::size_t header_buffer_size();
+        std::size_t header_buffer_size() const;
 
         /**
          * @brief      Get the number of data blocks in the ring buffer
          */
-        std::size_t data_buffer_count();
+        std::size_t data_buffer_count() const;
 
         /**
          * @brief      Get the number of header blocks in the ring buffer
          */
-        std::size_t header_buffer_count();
+        std::size_t header_buffer_count() const;
 
         /**
          * @brief      Connect to ring buffer

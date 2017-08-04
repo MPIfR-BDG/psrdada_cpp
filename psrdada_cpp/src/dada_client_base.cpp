@@ -17,22 +17,22 @@ namespace psrdada_cpp {
         }
     }
 
-    std::size_t DadaClientBase::data_buffer_size()
+    std::size_t DadaClientBase::data_buffer_size() const
     {
         return ipcbuf_get_bufsz((ipcbuf_t *) _hdu->data_block);
     }
 
-    std::size_t DadaClientBase::header_buffer_size()
+    std::size_t DadaClientBase::header_buffer_size() const
     {
         return ipcbuf_get_bufsz(_hdu->header_block);
     }
 
-    std::size_t DadaClientBase::data_buffer_count()
+    std::size_t DadaClientBase::data_buffer_count() const
     {
         return ipcbuf_get_nbufs((ipcbuf_t *) _hdu->data_block);
     }
 
-    std::size_t DadaClientBase::header_buffer_count()
+    std::size_t DadaClientBase::header_buffer_count() const
     {
         return ipcbuf_get_nbufs(_hdu->header_block);
     }
@@ -66,7 +66,7 @@ namespace psrdada_cpp {
         _connected = false;
     }
 
-    void DadaClientBase::disconnect()
+    void DadaClientBase::reconnect()
     {
         disconnect();
         connect();

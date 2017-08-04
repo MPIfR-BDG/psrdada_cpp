@@ -1,6 +1,7 @@
 #ifndef PSRDADA_CPP_DADA_OUTPUT_STREAM_HPP
 #define PSRDADA_CPP_DADA_OUTPUT_STREAM_HPP
 
+#include "psrdada_cpp/dada_write_client.hpp"
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/common.hpp"
 
@@ -19,25 +20,21 @@ namespace psrdada_cpp
         DadaWriteClient _writer;
     };
 
-    template <class HandlerType>
-    DadaOutputStream<HandlerType>::DadaOutputStream(key_t key, MultiLog& log)
+    DadaOutputStream::DadaOutputStream(key_t key, MultiLog& log)
     : _writer(key,log)
     {
     }
 
-    template <class HandlerType>
-    DadaOutputStream<HandlerType>::~DadaOutputStream()
+    DadaOutputStream::~DadaOutputStream()
     {
     }
 
-    template <class HandlerType>
-    DadaWriteClient const& client() const;
+    DadaWriteClient const& DadaOutputStream::client() const;
     {
         return _writer;
     }
 
-    template <class HandlerType>
-    void DadaOutputStream<HandlerType>::init(RawBytes& in)
+    void DadaOutputStream::init(RawBytes& in)
     {
         _writer.reset();
         auto& stream = _writer.header_stream();
@@ -46,8 +43,7 @@ namespace psrdada_cpp
         stream.realease();
     }
 
-    template <class HandlerType>
-    void DadaOutputStream<HandlerType>::operator()(RawBytes& in)
+    void DadaOutputStream::operator()(RawBytes& in)
     {
         if (!_writer)
         {
