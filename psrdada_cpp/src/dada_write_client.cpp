@@ -58,6 +58,13 @@ namespace psrdada_cpp {
         return _data_stream;
     }
 
+    void DadaWriteClient::reset()
+    {
+        release();
+        reconnect();
+        lock();
+    }
+
     DadaWriteClient::HeaderStream::HeaderStream(DadaWriteClient& parent)
     : _parent(parent)
     , _current_block(nullptr)

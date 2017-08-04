@@ -56,6 +56,11 @@ namespace psrdada_cpp {
          * @brief      Disconnect from ring buffer
          */
         void disconnect();
+
+        /**
+         * @brief      Reconnect to the ring buffer
+         */
+        void reconnect();
 };
 
 } //namespace psrdada_cpp

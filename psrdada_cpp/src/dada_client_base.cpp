@@ -66,4 +66,10 @@ namespace psrdada_cpp {
         _connected = false;
     }
 
+    void DadaClientBase::disconnect()
+    {
+        disconnect();
+        connect();
+    }
+
 } //namespace psrdada_cpp
