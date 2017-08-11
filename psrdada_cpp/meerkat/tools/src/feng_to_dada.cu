@@ -11,6 +11,7 @@ namespace meerkat {
 namespace tools {
 namespace kernels {
 
+    /*
     __global__ void feng_heaps_to_dada(
         int* __restrict__ in, int* __restrict__ out,
         int nchans)
@@ -47,6 +48,44 @@ namespace kernels {
             }
         }
     }
+    */
+
+
+    __global__ void feng_heaps_to_dada(
+        int* __restrict__ in,
+        int* __restrict__ out,
+        int nchans)
+    {
+        //This kernel only works with 256 threads
+        //Nchans must be a multiple of 32
+
+        __shared__ int transpose_buffer[32][32+1];
+        int const warp_idx = threadIdx.x >> 0x5;
+        int const lane_idx = threadIdx.x & 0x1f;
+
+        //blockIdx.x == timestamp
+
+        int offset = blockIdx.x * nchans * MEERKAT_FENG_NSAMPS_PER_HEAP;
+
+
+        for (int time_offset=0; time_offset < MEERKAT_FENG_NSAMPS_PER_HEAP; time_offset+=warpSize)
+        {
+            int toffset = offset + time_offset + lane_idx;
+            int coffset = offset + time_offset*nchans + warp_idx;
+            for (int chan_idx = warp_idx; chan_idx < nchans; chan_idx += 32)
+            {
+                transpose_buffer[warp_idx][lane_idx] = in[toffset + chan_idx*MEERKAT_FENG_NSAMPS_PER_HEAP];
+                __syncthreads();
+                out[coffset+ chan_idx] = transpose_buffer[lane_idx][warp_idx];
+            }
+        }
+    }
+
+
+
+
+
+
 } //kernels
 } //tools
 } //meerkat

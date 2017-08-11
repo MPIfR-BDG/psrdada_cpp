@@ -13,14 +13,14 @@ set(psrdada_cpp_meerkat_tools_src
 
 cuda_add_library(${CMAKE_PROJECT_NAME}_meerkat_tools ${psrdada_cpp_meerkat_tools_src})
 
-#feng2pb
-cuda_add_executable(feng2pb src/feng_to_bandpass_cli.cu)
-target_link_libraries(feng2pb ${PSRDADA_CPP_MEERKAT_TOOLS_LIBRARIES})
-install(TARGETS feng2pb DESTINATION bin)
+#feng2bp
+cuda_add_executable(feng2bp src/feng_to_bandpass_cli.cu)
+target_link_libraries(feng2bp ${PSRDADA_CPP_MEERKAT_TOOLS_LIBRARIES})
+install(TARGETS feng2bp DESTINATION bin)
 
-#feng2pb_test
-cuda_add_executable(feng2pb_test src/feng_to_bandpass_test.cu)
-target_link_libraries(feng2pb_test ${PSRDADA_CPP_MEERKAT_TOOLS_LIBRARIES})
+#feng2bp_test
+cuda_add_executable(feng2bp_test src/feng_to_bandpass_test.cu)
+target_link_libraries(feng2bp_test ${PSRDADA_CPP_MEERKAT_TOOLS_LIBRARIES})
 
 #feng2dada
 cuda_add_executable(feng2dada src/feng_to_dada_cli.cu)
