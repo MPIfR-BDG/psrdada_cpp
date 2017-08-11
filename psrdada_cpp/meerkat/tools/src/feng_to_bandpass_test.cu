@@ -5,6 +5,12 @@
 
 using namespace psrdada_cpp;
 
+struct FengToBandpassTester
+{
+    void init(RawBytes&){}
+    bool operator()(RawBytes&){return false;}
+};
+
 int main()
 {
     std::size_t const nantennas = 1;
@@ -40,10 +46,8 @@ int main()
             }
         }
     }
-
-    key_t key = 0;
+    FengToBandpassTester tester;
     RawBytes bytes((char*)input_buffer.data(),used_bytes,used_bytes);
-    MultiLog log("feng2bp");
-    meerkat::tools::FengToBandpass proc(key, log, nchans, nantennas);
-    proc.on_next(bytes);
+    meerkat::tools::FengToBandpass<FengToBandpassTester> proc(nchans, nantennas, tester);
+    proc(bytes);
 };

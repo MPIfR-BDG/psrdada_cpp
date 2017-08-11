@@ -1,9 +1,14 @@
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 #include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/dada_input_stream.hpp"
+#include "psrdada_cpp/simple_file_writer.hpp"
 #include "psrdada_cpp/meerkat/tools/feng_to_bandpass.cuh"
 
 #include "boost/program_options.hpp"
+
+#include <ctime>
+
 
 using namespace psrdada_cpp;
 
@@ -21,6 +26,11 @@ int main(int argc, char** argv)
         key_t key;
         std::size_t nantennas = 0;
         std::size_t nchannels = 0;
+        std::time_t now = std::time(NULL);
+        std::tm * ptm = std::localtime(&now);
+        char buffer[32];
+        std::strftime(buffer, 32, "%Y-%m-%d-%H:%M:%S.bp", ptm);
+        std::string filename(buffer);
 
         /** Define and parse the program options
         */
@@ -39,6 +49,9 @@ int main(int argc, char** argv)
             "The number of antennas in the stream")
         ("nchannels,c", po::value<std::size_t>(&nchannels)->required(),
             "The number of frequency channels in the stream")
+        ("outfile,o", po::value<std::string>(&filename)
+            ->default_value(filename),
+            "The output file to write bandpasses to")
         ("log_level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)
@@ -68,11 +81,11 @@ int main(int argc, char** argv)
         /**
          * All the application code goes here
          */
-
         MultiLog log("feng2bp");
-        meerkat::tools::FengToBandpass proc(key, log, nchannels, nantennas);
-        proc.run();
-
+        SimpleFileWriter outwriter(filename);
+        meerkat::tools::FengToBandpass<SimpleFileWriter> feg2bp(nchannels, nantennas, outwriter);
+        DadaInputStream<decltype(feg2bp)> stream(key, log, feg2bp);
+        stream.start();
         /**
          * End of application code
          */

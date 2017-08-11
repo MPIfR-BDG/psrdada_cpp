@@ -5,15 +5,16 @@ include_directories(..)
 include_directories(${PROJECT_BINARY_DIR})
 
 set(psrdada_cpp_src
-    src/multilog.cpp
-    src/raw_bytes.cpp
+    src/cli_utils.cpp
     src/dada_client_base.cpp
     src/dada_write_client.cpp
+    src/dada_null_sink.cpp
+    src/dada_output_stream.cpp
     src/dada_read_client.cpp
-    src/dada_io_loop.cpp
-    src/dada_junkdb.cpp
-    src/dada_dbnull.cpp
-    src/cli_utils.cpp
+    src/dada_write_client.cpp
+    src/multilog.cpp
+    src/raw_bytes.cpp
+    src/simple_file_writer.cpp
    )
 
 # -- the main library target

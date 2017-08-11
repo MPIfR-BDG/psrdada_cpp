@@ -1,7 +1,7 @@
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/dada_output_stream.hpp"
-#include "psrdada_cpp/dada_junkdb_stream.hpp"
+#include "psrdada_cpp/dada_junk_source.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 
 #include "boost/program_options.hpp"
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 
         MultiLog log("junkdb");
         DadaOutputStream out_stream(key, log);
-        junk_generator<decltype(out_stream)>(
+        junk_source<decltype(out_stream)>(
             out_stream, out_stream.client().header_buffer_size(),
             out_stream.client().data_buffer_size(), nbytes);
 

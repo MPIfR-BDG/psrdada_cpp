@@ -2,8 +2,8 @@
 #define PSRDADA_CPP_MEERKAT_TOOLS_FENG_TO_BANDPASS_HPP
 
 #include "psrdada_cpp/common.hpp"
-#include "psrdada_cpp/dada_io_loop_reader.hpp"
 #include "psrdada_cpp/meerkat/constants.hpp"
+#include "psrdada_cpp/raw_bytes.hpp"
 #include "thrust/device_vector.h"
 #include "thrust/host_vector.h"
 
@@ -48,11 +48,11 @@ namespace kernels {
 
 }
 
-class FengToBandpass:
-    public DadaIoLoopReader<FengToBandpass>
+template <class HandlerType>
+class FengToBandpass
 {
 public:
-    FengToBandpass(key_t key, MultiLog& log, std::size_t nchans, std::size_t nants);
+    FengToBandpass(std::size_t nchans, std::size_t nants, HandlerType& handler);
     ~FengToBandpass();
 
     /**
@@ -66,7 +66,7 @@ public:
      *
      * @param      block  A RawBytes object wrapping a DADA header buffer
      */
-    void on_connect(RawBytes& block);
+    void init(RawBytes& block);
 
     /**
      * @brief      A callback to be called on acqusition of a new
@@ -74,17 +74,14 @@ public:
      *
      * @param      block  A RawBytes object wrapping a DADA data buffer
      */
-    void on_next(RawBytes& block);
+    bool operator()(RawBytes& block);
 
 private:
-    void write_output_file();
     std::size_t _nchans;
     std::size_t _natnennas;
-    std::size_t _dump_counter;
+    HandlerType& _handler;
     thrust::device_vector<char2> _input;
     thrust::device_vector<float> _output;
-    thrust::host_vector<float> _h_output;
-
 };
 
 
@@ -92,4 +89,5 @@ private:
 } //meerkat
 } //psrdada_cpp
 
+#include "psrdada_cpp/meerkat/tools/detail/feng_to_bandpass.cu"
 #endif //PSRDADA_CPP_MEERKAT_TOOLS_FENG_TO_BANDPASS_HPP
