@@ -1,11 +1,11 @@
 #ifndef PSRDADA_CPP_MEERKAT_TOOLS_FENG_TO_DADA_HPP
 #define PSRDADA_CPP_MEERKAT_TOOLS_FENG_TO_DADA_HPP
 
+#include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/common.hpp"
-#include "psrdada_cpp/dada_io_loop_reader.hpp"
 #include "psrdada_cpp/meerkat/constants.hpp"
 #include "thrust/device_vector.h"
-#include "thrust/host_vector.h"
+
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -14,16 +14,17 @@ namespace kernels {
 
     __global__
     void feng_heaps_to_dada(
-        char2* __restrict__ in, float* __restrict__ out,
-        int nchans, int ntimestamps);
+        int* __restrict__ in,
+        int* __restrict__ out,
+        int nchans);
 
 }
 
-class FengToDada:
-    public DadaIoLoopReader<FengToDada>
+template <class HandlerType>
+class FengToDada
 {
 public:
-    FengToDada(key_t key, MultiLog& log, std::size_t nchans);
+    FengToDada(std::size_t nchans, HandlerType& handler);
     ~FengToDada();
 
     /**
@@ -37,7 +38,7 @@ public:
      *
      * @param      block  A RawBytes object wrapping a DADA header buffer
      */
-    void on_connect(RawBytes& block);
+    void init(RawBytes& block);
 
     /**
      * @brief      A callback to be called on acqusition of a new
@@ -45,15 +46,13 @@ public:
      *
      * @param      block  A RawBytes object wrapping a DADA data buffer
      */
-    void on_next(RawBytes& block);
+    bool operator()(RawBytes& block);
 
 private:
-    void write_output_file();
     std::size_t _nchans;
-    std::size_t _dump_counter;
-    thrust::device_vector<char2> _input;
-    thrust::device_vector<float> _output;
-    thrust::host_vector<float> _h_output;
+    HandlerType& _handler;
+    thrust::device_vector<int> _input;
+    thrust::device_vector<int> _output;
 
 };
 
@@ -62,4 +61,5 @@ private:
 } //meerkat
 } //psrdada_cpp
 
+#include "psrdada_cpp/meerkat/tools/detail/feng_to_dada.cu"
 #endif //PSRDADA_CPP_MEERKAT_TOOLS_FENG_TO_DADA_HPP
