@@ -31,8 +31,8 @@ int main()
                 for (int samp=0; samp<MEERKAT_FENG_NSAMPS_PER_HEAP; ++samp)
                 {
                     int offset = timestamp*nelements_per_timestamp
-                    + ant * nchans * MEERKAT_FENG_NSAMPS_PER_HEAP * MEERKAT_FENG_NPOL_PER_HEAP
-                    + chan * MEERKAT_FENG_NSAMPS_PER_HEAP * MEERKAT_FENG_NPOL_PER_HEAP
+                    + ant * nchans * MEERKAT_FENG_NSAMPS_PER_HEAP
+                    + chan * MEERKAT_FENG_NSAMPS_PER_HEAP
                     + samp;
                     input_buffer[offset] = chan;
                 }
