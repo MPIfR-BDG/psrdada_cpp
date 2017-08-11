@@ -39,6 +39,7 @@ namespace tools {
         int ntimestamps = used/nbytes_per_timestamp;
         BOOST_LOG_TRIVIAL(debug) << "Number of time heaps: " << ntimestamps;
         _input.resize(size);
+        _output.resize(size);
         int* d_input_ptr = thrust::raw_pointer_cast(_input.data());
         int* d_output_ptr = thrust::raw_pointer_cast(_output.data());
         CUDA_ERROR_CHECK(cudaMemcpy(d_input_ptr, block.ptr(), used, cudaMemcpyHostToDevice));
