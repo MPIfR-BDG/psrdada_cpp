@@ -37,6 +37,7 @@ namespace tools {
         }
         std::size_t size = used/sizeof(int);
         int ntimestamps = used/nbytes_per_timestamp;
+        BOOST_LOG_TRIVIAL(debug) << "Number of time heaps: " << ntimestamps;
         _input.resize(size);
         int* d_input_ptr = thrust::raw_pointer_cast(_input.data());
         int* d_output_ptr = thrust::raw_pointer_cast(_output.data());
