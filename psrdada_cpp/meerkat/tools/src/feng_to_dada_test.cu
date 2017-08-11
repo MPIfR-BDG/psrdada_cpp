@@ -13,29 +13,24 @@ struct FengToDadaTester
 
 int main()
 {
-    std::size_t const nantennas = 1;
     std::size_t const nchans = 256;
     std::size_t const ntimestamps = 800;
-    std::size_t const nelements_per_timestamp =
-        (nantennas * nchans * MEERKAT_FENG_NSAMPS_PER_HEAP);
+    std::size_t const nelements_per_timestamp = nchans * MEERKAT_FENG_NSAMPS_PER_HEAP;
     std::size_t const nelements = nelements_per_timestamp * ntimestamps;
-    std::size_t const used_bytes = nelements*MEERKAT_FENG_NBYTES_PER_SAMPLE;
+    std::size_t const used_bytes = nelements * MEERKAT_FENG_NBYTES_PER_SAMPLE * MEERKAT_FENG_NPOL_PER_HEAP;
 
     std::vector<int> input_buffer(nelements);
+
     for (int timestamp=0; timestamp<ntimestamps; ++timestamp)
     {
-        for (int ant=0; ant<nantennas; ++ant)
+        for (int chan=0; chan<nchans; ++chan)
         {
-            for (int chan=0; chan<nchans; ++chan)
+            for (int samp=0; samp<MEERKAT_FENG_NSAMPS_PER_HEAP; ++samp)
             {
-                for (int samp=0; samp<MEERKAT_FENG_NSAMPS_PER_HEAP; ++samp)
-                {
-                    int offset = timestamp*nelements_per_timestamp
-                    + ant * nchans * MEERKAT_FENG_NSAMPS_PER_HEAP
-                    + chan * MEERKAT_FENG_NSAMPS_PER_HEAP
-                    + samp;
-                    input_buffer[offset] = chan;
-                }
+                int offset = timestamp * nelements_per_timestamp
+                + chan * MEERKAT_FENG_NSAMPS_PER_HEAP
+                + samp;
+                input_buffer[offset] = chan;
             }
         }
     }
