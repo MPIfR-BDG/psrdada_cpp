@@ -45,6 +45,11 @@ namespace psrdada_cpp {
         template<class... Args>
         void write(int priority, const char* format, Args&&... args);
 
+        /**
+         * @brief      Return the name of the logger
+         */
+        std::string const& name() const;
+
     private:
         void open();
         void close();

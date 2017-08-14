@@ -12,10 +12,10 @@ namespace psrdada_cpp {
     {
     protected:
         key_t _key;
-        std::string _key_string;
         dada_hdu_t* _hdu;
         bool _connected;
         MultiLog& _log;
+        std::string _id;
 
     public:
         /**
@@ -62,6 +62,11 @@ namespace psrdada_cpp {
          * @brief      Reconnect to the ring buffer
          */
         void reconnect();
+
+        /**
+         * @brief      Return a string identifier based on the buffer key and log name
+         */
+        std::string const& id() const;
 };
 
 } //namespace psrdada_cpp
