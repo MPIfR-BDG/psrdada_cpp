@@ -12,6 +12,7 @@ namespace psrdada_cpp {
     {
     protected:
         key_t _key;
+        std::string _key_string;
         dada_hdu_t* _hdu;
         bool _connected;
         MultiLog& _log;

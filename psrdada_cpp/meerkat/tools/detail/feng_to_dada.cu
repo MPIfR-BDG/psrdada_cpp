@@ -21,6 +21,7 @@ namespace tools {
     void FengToDada<HandlerType>::init(RawBytes& block)
     {
         _handler.init(block);
+        BOOST_LOG_TRIVIAL(debug) << "FengToDada header passing through\n " << block.ptr();
     }
 
     template <class HandlerType>

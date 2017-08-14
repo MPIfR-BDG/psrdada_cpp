@@ -85,6 +85,7 @@ namespace psrdada_cpp {
         _current_block.reset(new RawBytes(tmp, _parent.header_buffer_size(), nbytes));
         BOOST_LOG_TRIVIAL(debug) << "Header block used/total bytes = "
             << _current_block->used_bytes() <<"/"<<_current_block->total_bytes();
+        BOOST_LOG_TRIVIAL(debug) << "Header content\n " << _current_block->ptr();
         return *_current_block;
     }
 
