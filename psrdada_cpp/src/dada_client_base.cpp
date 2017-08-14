@@ -8,9 +8,7 @@ namespace psrdada_cpp {
     {
         connect();
         std::stringstream _key_string_stream;
-        _key_string_stream << "[ key: "
-        << std::hex << _key << std::dec
-        << " -- log: " << _log.name() << "] ";
+        _key_string_stream << "["<< std::hex << _key << std::dec << "] ["<<_log.name()<<"] ";
         _id = _key_string_stream.str();
     }
 
@@ -44,23 +42,23 @@ namespace psrdada_cpp {
 
     void DadaClientBase::connect()
     {
-        BOOST_LOG_TRIVIAL(debug) << id() << "Connecting to dada buffer";
+        BOOST_LOG_TRIVIAL(debug) << this->id() << "Connecting to dada buffer";
         _hdu = dada_hdu_create(_log.native_handle());
         dada_hdu_set_key(_hdu, _key);
         if (dada_hdu_connect (_hdu) < 0){
             _log.write(LOG_ERR, "could not connect to hdu\n");
             throw std::runtime_error("Unable to connect to hdu\n");
         }
-        BOOST_LOG_TRIVIAL(debug) << id() << "Header buffer is " << header_buffer_count()
+        BOOST_LOG_TRIVIAL(debug) << this->id() << "Header buffer is " << header_buffer_count()
             << " x " << header_buffer_size() << " bytes";
-        BOOST_LOG_TRIVIAL(debug) << id() << "Data buffer is " << data_buffer_count()
+        BOOST_LOG_TRIVIAL(debug) << this->id() << "Data buffer is " << data_buffer_count()
             << " x " << data_buffer_size() << " bytes";
         _connected = true;
     }
 
     void DadaClientBase::disconnect()
     {
-        BOOST_LOG_TRIVIAL(debug) << id() << "Disconnecting from dada buffer";
+        BOOST_LOG_TRIVIAL(debug) << this->id() << "Disconnecting from dada buffer";
         if (dada_hdu_disconnect (_hdu) < 0){
             _log.write(LOG_ERR, "could not disconnect from hdu\n");
             throw std::runtime_error("Unable to disconnect from hdu\n");
