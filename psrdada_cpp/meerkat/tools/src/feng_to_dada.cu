@@ -56,27 +56,21 @@ namespace kernels {
         int* __restrict__ out,
         int nchans)
     {
-        //This kernel only works with 256 threads
-        //Nchans must be a multiple of 32
-
-        __shared__ int transpose_buffer[32][32+1];
+        __shared__ int transpose_buffer[32][32];
         int const warp_idx = threadIdx.x >> 0x5;
         int const lane_idx = threadIdx.x & 0x1f;
-
-        //blockIdx.x == timestamp
-
         int offset = blockIdx.x * nchans * MEERKAT_FENG_NSAMPS_PER_HEAP;
-
-
-        for (int time_offset=0; time_offset < MEERKAT_FENG_NSAMPS_PER_HEAP; time_offset+=warpSize)
+        for (int time_idx=0; time_idx < MEERKAT_FENG_NSAMPS_PER_HEAP; time_idx+=warpSize)
         {
-            int toffset = offset + time_offset + lane_idx;
-            int coffset = offset + time_offset*nchans + warp_idx;
-            for (int chan_idx = warp_idx; chan_idx < nchans; chan_idx += 32)
+            int toffset = offset + (time_idx + lane_idx);
+            int coffset = offset + (time_idx + warp_idx) * nchans
+            for (int chan_idx = 0; chan_idx < nchans; chan_idx += warpSize)
             {
-                transpose_buffer[warp_idx][lane_idx] = in[toffset + chan_idx*MEERKAT_FENG_NSAMPS_PER_HEAP];
+                int input_idx = (chan_idx + warp_idx) * MEERKAT_FENG_NSAMPS_PER_HEAP + toffset;
+                int output_idx = coffset + (chan_idx + lane_idx);
+                transpose_buffer[warp_idx][lane_idx] = in[input_idx];
                 __syncthreads();
-                out[coffset+ chan_idx] = transpose_buffer[lane_idx][warp_idx];
+                out[output_idx] = transpose_buffer[lane_idx][warp_idx];
             }
         }
     }

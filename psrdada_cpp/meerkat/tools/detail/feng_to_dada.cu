@@ -46,7 +46,7 @@ namespace tools {
         kernels::feng_heaps_to_dada<<<ntimestamps, MEERKAT_FENG_NSAMPS_PER_HEAP>>>
             (d_input_ptr, d_output_ptr, _nchans);
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-        thrust::copy(_output.begin(), _output.end(), block.ptr());
+        thrust::copy(_output.begin(), _output.end(), (int*) block.ptr());
         _handler(block);
         return false;
     }
