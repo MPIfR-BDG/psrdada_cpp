@@ -30,7 +30,8 @@ namespace psrdada_cpp {
             BOOST_LOG_TRIVIAL(info) << "Attaching new read client to buffer";
             DadaReadClient client(_key,_log);
             auto& header_stream = client.header_stream();
-            _handler.init(header_stream.next());
+            auto& header_block = header_stream.next();
+            _handler.init(header_block);
             header_stream.release();
             auto& data_stream = client.data_stream();
             while (!_stop)

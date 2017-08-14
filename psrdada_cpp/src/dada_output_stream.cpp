@@ -18,10 +18,9 @@ namespace psrdada_cpp {
 
     void DadaOutputStream::init(RawBytes& in)
     {
-        _writer.reset();
         auto& stream = _writer.header_stream();
         auto& buffer = stream.next();
-        memcpy(in.ptr(),buffer.ptr(),in.used_bytes());
+        memcpy(buffer.ptr(),in.ptr(),in.used_bytes());
         buffer.used_bytes(in.used_bytes());
         stream.release();
     }
@@ -30,7 +29,7 @@ namespace psrdada_cpp {
     {
         auto& stream = _writer.data_stream();
         auto& out = stream.next();
-        memcpy(in.ptr(),out.ptr(),in.used_bytes());
+        memcpy(out.ptr(),in.ptr(),in.used_bytes());
         out.used_bytes(in.used_bytes());
         stream.release();
     }
