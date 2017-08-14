@@ -63,7 +63,7 @@ namespace kernels {
         for (int time_idx=0; time_idx < MEERKAT_FENG_NSAMPS_PER_HEAP; time_idx+=warpSize)
         {
             int toffset = offset + (time_idx + lane_idx);
-            int coffset = offset + (time_idx + warp_idx) * nchans
+            int coffset = offset + (time_idx + warp_idx) * nchans;
             for (int chan_idx = 0; chan_idx < nchans; chan_idx += warpSize)
             {
                 int input_idx = (chan_idx + warp_idx) * MEERKAT_FENG_NSAMPS_PER_HEAP + toffset;
