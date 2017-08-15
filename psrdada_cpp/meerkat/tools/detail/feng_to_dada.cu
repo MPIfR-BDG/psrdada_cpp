@@ -43,7 +43,7 @@ namespace tools {
         int* d_input_ptr = thrust::raw_pointer_cast(_input.data());
         int* d_output_ptr = thrust::raw_pointer_cast(_output.data());
         CUDA_ERROR_CHECK(cudaMemcpy(d_input_ptr, block.ptr(), used, cudaMemcpyHostToDevice));
-        kernels::feng_heaps_to_dada<<<ntimestamps, MEERKAT_FENG_NSAMPS_PER_HEAP>>>
+        kernels::feng_heaps_to_dada<<<ntimestamps, 1024>>>
             (d_input_ptr, d_output_ptr, _nchans);
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
         thrust::copy(_output.begin(), _output.end(), (int*) block.ptr());
