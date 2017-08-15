@@ -30,6 +30,8 @@ namespace psrdada_cpp {
     bool SimpleFileWriter::operator()(RawBytes& block)
     {
         _outfile.write(block.ptr(), block.used_bytes());
+        //This is specifying the number of bytes read.
+        block.used_bytes(block.total_bytes());
         return false;
     }
 

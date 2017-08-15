@@ -6,10 +6,10 @@ namespace psrdada_cpp {
     : _key(key)
     , _log(log)
     {
-        connect();
         std::stringstream _key_string_stream;
         _key_string_stream << "["<< std::hex << _key << std::dec << "] ["<<_log.name()<<"] ";
         _id = _key_string_stream.str();
+        connect();
     }
 
     DadaClientBase::~DadaClientBase()
