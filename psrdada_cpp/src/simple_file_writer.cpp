@@ -22,9 +22,9 @@ namespace psrdada_cpp {
         _outfile.close();
     }
 
-    void SimpleFileWriter::init(RawBytes& /*block*/)
+    void SimpleFileWriter::init(RawBytes& block)
     {
-
+        _outfile.write(block.ptr(), 4096);
     }
 
     bool SimpleFileWriter::operator()(RawBytes& block)
