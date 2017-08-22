@@ -18,7 +18,7 @@ namespace tools {
     {
         //Will output data as an array of bandpasses for each
         //polarisation and antenna
-        _output.resize(_nchans * _natnennas);
+        _output.resize(_nchans * _natnennas * MEERKAT_FENG_NPOL_PER_HEAP);
     }
 
     template <class HandlerType>

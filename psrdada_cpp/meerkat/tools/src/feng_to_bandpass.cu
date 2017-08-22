@@ -23,7 +23,6 @@ namespace kernels {
         int channel_idx = blockIdx.y;
         for (int heap_idx=0; heap_idx<ntimestamps; ++heap_idx)
         {
-
             int offset = MEERKAT_FENG_NSAMPS_PER_HEAP * MEERKAT_FENG_NPOL_PER_HEAP * (
                 nchans * (heap_idx * nants + antenna_idx)
                 + channel_idx);
@@ -34,7 +33,7 @@ namespace kernels {
             time_pol_ar[threadIdx.x] = val;
             __syncthreads();
 
-            for (int ii=0; ii<9; ++ii)
+            for (int ii=1; ii<9; ++ii)
             {
                 if ((threadIdx.x + (1<<ii)) < (MEERKAT_FENG_NSAMPS_PER_HEAP*MEERKAT_FENG_NPOL_PER_HEAP))
                 {
@@ -46,9 +45,11 @@ namespace kernels {
             }
             total_sum += val;
         }
-        if (threadIdx.x == 0)
+        if (threadIdx.x == 0 || threadIdx.x == 1)
         {
-            out[antenna_idx * nchans + channel_idx] = total_sum;
+            out[antenna_idx * nchans * MEERKAT_FENG_NPOL_PER_HEAP
+                + antenna_idx * nchans * threadIdx.x
+                + channel_idx] = total_sum;
         }
     }
 }
