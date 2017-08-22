@@ -16,7 +16,7 @@ namespace kernels {
         int nchans, int nants,
         int ntimestamps)
     {
-        __shared__ float time_pol_ar[MEERKAT_FENG_NPOL_PER_HEAP*MEERKAT_FENG_NSAMPS_PER_HEAP];
+        __shared__ float time_ar[MEERKAT_FENG_NSAMPS_PER_HEAP];
 
         float total_sum = 0.0f;
         int antenna_idx = blockIdx.x;
@@ -32,17 +32,17 @@ namespace kernels {
             char2 tmp = in[offset + threadIdx.x*MEERKAT_FENG_NPOL_PER_HEAP + poln_idx];
             cuComplex voltage = make_cuComplex(tmp.x,tmp.y);
             float val = voltage.x * voltage.x + voltage.y * voltage.y;
-            time_pol_ar[threadIdx.x] = val;
+            time_ar[threadIdx.x] = val;
             __syncthreads();
 
-            for (int ii=0; ii<9; ++ii)
+            for (int ii=0; ii<8; ++ii)
             {
-                if ((threadIdx.x + (1<<ii)) < (MEERKAT_FENG_NSAMPS_PER_HEAP*MEERKAT_FENG_NPOL_PER_HEAP))
+                if ((threadIdx.x + (1<<ii)) < MEERKAT_FENG_NSAMPS_PER_HEAP)
                 {
-                    val += time_pol_ar[threadIdx.x + (1<<ii)];
+                    val += time_ar[threadIdx.x + (1<<ii)];
                 }
                 __syncthreads();
-                time_pol_ar[threadIdx.x] = val;
+                time_ar[threadIdx.x] = val;
                 __syncthreads();
             }
             total_sum += val;
