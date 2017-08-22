@@ -50,8 +50,8 @@ namespace tools {
         char2* d_input_ptr = thrust::raw_pointer_cast(_input.data());
         float* d_output_ptr = thrust::raw_pointer_cast(_output.data());
         CUDA_ERROR_CHECK(cudaMemcpy(d_input_ptr, block.ptr(), used, cudaMemcpyHostToDevice));
-        dim3 grid(_natnennas,_nchans,MEERKAT_FENG_NPOL_PER_HEAP);
-        kernels::feng_heaps_to_bandpass<<<grid,MEERKAT_FENG_NSAMPS_PER_HEAP>>>
+        dim3 grid(_natnennas, _nchans, MEERKAT_FENG_NPOL_PER_HEAP);
+        kernels::feng_heaps_to_bandpass<<<grid, MEERKAT_FENG_NSAMPS_PER_HEAP>>>
             (d_input_ptr, d_output_ptr, _nchans, _natnennas, ntimestamps);
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
         thrust::copy(_output.begin(),_output.end(),(float*) block.ptr());

@@ -49,7 +49,7 @@ namespace kernels {
         }
         if (threadIdx.x == 0)
         {
-            out[antenna_idx * nchans * MEERKAT_FENG_NPOL_PER_HEAP + antenna_idx * nchans * poln_idx + channel_idx] = total_sum;
+            out[antenna_idx * nchans * MEERKAT_FENG_NPOL_PER_HEAP  + nchans * poln_idx + channel_idx] = total_sum;
         }
     }
 }
