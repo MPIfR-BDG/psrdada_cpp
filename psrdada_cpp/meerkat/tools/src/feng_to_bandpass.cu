@@ -21,19 +21,21 @@ namespace kernels {
         float total_sum = 0.0f;
         int antenna_idx = blockIdx.x;
         int channel_idx = blockIdx.y;
+        int poln_idx = blockIdx.z;
         for (int heap_idx=0; heap_idx<ntimestamps; ++heap_idx)
         {
+
             int offset = MEERKAT_FENG_NSAMPS_PER_HEAP * MEERKAT_FENG_NPOL_PER_HEAP * (
                 nchans * (heap_idx * nants + antenna_idx)
                 + channel_idx);
 
-            char2 tmp = in[offset + threadIdx.x];
+            char2 tmp = in[offset + threadIdx.x*MEERKAT_FENG_NPOL_PER_HEAP + poln_idx];
             cuComplex voltage = make_cuComplex(tmp.x,tmp.y);
             float val = voltage.x * voltage.x + voltage.y * voltage.y;
             time_pol_ar[threadIdx.x] = val;
             __syncthreads();
 
-            for (int ii=1; ii<9; ++ii)
+            for (int ii=0; ii<9; ++ii)
             {
                 if ((threadIdx.x + (1<<ii)) < (MEERKAT_FENG_NSAMPS_PER_HEAP*MEERKAT_FENG_NPOL_PER_HEAP))
                 {
@@ -45,11 +47,9 @@ namespace kernels {
             }
             total_sum += val;
         }
-        if (threadIdx.x == 0 || threadIdx.x == 1)
+        if (threadIdx.x == 0)
         {
-            out[antenna_idx * nchans * MEERKAT_FENG_NPOL_PER_HEAP
-                + antenna_idx * nchans * threadIdx.x
-                + channel_idx] = total_sum;
+            out[antenna_idx * nchans * MEERKAT_FENG_NPOL_PER_HEAP + antenna_idx * nchans * poln_idx + channel_idx] = total_sum;
         }
     }
 }
