@@ -16,6 +16,19 @@ set(psrdada_cpp_src
     src/cli_utils.cpp
    )
 
+set(psrdada_cpp_inc
+  cli_utils.hpp
+  dada_client_base.hpp
+  dada_io_loop.hpp
+  dada_io_loop_writer.hpp
+  dada_read_client.hpp
+  multilog.hpp
+  common.hpp
+  dada_io_loop_reader.hpp
+  dada_write_client.hpp
+  raw_bytes.hpp
+  )
+
 # -- the main library target
 add_library(${CMAKE_PROJECT_NAME} ${psrdada_cpp_src})
 
@@ -27,5 +40,11 @@ target_link_libraries (junkdb ${PSRDADA_CPP_LIBRARIES})
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 
-install (TARGETS junkdb dbnull DESTINATION bin)
+#install (TARGETS junkdb dbnull DESTINATION bin)
 #install (FILES MathFunctions.h DESTINATION include)
+install (TARGETS ${CMAKE_PROJECT_NAME}
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
+install(FILES ${psrdada_cpp_inc} DESTINATION include/psrdada_cpp)
+
