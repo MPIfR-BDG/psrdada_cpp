@@ -112,7 +112,7 @@ namespace psrdada_cpp {
         {
             throw std::runtime_error("Previous data block not released");
         }
-        BOOST_LOG_TRIVIAL(debug) << "Acquiring next header block";
+        BOOST_LOG_TRIVIAL(debug) << "Acquiring next data block";
         char* tmp = ipcio_open_block_write(_parent._hdu->data_block, &_block_idx);
         _current_block.reset(new RawBytes(tmp, _parent.data_buffer_size()));
         BOOST_LOG_TRIVIAL(debug) << "Acquired data block " << _block_idx;
