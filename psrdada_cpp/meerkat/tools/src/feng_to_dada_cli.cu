@@ -10,9 +10,6 @@
 #include <time.h>
 #include <ctime>
 
-#define CLOCK_RATE 1750000000.0
-#define DADA_TIMESTR "%Y-%m-%d-%H:%M:%S"
-
 using namespace psrdada_cpp;
 
 namespace
