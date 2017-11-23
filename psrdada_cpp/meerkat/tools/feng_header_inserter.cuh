@@ -20,7 +20,7 @@ class FengHeaderInserter
 
     public:
         explicit FengHeaderInserter(
-            Handler const& handler,
+            Handler& handler,
             std::string const& obs_id,
             float cfreq,
             float bw,
@@ -35,7 +35,7 @@ class FengHeaderInserter
         void calculate_epoch(timestamp_t timestamp);
 
     private:
-        Handler const& _handler;
+        Handler& _handler;
         std::string const& _obs_id;
         float _cfreq;
         float _bw;

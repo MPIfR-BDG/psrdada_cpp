@@ -1,6 +1,9 @@
 #include "psrdada_cpp/meerkat/tools/feng_header_inserter.cuh"
 #include "psrdada_cpp/cuda_utils.hpp"
 
+#define CLOCK_RATE 1750000000.0
+#define DADA_TIMESTR "%Y-%m-%d-%H:%M:%S"
+
 namespace psrdada_cpp {
 namespace meerkat {
 namespace tools {
