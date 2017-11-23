@@ -81,6 +81,7 @@ namespace tools {
     bool FengHeaderInserter<Handler>::operator()(RawBytes& block)
     {
         _handler(block);
+        return false;
     }
 
     template <typename Handler>
