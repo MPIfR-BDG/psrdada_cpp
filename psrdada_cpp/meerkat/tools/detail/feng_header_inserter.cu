@@ -59,7 +59,7 @@ namespace tools {
         << "RECEIVER     S-band\n"
         << "FREQ         " << _cfreq << "\n"
         << "BW           " << _bw << "\n"
-        << "TSAMP        " << _tsamp << "\n"
+        << "TSAMP        4.681142857142857e\n"
         << "\n"
         << "BYTES_PER_SECOND " << (_bw * 4) << "\n"
         << "NBIT         2\n"
