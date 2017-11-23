@@ -73,7 +73,7 @@ namespace tools {
         << "DSB          1\n";
         std::memset(block.ptr(), 0, block.total_bytes());
         std::memcpy(block.ptr(), header.str().c_str(), header.str().size());
-        block.used_bytes(block.total_bytes);
+        block.used_bytes(block.total_bytes());
         _handler.init(block);
     }
 
