@@ -10,7 +10,7 @@ namespace tools {
 
     template <typename Handler>
     FengHeaderInserter<Handler>::FengHeaderInserter(
-        Handler const& handler,
+        Handler& handler,
         std::string const& obs_id,
         float cfreq,
         float bw,
