@@ -59,7 +59,10 @@ namespace kernels {
         __shared__ int transpose_buffer[32][32];
         int const warp_idx = threadIdx.x >> 0x5;
         int const lane_idx = threadIdx.x & 0x1f;
+
         int offset = blockIdx.x * nchans * MEERKAT_FENG_NSAMPS_PER_HEAP;
+
+
         for (int time_idx=0; time_idx < MEERKAT_FENG_NSAMPS_PER_HEAP; time_idx+=warpSize)
         {
             int toffset = offset + (time_idx + lane_idx);
@@ -68,6 +71,7 @@ namespace kernels {
             {
                 int input_idx = (chan_idx + warp_idx) * MEERKAT_FENG_NSAMPS_PER_HEAP + toffset;
                 int output_idx = coffset + (chan_idx + lane_idx);
+                __syncthreads();
                 transpose_buffer[warp_idx][lane_idx] = in[input_idx];
                 __syncthreads();
                 out[output_idx] = transpose_buffer[lane_idx][warp_idx];
