@@ -31,4 +31,9 @@ install(TARGETS feng2dada DESTINATION bin)
 cuda_add_executable(feng2dada_test src/feng_to_dada_test.cu)
 target_link_libraries(feng2dada_test ${PSRDADA_CPP_MEERKAT_TOOLS_LIBRARIES})
 
+#header inserter
+cuda_add_executable(insert_header src/insert_header_cli.cu)
+target_link_libraries(insert_header ${PSRDADA_CPP_MEERKAT_TOOLS_LIBRARIES})
+install(TARGETS insert_header DESTINATION bin)
+
 endif(ENABLE_CUDA)
