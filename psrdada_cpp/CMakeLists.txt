@@ -13,6 +13,7 @@ set(psrdada_cpp_src
     src/dada_io_loop.cpp
     src/dada_junkdb.cpp
     src/dada_dbnull.cpp
+    src/transpose_client.cpp
     src/cli_utils.cpp
    )
 
@@ -27,6 +28,7 @@ set(psrdada_cpp_inc
   dada_io_loop_reader.hpp
   dada_write_client.hpp
   raw_bytes.hpp
+  transpose_client.hpp
   )
 
 # -- the main library target
