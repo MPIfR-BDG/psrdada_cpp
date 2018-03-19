@@ -33,20 +33,16 @@ namespace psrdada_cpp {
      */
 
 
-    RawBytes& TransposeClient::do_transpose(RawBytes& input_data,std::uint32_t beamnum)
+    void TransposeClient::do_transpose(RawBytes& input_data, RawBytes& transposed_data,std::uint32_t beamnum)
     {
 
 
         // For now making a separate output memory block in RAM and constructing a RawBytes object pointing to it
 	// Can be done more memory efficiently by using a temporary pointer
 	
-        char* o_data =NULL;
 
-	o_data = new char[_nsamples*_ntime*_nfreq*_nchans];
         std::uint32_t j,k,l,m;
 	std::uint32_t a = 0;
-
-	RawBytes transposed_data(o_data,std::size_t(_nsamples*_ntime*_nfreq*_nchans),std::size_t(0));
 
         // Actual transpose
 
@@ -74,10 +70,7 @@ namespace psrdada_cpp {
                                                                                                       
 	    }
 	 
-	 
 	
-        return std::ref(transposed_data);
-         
     }
 
    /* @brief: Function that reads in the data from the DADA buffer adn returns a Reference to a RawBytes object */
@@ -134,6 +127,32 @@ namespace psrdada_cpp {
     void TransposeClient::set_nfreq(const int nfreq)
     {
         _nfreq = nfreq;
+    }
+
+
+    std::uint32_t TransposeClient::nbeams()
+    {
+        return _nbeams;
+    }
+
+    std::uint32_t TransposeClient::nchans()
+    {
+        return _nchans;
+    }
+
+    std::uint32_t TransposeClient::nsamples()
+    {
+        return _nsamples;
+    }
+
+    std::uint32_t TransposeClient::ntime()
+    {
+        return _ntime;
+    }
+
+    std::uint32_t TransposeClient::nfreq()
+    {
+        return _nfreq;
     }
 
 } //namespace psrdada_cpp

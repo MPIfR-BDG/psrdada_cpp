@@ -26,7 +26,7 @@ namespace psrdada_cpp {
         /**
 	 * @brief function to the do the transpose
 	 */
-        RawBytes& do_transpose(RawBytes& _current_block, std::uint32_t beamnum); 
+        void do_transpose(RawBytes& _current_block,RawBytes& transposed_data, std::uint32_t beamnum); 
         
 	/**
 	 * @brief Function to read in the data to be transposed
@@ -69,6 +69,36 @@ namespace psrdada_cpp {
 
         void set_nfreq(const int _nfreq);
 
+       /**
+        * @ getter for number of beams
+        */
+
+        std::uint32_t nbeams();
+ 
+       /**
+        * @ getter for number of channels
+        */
+
+        std::uint32_t nchans();
+
+       /**
+        * @ getter for number of time blocks
+        */
+
+        std::uint32_t nsamples();
+
+       /**
+        * @ getter for number of time samples
+        */
+
+        std::uint32_t ntime();
+
+       /**
+        * @ getter for number of freq blocks
+        */
+
+        std::uint32_t nfreq();
+ 
 
     private:
         std::uint32_t _nbeams;
