@@ -7,11 +7,11 @@ namespace psrdada_cpp {
     TransposeClient::TransposeClient(DadaWriteClient* _writer[],std::string* keys,std::uint32_t numbeams)
     : _nbeams(numbeams),
       _nchans(128),
-      _ntime(64),
       _nsamples(128),
+      _ntime(64),
       _nfreq(32)
     {
-        int ii;
+        std::uint32_t ii;
         std::string logname="logger";
         MultiLog log(logname);
         _writer = new DadaWriteClient*[numbeams];
@@ -43,7 +43,7 @@ namespace psrdada_cpp {
         char* o_data =NULL;
 
 	o_data = new char[_nsamples*_ntime*_nfreq*_nchans];
-        std::uint32_t i,j,k,l,m;
+        std::uint32_t j,k,l,m;
 	std::uint32_t a = 0;
 
 	RawBytes transposed_data(o_data,std::size_t(_nsamples*_ntime*_nfreq*_nchans),std::size_t(0));
