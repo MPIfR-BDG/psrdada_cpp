@@ -91,7 +91,7 @@ namespace psrdada_cpp {
         auto& current_block = data_stream.next();
        // Release the current block of data
         data_stream.release();
-	return std::ref(current_block);
+	return current_block;
     }
 
 
