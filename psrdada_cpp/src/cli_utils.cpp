@@ -15,22 +15,18 @@ namespace psrdada_cpp {
         using namespace boost::log;
         if (level == "debug")
         {
-            std::cout << "debug" << std::endl;
             core::get()->set_filter(trivial::severity >= trivial::debug);
         }
         else if (level == "info")
         {
-            std::cout << "info" << std::endl;
             core::get()->set_filter(trivial::severity >= trivial::info);
         }
         else if (level == "warning")
         {
-            std::cout << "warning" << std::endl;
             core::get()->set_filter(trivial::severity >= trivial::warning);
         }
         else
         {
-            std::cout << "error" << std::endl;
             core::get()->set_filter(trivial::severity >= trivial::error);
         }
     }

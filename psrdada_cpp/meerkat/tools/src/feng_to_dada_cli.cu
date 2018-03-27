@@ -1,17 +1,15 @@
 #include "psrdada_cpp/multilog.hpp"
-#include "psrdada_cpp/raw_bytes.hpp"
-#include "psrdada_cpp/dada_output_stream.hpp"
-#include "psrdada_cpp/dada_junk_source.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
+#include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/dada_input_stream.hpp"
+#include "psrdada_cpp/dada_output_stream.hpp"
+#include "psrdada_cpp/simple_file_writer.hpp"
+#include "psrdada_cpp/meerkat/tools/feng_to_dada.cuh"
 
 #include "boost/program_options.hpp"
 
-#include <sys/types.h>
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <ios>
-#include <algorithm>
+#include <ctime>
+
 
 using namespace psrdada_cpp;
 
@@ -26,24 +24,30 @@ int main(int argc, char** argv)
 {
     try
     {
-        std::size_t nbytes = 0;
-        key_t key;
+        key_t input_key, output_key;
+        std::size_t nchannels;
         /** Define and parse the program options
         */
         namespace po = boost::program_options;
         po::options_description desc("Options");
         desc.add_options()
         ("help,h", "Print help messages")
-        ("nbytes,n", po::value<std::size_t>(&nbytes)
-            ->default_value(0),
-            "Total number of bytes to write")
-        ("key,k", po::value<std::string>()
+        ("input_key,i", po::value<std::string>()
             ->default_value("dada")
-            ->notifier([&key](std::string in)
+            ->notifier([&input_key](std::string in)
                 {
-                    key = string_to_key(in);
+                    input_key = string_to_key(in);
                 }),
-            "The shared memory key for the dada buffer to connect to (hex string)")
+           "The shared memory key for the dada buffer to connect to (hex string)")
+        ("output_key,o", po::value<std::string>()
+            ->default_value("caca")
+            ->notifier([&output_key](std::string in)
+                {
+                    output_key = string_to_key(in);
+                }),
+           "The shared memory key for the dada buffer to connect to (hex string)")
+        ("nchannels,c", po::value<std::size_t>(&nchannels)->required(),
+            "The number of frequency channels in the stream")
         ("log_level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)
@@ -57,8 +61,8 @@ int main(int argc, char** argv)
             po::store(po::parse_command_line(argc, argv, desc), vm);
             if ( vm.count("help")  )
             {
-                std::cout << "JunkDB -- write garbage into a DADA ring buffer" << std::endl
-                << desc << std::endl;
+                std::cout << "Feng2Dada -- read MeerKAT F-engine from DADA ring buffer and convert it to TFP order DADA data"
+                << std::endl << desc << std::endl;
                 return SUCCESS;
             }
             po::notify(vm);
@@ -73,13 +77,11 @@ int main(int argc, char** argv)
         /**
          * All the application code goes here
          */
-
-        MultiLog log("junkdb");
-        DadaOutputStream out_stream(key, log);
-        junk_source<decltype(out_stream)>(
-            out_stream, out_stream.client().header_buffer_size(),
-            out_stream.client().data_buffer_size(), nbytes);
-
+        MultiLog log("feng2dada");
+        DadaOutputStream ostream(output_key, log);
+        meerkat::tools::FengToDada<decltype(ostream)> feng2dada(nchannels, ostream);
+        DadaInputStream<decltype(feng2dada)> istream(input_key, log, feng2dada);
+        istream.start();
         /**
          * End of application code
          */

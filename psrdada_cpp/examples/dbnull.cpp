@@ -1,7 +1,7 @@
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
-#include "psrdada_cpp/dada_read_client.hpp"
-#include "psrdada_cpp/dada_dbnull.hpp"
+#include "psrdada_cpp/dada_input_stream.hpp"
+#include "psrdada_cpp/dada_null_sink.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 
 #include "boost/program_options.hpp"
@@ -26,7 +26,6 @@ int main(int argc, char** argv)
 {
     try
     {
-        std::size_t nbytes = 0;
         key_t key;
 
         /** Define and parse the program options
@@ -35,9 +34,6 @@ int main(int argc, char** argv)
         po::options_description desc("Options");
         desc.add_options()
         ("help,h", "Print help messages")
-        ("nbytes,n", po::value<std::size_t>(&nbytes)
-            ->default_value(0),
-            "Total number of bytes to read")
         ("key,k", po::value<std::string>()
             ->default_value("dada")
             ->notifier([&key](std::string in)
@@ -75,10 +71,10 @@ int main(int argc, char** argv)
          * All the application code goes here
          */
 
+        NullSink sink;
         MultiLog log("dbnull");
-        DbNull proc(key, log, nbytes);
-        proc.run();
-
+        DadaInputStream<decltype(sink)> stream(key, log, sink);
+        stream.start();
         /**
          * End of application code
          */

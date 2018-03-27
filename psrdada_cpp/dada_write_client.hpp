@@ -120,6 +120,8 @@ namespace psrdada_cpp {
          */
         DataStream& data_stream();
 
+        void reset();
+
     private:
         void lock();
         void release();

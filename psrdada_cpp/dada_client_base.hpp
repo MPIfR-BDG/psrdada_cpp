@@ -15,6 +15,7 @@ namespace psrdada_cpp {
         dada_hdu_t* _hdu;
         bool _connected;
         MultiLog& _log;
+        std::string _id;
 
     public:
         /**
@@ -30,26 +31,42 @@ namespace psrdada_cpp {
         /**
          * @brief      Get the sizes of each data block in the ring buffer
          */
-        std::size_t data_buffer_size();
+        std::size_t data_buffer_size() const;
 
         /**
          * @brief      Get the sizes of each header block in the ring buffer
          */
-        std::size_t header_buffer_size();
+        std::size_t header_buffer_size() const;
 
         /**
          * @brief      Get the number of data blocks in the ring buffer
          */
-        std::size_t data_buffer_count();
+        std::size_t data_buffer_count() const;
 
         /**
          * @brief      Get the number of header blocks in the ring buffer
          */
-        std::size_t header_buffer_count();
+        std::size_t header_buffer_count() const;
 
-    private:
+        /**
+         * @brief      Connect to ring buffer
+         */
         void connect();
+
+        /**
+         * @brief      Disconnect from ring buffer
+         */
         void disconnect();
+
+        /**
+         * @brief      Reconnect to the ring buffer
+         */
+        void reconnect();
+
+        /**
+         * @brief      Return a string identifier based on the buffer key and log name
+         */
+        std::string const& id() const;
 };
 
 } //namespace psrdada_cpp
