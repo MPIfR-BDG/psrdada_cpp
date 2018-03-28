@@ -5,13 +5,17 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/constants.hpp"
 
-
 namespace psrdada_cpp {
 
+namespace transpose{
+
+    void do_transpose(RawBytes& transposed_data, RawBytes& input_data, std::uint32_t nchans, std::uint32_t nsamples,std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum);
+}
 
 template <class HandlerType>
 class TransposeToDada
 {
+
 public:
     TransposeToDada(std::size_t beamnum, HandlerType& handler);
     ~TransposeToDada();
@@ -38,7 +42,6 @@ public:
     bool operator()(RawBytes& block);
 
 private:
-    std::size_t _beamnum;
     HandlerType& _handler;
     std::uint32_t _nchans;
     std::uint32_t _nsamples;

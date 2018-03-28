@@ -1,4 +1,4 @@
-#include "psrdada_cpp/transpose_to_data.hpp"
+#include "psrdada_cpp/transpose_to_dada.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 
 namespace psrdada_cpp {
@@ -28,31 +28,10 @@ namespace psrdada_cpp {
     template <class HandlerType>
     bool TransposeToDada<HandlerType>::operator()(RawBytes& block)
     {
-
-         for (j =0; j < _nsamples; j++)
-            {
-                for (k = 0; k < _ntime ; k++)
-                {
-
-                    for (l = 0; l < _nfreq ; l++)
-                    {
-
-
-                        for (m=0;m < _nchans ; m++)
-                        {
-
-                            transposed_data.ptr()[a] = block.ptr()[m + _ntime * _nchans * _nsamples * l + _nchans * (j * _ntime + k) + _nsamples * _nchans * _ntime* _nfreq * beamnum];
-                            a++;
-
-                        }
-
-
-                    }
-
-
-                }
-
-         }
+      
+        char o_data[_nchans*_nsamples*_ntime*_nfreq];
+        RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq),std::size_t(0));
+        transpose::do_transpose(block,transpose,_beamnum);
         _handler(block);
         return false;
     }
