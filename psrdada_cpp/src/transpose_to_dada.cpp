@@ -38,6 +38,10 @@ namespace transpose{
         
     }
 
+/* Setters and Getters */
+
+    
+
 
 } //transpose
 } //psrdada_cpp

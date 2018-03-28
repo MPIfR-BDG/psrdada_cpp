@@ -25,8 +25,14 @@ int main(int argc, char** argv)
 {
     try
     {
-        key_t input_key, output_key;
-        std::size_t nchannels;
+        key_t input_key;
+        std::uint32_t nchans;
+        std::uint32_t nsamples;
+        std::uint32_t ntime;
+        std::uint32_t nfreq;
+        std::uint32_t nbeams;
+        key_t* output_keys = new key_t[nbeams];
+        std::vector<std::string> keys;
         /** Define and parse the program options
  *         */
         namespace po = boost::program_options;
@@ -40,27 +46,27 @@ int main(int argc, char** argv)
                     input_key = string_to_key(in);
                 }),
          "The shared memory key for the input dada buffer to connect to  (hex string)")
-        ("output_key,o", po::value<std::vector<std::string> >()
-            ->default_value("caca")
-            ->notifier([&output_key](std::vector<std::string> in)
+         ("nbeams,b", po::value<std::uint32_t>(&nbeams)->required(),
+            "The number of beams in the stream")
+
+         ("output_key,o", po::value<std::vector<std::string> >(&keys)->required()
+            ->notifier([&output_keys](std::vector<std::string> in)
                 {
                     std::uint32_t ii;
                     for (ii=0 ; ii < in.size(); ii++)
                     {
-                        output_key[ii] = string_to_key(in[ii]);
+                        output_keys[ii] = string_to_key(in[ii]);
                     }
-                }), 
+                }),
 
-          "The shared memory key for the dada buffer to connect to based on the beams (hex string)") 
-         ("nbeams,b", po::value<std::uint32_t>(&nbeams)->required(),
-            "The number of beams in the stream")
-         ("nchannels,c", po::value<std::uint32_t>(&nchannels)->required(),
+          "The shared memory key for the dada buffer to connect to based on the beams (hex string)")
+         ("nchannels,c", po::value<std::uint32_t>(&nchans)->required(),
             "The number of frequency channels per packet in the stream")
          ("nsamples,s", po::value<std::uint32_t>(&nsamples)->required(),
             "The number of time samples per heap in the stream")
          ("ntime,t", po::value<std::uint32_t>(&ntime)->required(),
             "The number of time samples per packet in the stream")
-         ("nfreq,f", po::value<std::size_t>(&nfreq)->required(),
+         ("nfreq,f", po::value<std::uint32_t>(&nfreq)->required(),
             "The number of frequency blocks in the stream");
 
 /* Catch Error and program description */
@@ -90,7 +96,7 @@ int main(int argc, char** argv)
 
       /* End Application Code */
 
-
+       }
        catch(std::exception& e)
        {
            std::cerr << "Unhandled Exception reached the top of main: "
@@ -98,5 +104,5 @@ int main(int argc, char** argv)
            return ERROR_UNHANDLED_EXCEPTION;
        }
        return SUCCESS;
-   }
+
 }  

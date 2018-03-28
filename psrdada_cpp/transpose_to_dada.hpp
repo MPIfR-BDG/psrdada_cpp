@@ -3,7 +3,6 @@
 
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/common.hpp"
-#include "psrdada_cpp/constants.hpp"
 
 namespace psrdada_cpp {
 
@@ -41,8 +40,59 @@ public:
      */
     bool operator()(RawBytes& block);
 
+
+     
+       /**
+        * @brief Setter for frequency channels
+        */
+
+        void set_nchans(const int nchans);
+
+       /**
+        * @brief Setter of number of samples
+        */
+
+        void set_nsamples(const int nsamples);
+  
+       /**
+        * @brief Setter for number of time samples
+        */
+
+        void set_ntime(const int ntime);
+
+       /**
+        * @brief Setter for number of frequency blocks
+        */
+
+        void set_nfreq(const int _nfreq);
+
+       /**
+        * @brief getter for number of channels
+        */
+
+        std::uint32_t nchans();
+
+       /**
+        * @brief getter for number of time blocks
+        */
+
+        std::uint32_t nsamples();
+
+       /**
+        * @brief getter for number of time samples 
+        */
+
+        std::uint32_t ntime();
+        
+       /**
+        * @brief getter for frequency blocks 
+        */   
+   
+        std::uint32_t nfreq();
+
 private:
     HandlerType& _handler;
+    std::uint32_t _beamnum;
     std::uint32_t _nchans;
     std::uint32_t _nsamples;
     std::uint32_t _ntime;
