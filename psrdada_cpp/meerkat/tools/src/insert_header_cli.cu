@@ -3,8 +3,6 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_output_stream.hpp"
-#include "psrdada_cpp/simple_file_writer.hpp"
-#include "psrdada_cpp/meerkat/tools/feng_to_dada.cuh"
 #include "psrdada_cpp/meerkat/tools/feng_header_inserter.cuh"
 #include "boost/program_options.hpp"
 #include <time.h>
@@ -100,11 +98,10 @@ int main(int argc, char** argv)
         /**
          * All the application code goes here
          */
-        MultiLog log("feng2dada");
+        MultiLog log("header_inserter");
         DadaOutputStream ostream(output_key, log);
-        meerkat::tools::FengToDada<decltype(ostream)> feng2dada(nchannels, ostream);
-        meerkat::tools::FengHeaderInserter<decltype(feng2dada)> header_inserter(
-            feng2dada, obs_id, cfreq, bw, nchannels, sync_epoch);
+        meerkat::tools::FengHeaderInserter<decltype(ostream)> header_inserter(
+            ostream, obs_id, cfreq, bw, nchannels, sync_epoch);
         DadaInputStream<decltype(header_inserter)> istream(input_key, log, header_inserter);
         istream.start();
         /**
