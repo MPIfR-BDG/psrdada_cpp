@@ -5,6 +5,11 @@ namespace psrdada_cpp {
 
 namespace transpose{
 
+    /*
+     * @brief This is the actual block that performs the
+     * transpose. The format is based on the heap format
+     * of SPEAD2 packets. This can change in time
+     */  
 
     void do_transpose(RawBytes& transposed_data, RawBytes& input_data,std::uint32_t nchans, std::uint32_t nsamples, std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum)
     {

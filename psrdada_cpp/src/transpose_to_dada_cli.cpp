@@ -4,7 +4,7 @@
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_output_stream.hpp"
 #include "psrdada_cpp/transpose_to_dada.hpp"
-
+#include <memory>
 
 #include "boost/program_options.hpp"
 
@@ -92,7 +92,23 @@ int main(int argc, char** argv)
 
        /* Application Code */
  
+        MultiLog log("outstream");
+        std::vector<std::shared_ptr<DadaOutputStream>> outstreams;
 
+        std::uint32_t ii;
+        for (ii=0 ; ii < nbeams; ii++)
+        {
+            outstreams.emplace_back(std::make_shared<DadaOutputStream>(output_keys[ii],log));
+        }
+
+        TransposeToDada<DadaOutputStream> transpose(nbeams,std::move(outstreams));
+
+        MultiLog log1("instream");
+
+        DadaInputStream<decltype(transpose)> input(input_key,log1,transpose);
+         
+        input.start();
+        
 
       /* End Application Code */
 

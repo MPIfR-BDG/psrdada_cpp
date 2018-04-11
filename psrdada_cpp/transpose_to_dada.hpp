@@ -8,6 +8,9 @@ namespace psrdada_cpp {
 
 namespace transpose{
 
+    /**
+     * @brief the method that does the actual transpose
+     */ 
     void do_transpose(RawBytes& transposed_data, RawBytes& input_data, std::uint32_t nchans, std::uint32_t nsamples,std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum);
 }
 
@@ -16,17 +19,17 @@ class TransposeToDada
 {
 
 public:
-    TransposeToDada(std::size_t beamnum, HandlerType& handler);
+    TransposeToDada(std::size_t numbeams, std::vector<std::shared_ptr<HandlerType>> handler);
     ~TransposeToDada();
 
     /**
-     * @brief      A callback to be called on connection
+     * @brief      A transpose method to be called on connection
      *             to a ring buffer.
      *
-     * @detail     The first available header block in the
-     *             in the ring buffer is provided as an argument.
-     *             It is here that header parameters could be read
-     *             if desired.
+     * @detail     The number of beams to process and a vector of
+     * 		   shared pointers to open DADA blocks are given
+     * 		   as arguments. The transpose is performed on 
+     * 		   a beam to beam basis.
      *
      * @param      block  A RawBytes object wrapping a DADA header buffer
      */
@@ -91,8 +94,8 @@ public:
         std::uint32_t nfreq();
 
 private:
-    HandlerType& _handler;
-    std::uint32_t _beamnum;
+    std::uint32_t _numbeams;
+    std::vector<std::shared_ptr<HandlerType>> _handler;
     std::uint32_t _nchans;
     std::uint32_t _nsamples;
     std::uint32_t _ntime;

@@ -1,12 +1,13 @@
 #include "psrdada_cpp/transpose_to_dada.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
+#include <thread>
 
 namespace psrdada_cpp {
 
     template <class HandlerType>
-    TransposeToDada<HandlerType>::TransposeToDada(std::size_t beamnum, HandlerType& handler)
-    : _beamnum(beamnum)
-    , _handler(handler)
+    TransposeToDada<HandlerType>::TransposeToDada(std::size_t numbeams, std::vector<std::shared_ptr<HandlerType>> handler)
+    : _numbeams(numbeams)
+    , _handler(std::move(handler))
     , _nchans(128)
     , _nsamples(64)
     , _ntime(64)
@@ -22,17 +23,36 @@ namespace psrdada_cpp {
     template <class HandlerType>
     void TransposeToDada<HandlerType>::init(RawBytes& block)
     {
-        _handler.init(block);
+        std::uint32_t ii;
+        for (ii = 0; ii < _numbeams; ii++ )
+        {
+            (*_handler[ii]).init(block);
+        }
     }
 
     template <class HandlerType>
     bool TransposeToDada<HandlerType>::operator()(RawBytes& block)
     {
       
-        char o_data[_nchans*_nsamples*_ntime*_nfreq];
-        RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq),std::size_t(0));
-        transpose::do_transpose(block,transpose,_nchans,_nsamples,_ntime,_nfreq,_beamnum);
-        _handler(block);
+        std::uint32_t ii;
+        std::vector<std::thread> threads;
+        for(ii=0; ii< _numbeams; ii++)
+        {
+            threads.emplace_back(std::thread([&]()
+            {
+                char* o_data = new char[_nchans*_nsamples*_ntime*_nfreq];
+                RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq),std::size_t(0));
+                transpose::do_transpose(block,transpose,_nchans,_nsamples,_ntime,_nfreq,ii);
+                (*_handler[ii])(transpose);
+           }));
+
+        }
+
+        for (ii=0; ii< _numbeams; ii++)
+        {
+            threads[ii].join();
+        }
+
         return false;
     }
  
