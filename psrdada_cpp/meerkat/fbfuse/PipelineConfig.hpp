@@ -1,0 +1,12 @@
+#ifndef PSRDADA_CPP_MEERKAT_PIPELINECONFIG_HPP
+#define PSRDADA_CPP_MEERKAT_PIPELINECONFIG_HPP
+
+class PipelineConfig
+{
+private:
+
+public:
+
+};
+
+#endif //PSRDADA_CPP_MEERKAT_PIPELINECONFIG_HPP
