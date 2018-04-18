@@ -32,4 +32,10 @@ namespace psrdada_cpp {
         return _log;
     }
 
+    std::string const& MultiLog::name() const
+    {
+        return _name;
+    }
+
+
 } //namespace psrdada_cpp
