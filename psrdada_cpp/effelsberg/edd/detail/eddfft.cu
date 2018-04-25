@@ -76,8 +76,8 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
     if (_nbits == 12)
     {
-        int nblocks = _edd_raw.size() / 512;
-        kernels::unpack_edd_12bit_to_float32<<< nblocks, 512>>>(_edd_raw_ptr, _edd_unpacked_ptr, _edd_raw.size());
+        int nblocks = _edd_raw.size() / NTHREADS_UNPACK;
+        kernels::unpack_edd_12bit_to_float32<<< nblocks, NTHREADS_UNPACK>>>(_edd_raw_ptr, _edd_unpacked_ptr, _edd_raw.size());
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     }
     else if (_nbits == 8)
@@ -94,7 +94,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
 
     float* _detected_ptr = thrust::raw_pointer_cast(_detected.data());
-    detect_and_accumulate<<<1024, 1024>>>(_channelised_ptr, _detected_ptr, nchans, nsamps_in_block/_fft_length, 64);
+    kernels::detect_and_accumulate<<<1024, 1024>>>(_channelised_ptr, _detected_ptr, nchans, nsamps_in_block/_fft_length, 64);
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     //thrust::copy(_edd_unpacked.begin(), _edd_unpacked.end(), block.ptr());
