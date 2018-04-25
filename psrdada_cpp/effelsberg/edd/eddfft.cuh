@@ -12,7 +12,7 @@ namespace edd {
 namespace kernels {
 
     __global__
-    void unpack_edd_12bit_to_float32(char* __restrict__ in, float* __restrict__ out, int n);
+    void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
 
 } //kernels
 
@@ -21,9 +21,9 @@ class SimpleFFTSpectrometer
 {
 public:
     SimpleFFTSpectrometer(
-        std::size_t fft_length,
-        std::size_t naccumulate,
-        std::size_t nbits,
+        int fft_length,
+        int naccumulate,
+        int nbits,
         HandlerType& handler);
     ~SimpleFFTSpectrometer();
 
@@ -49,12 +49,12 @@ public:
     bool operator()(RawBytes& block);
 
 private:
-    std::size_t _fft_length;
-    std::size_t _naccumulate;
-    std::size_t _nbits;
+    int _fft_length;
+    int _naccumulate;
+    int _nbits;
     HandlerType& _handler;
     bool _first_block;
-    std::size_t _nsamps;
+    int _nsamps;
     cufftHandle _fft_plan;
     thrust::device_vector<uint64_t> _edd_raw;
     thrust::device_vector<float> _edd_unpacked;

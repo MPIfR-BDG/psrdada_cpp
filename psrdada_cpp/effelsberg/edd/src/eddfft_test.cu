@@ -1,16 +1,23 @@
-#include "psrdada_cpp/common.h"
-#include "psrdada_cpp/raw_bytes.h"
+#include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/effelsberg/edd/eddfft.cuh"
 
 #include "thrust/host_vector.h"
 
+struct DummyHandler
+{
+    void init(RawBytes& header){}
+    bool operator()(RawBytes& data){}
+};
+
 int main()
 {
-    std::size_t size = 4096 * 12 * 4096 / 8
+    int size = 4096 * 12 * 4096 / 8
     thrust::host_vector<char> data;
     data.resize(size);
     RawBytes dada_input(data.data(), data.size());
-    SimpleFFTSpectrometer spectrometer(8192, 1, 12, NULL);
+    DummyHandler _handler;
+    effelsberg::edd::SimpleFFTSpectrometer<DummyHandler> spectrometer(8192, 1, 12, _handler);
     for (int ii=0; ii<100; ++ii)
     {
         spectrometer(dada_input);

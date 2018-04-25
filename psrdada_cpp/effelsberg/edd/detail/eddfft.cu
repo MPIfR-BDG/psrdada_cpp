@@ -1,8 +1,6 @@
-#ifndef PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
-#define PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
-
 #include "psrdada_cpp/effelsberg/edd/eddfft.cuh"
 #include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/cuda_utils.hpp"
 
 namespace psrdada_cpp {
 namespace effelsberg {
@@ -10,9 +8,9 @@ namespace edd {
 
 template <class HandlerType>
 SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
-    std::size_t fft_length,
-    std::size_t naccumulate,
-    std::size_t nbits,
+    int fft_length,
+    int naccumulate,
+    int nbits,
     HandlerType& handler)
     : _fft_length(fft_length)
     , _naccumulate(naccumulate)
@@ -41,22 +39,22 @@ template <class HandlerType>
 bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 {
 
-    std::size_t nsamps_in_block = 8 * block.used_bytes() / _nbits;
-    std::size_t nchans = _fft_length / 2 + 1;
+    int nsamps_in_block = 8 * block.used_bytes() / _nbits;
+    int nchans = _fft_length / 2 + 1;
 
     if (_first_block)
     {
         _nsamps = nsamps_in_block;
-        std::size_t n64bit_words = 3 * _nsamps / 16;
+        int n64bit_words = 3 * _nsamps / 16;
         if (_nsamps % _fft_length != 0)
         {
             throw std::runtime_error("Number of samples is not multiple of FFT size");
         }
-        std::size_t batch = _nsamps/_fft_length;
+        int batch = _nsamps/_fft_length;
 
         // Only do these things once
-        CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, _fft_length, 0, 1,
-            _fft_length, 1, 1, _fft_length, CUFFT_R2C, batch));
+        CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
+            NULL, 1, _fft_length, CUFFT_R2C, batch));
 
         _edd_raw.resize(n64bit_words);
         _edd_unpacked.resize(_nsamps);
@@ -78,7 +76,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
     if (_nbits == 12)
     {
-        unpack_edd_12bit_to_float32<<< 64, 1024>>>(_edd_raw_ptr, _edd_unpacked_ptr, _edd_raw.size());
+        kernels::unpack_edd_12bit_to_float32<<< 64, 1024>>>(_edd_raw_ptr, _edd_unpacked_ptr, _edd_raw.size());
         CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     }
     else if (_nbits == 8)
@@ -91,7 +89,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     }
 
     cufftComplex* _channelised_ptr = thrust::raw_pointer_cast(_channelised.data());
-    CUFFT_ERROR_CHECK(cufftExecuteR2C(_fft_plan, (cufftReal*)_edd_unpacked_ptr, _channelised_ptr, CUFFT_FORWARD));
+    CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal*)_edd_unpacked_ptr, _channelised_ptr));
 
     //thrust::copy(_edd_unpacked.begin(), _edd_unpacked.end(), block.ptr());
     //_handler(block);
@@ -101,5 +99,4 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 } //effelsberg
 } //psrdada_cpp
 
-#include "psrdada_cpp/effelsberg/edd/detail/edd_simple_fft_spectrometer.cu"
-#endif //PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
+
