@@ -54,7 +54,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
         // Only do these things once
         int n[] = {_fft_length};
-        CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, {_fft_length}, NULL, 1, _fft_length,
+        CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
             NULL, 1, _fft_length/2 + 1, CUFFT_R2C, batch));
 
         _edd_raw.resize(n64bit_words);
