@@ -53,8 +53,9 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
         int batch = _nsamps/_fft_length;
 
         // Only do these things once
-        CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
-            NULL, 1, _fft_length, CUFFT_R2C, batch));
+        int n[] = {_fft_length};
+        CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, {_fft_length}, NULL, 1, _fft_length,
+            NULL, 1, _fft_length/2 + 1, CUFFT_R2C, batch));
 
         _edd_raw.resize(n64bit_words);
         _edd_unpacked.resize(_nsamps);
