@@ -134,6 +134,7 @@ void unpack_edd_12bit_to_float32_shared(uint64_t* __restrict__ in, float* __rest
     }
 }
 
+
 int main()
 {
     // equivalent of 1 second of data at 4 4GHz
