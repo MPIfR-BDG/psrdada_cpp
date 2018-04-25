@@ -1,6 +1,6 @@
 #include "psrdada_cpp/common.h"
 #include "psrdada_cpp/raw_bytes.h"
-#include "psrdada_cpp/effelsberg/ebb/edd_simple_fft_spectrometer.cuh"
+#include "psrdada_cpp/effelsberg/edd/eddfft.cuh"
 
 #include "thrust/host_vector.h"
 

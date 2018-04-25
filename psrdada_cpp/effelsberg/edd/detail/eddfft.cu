@@ -1,7 +1,8 @@
-#ifndef PSRDADA_CPP_EFFELSBERG_EDD_SIMPLE_FFT_SPECTROMETER_HPP
-#define PSRDADA_CPP_EFFELSBERG_EDD_SIMPLE_FFT_SPECTROMETER_HPP
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
+#define PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
 
-#include "psrdada_cpp/effelsberg/edd/edd_simple_fft_spectrometer.cuh"
+#include "psrdada_cpp/effelsberg/edd/eddfft.cuh"
+#include "psrdada_cpp/common.hpp"
 
 namespace psrdada_cpp {
 namespace effelsberg {
@@ -101,4 +102,4 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 } //psrdada_cpp
 
 #include "psrdada_cpp/effelsberg/edd/detail/edd_simple_fft_spectrometer.cu"
-#endif //PSRDADA_CPP_EFFELSBERG_EDD_SIMPLE_FFT_SPECTROMETER_HPP
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP

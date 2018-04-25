@@ -1,7 +1,6 @@
-#ifndef PSRDADA_CPP_EFFELSBERG_EDD_SIMPLE_FFT_SPECTROMETER_HPP
-#define PSRDADA_CPP_EFFELSBERG_EDD_SIMPLE_FFT_SPECTROMETER_HPP
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
+#define PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
 
-#include "psrdada_cpp/effelsberg/edd/"
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "thrust/device_vector.h"
 #include "thrust/host_vector.h"
@@ -68,5 +67,5 @@ private:
 } //effelsberg
 } //psrdada_cpp
 
-#include "psrdada_cpp/effelsberg/edd/detail/edd_simple_fft_spectrometer.cu"
-#endif //PSRDADA_CPP_EFFELSBERG_EDD_SIMPLE_FFT_SPECTROMETER_HPP
+#include "psrdada_cpp/effelsberg/edd/detail/eddfft.cu"
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP

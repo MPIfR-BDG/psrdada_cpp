@@ -1,3 +1,4 @@
+#include "psrdada_cpp/effelsberg/edd/eddfft.cuh"
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 
