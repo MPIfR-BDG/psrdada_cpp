@@ -71,9 +71,8 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
     uint64_t* _edd_raw_ptr = thrust::raw_pointer_cast(_edd_raw.data());
     float* _edd_unpacked_ptr = thrust::raw_pointer_cast(_edd_unpacked.data());
-
-    //Copy DADA buffer to GPU
-    thrust::copy(block.ptr(), block.ptr()+block.used_bytes(), (char*) _edd_raw_ptr);
+    cudaMemcpy((char*) _edd_raw_ptr, block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice);
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     if (_nbits == 12)
     {
