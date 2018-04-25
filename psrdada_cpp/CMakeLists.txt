@@ -42,4 +42,8 @@ add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 
 install (TARGETS junkdb dbnull DESTINATION bin)
+
+#include subdirs
 add_subdirectory(meerkat)
+add_subdirectory(effelsberg)
+
