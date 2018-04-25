@@ -16,7 +16,7 @@ int main()
     int size = 4096 * 12 * 4096 / 8;
     thrust::host_vector<char> data;
     data.resize(size);
-    RawBytes dada_input(data.data(), data.size());
+    RawBytes dada_input(data.data(), data.size(), data.size());
     DummyHandler _handler;
     effelsberg::edd::SimpleFFTSpectrometer<DummyHandler> spectrometer(8192, 1, 12, _handler);
     for (int ii=0; ii<100; ++ii)
