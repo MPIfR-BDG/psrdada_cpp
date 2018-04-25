@@ -94,18 +94,18 @@ void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ 
 }
 
 __global__
-void detect_and_accumulate(cufftComplex* __restrict__ in, float* __restrict__ out, int nchans, int nsamps, int naccumulate)
+void detect_and_accumulate(float2* __restrict__ in, float* __restrict__ out, int nchans, int nsamps, int naccumulate)
 {
-    for (int block_idx = blockIdx.x; block_idx < nsamps/naccumulate; ++block_idx)
+    for (int block_idx = blockIdx.x; block_idx < nsamps/naccumulate; block_idx+=gridDim.x)
     {
         int read_offset = block_idx * naccumulate * nchans;
         int write_offset = block_idx * nchans;
-        for (int chan_idx = threadIdx.x; threadIdx.x < nchans; chan_idx += blockDim.x)
+        for (int chan_idx = threadIdx.x; chan_idx < nchans; chan_idx += blockDim.x)
         {
             float sum = 0.0f;
             for (int ii=0; ii < naccumulate; ++ii)
             {
-                cufftComplex tmp = in[read_offset + chan_idx];
+                float2 tmp = in[read_offset + chan_idx + ii*nchans];
                 float x = tmp.x * tmp.x;
                 float y = tmp.y * tmp.y;
                 sum += x + y;

@@ -62,7 +62,26 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
         _channelised.resize(nchans * batch);
         _detected.resize(nchans * batch / _naccumulate);
         _first_block = false;
+
+        //cudaMemcpy((char*) _edd_raw_ptr, block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice);
+        //CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+        return false;
     }
+
+    // --- pass 2 ---
+    // Start async memcpy into next buffer in stream 0
+    // Process previous block in stream 1
+    // return
+
+    // sync stream 1
+    // start async memcpy into output block in stream 2
+    // sync stream 0
+    // start async memcpy into next buffer in stream 0
+    // Process previous block in stream 1
+    //
+
+
+
 
     if (_nsamps != nsamps_in_block)
     {
@@ -92,9 +111,8 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     cufftComplex* _channelised_ptr = thrust::raw_pointer_cast(_channelised.data());
     CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal*)_edd_unpacked_ptr, _channelised_ptr));
 
-
     float* _detected_ptr = thrust::raw_pointer_cast(_detected.data());
-    kernels::detect_and_accumulate<<<1024, 1024>>>(_channelised_ptr, _detected_ptr, nchans, nsamps_in_block/_fft_length, 64);
+    kernels::detect_and_accumulate<<<1024, 1024>>>(_channelised_ptr, _detected_ptr, nchans, _nsamps/_fft_length, 64);
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     //thrust::copy(_edd_unpacked.begin(), _edd_unpacked.end(), block.ptr());
