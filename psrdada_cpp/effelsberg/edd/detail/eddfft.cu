@@ -18,7 +18,7 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     , _handler(handler)
     , _first_block(true)
     , _nsamps(0)
-    , _fft_plan(NULL)
+    , _fft_plan(0)
 {
 
 }
@@ -26,7 +26,7 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
 template <class HandlerType>
 SimpleFFTSpectrometer<HandlerType>::~SimpleFFTSpectrometer()
 {
-    if (!_first_block)
+    if (!_fft_plan)
         cufftDestroy(_fft_plan);
 }
 
@@ -94,6 +94,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
     //thrust::copy(_edd_unpacked.begin(), _edd_unpacked.end(), block.ptr());
     //_handler(block);
+    return false;
 }
 
 } //edd
