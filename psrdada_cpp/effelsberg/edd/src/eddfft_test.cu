@@ -8,12 +8,12 @@ using namespace psrdada_cpp;
 struct DummyHandler
 {
     void init(RawBytes& header){}
-    bool operator()(RawBytes& data){}
+    bool operator()(RawBytes& data){return false;}
 };
 
 int main()
 {
-    int size = 4096 * 12 * 4096 / 8
+    int size = 4096 * 12 * 4096 / 8;
     thrust::host_vector<char> data;
     data.resize(size);
     RawBytes dada_input(data.data(), data.size());
