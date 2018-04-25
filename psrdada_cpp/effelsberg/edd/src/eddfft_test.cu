@@ -1,8 +1,9 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/effelsberg/edd/eddfft.cuh"
-
 #include "thrust/host_vector.h"
+
+using namespace psrdada_cpp;
 
 struct DummyHandler
 {
