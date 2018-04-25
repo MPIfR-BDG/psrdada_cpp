@@ -39,8 +39,8 @@ void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ 
      * Note: This kernels will not work with more than 512 threads.
      */
 
-    __shared__ volatile float tmp_out[NTHREADS * 16];
-    __shared__ volatile uint64_t tmp_in[NTHREADS * 3];
+    __shared__ volatile float tmp_out[NTHREADS_UNPACK * 16];
+    __shared__ volatile uint64_t tmp_in[NTHREADS_UNPACK * 3];
     int block_idx = blockIdx.x;
 
     uint64_t val;
@@ -51,10 +51,10 @@ void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ 
     {
 
         //Read to shared memeory
-        int block_read_start = block_idx * NTHREADS * 3;
+        int block_read_start = block_idx * NTHREADS_UNPACK * 3;
         tmp_in[threadIdx.x]                = in[block_read_start + threadIdx.x];
-        tmp_in[NTHREADS + threadIdx.x]     = in[block_read_start + NTHREADS + threadIdx.x];
-        tmp_in[NTHREADS * 2 + threadIdx.x] = in[block_read_start + NTHREADS * 2 + threadIdx.x];
+        tmp_in[NTHREADS_UNPACK + threadIdx.x]     = in[block_read_start + NTHREADS_UNPACK + threadIdx.x];
+        tmp_in[NTHREADS_UNPACK * 2 + threadIdx.x] = in[block_read_start + NTHREADS_UNPACK * 2 + threadIdx.x];
 
         __syncthreads();
 
@@ -83,9 +83,9 @@ void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ 
 
         __syncthreads();
 
-        int block_write_start = block_idx * NTHREADS * 16;
+        int block_write_start = block_idx * NTHREADS_UNPACK * 16;
 
-        for (int ii = threadIdx.x; ii < 16 * NTHREADS; ii+=blockDim.x)
+        for (int ii = threadIdx.x; ii < 16 * NTHREADS_UNPACK; ii+=blockDim.x)
         {
             out[block_write_start+ii] = tmp_out[ii];
         }

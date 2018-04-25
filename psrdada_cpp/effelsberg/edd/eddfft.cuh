@@ -6,6 +6,8 @@
 #include "thrust/host_vector.h"
 #include "cufft.h"
 
+#define NTHREADS_UNPACK 512
+
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
@@ -15,7 +17,7 @@ namespace kernels {
     void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
 
     __global__
-    void detect_and_accumulate(cufftComplex* __restrict__ in, float* __restrict__ out, int nchans, int nsamps, int naccumulate)
+    void detect_and_accumulate(cufftComplex* __restrict__ in, float* __restrict__ out, int nchans, int nsamps, int naccumulate);
 
 
 } //kernels
