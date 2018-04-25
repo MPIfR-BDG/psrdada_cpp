@@ -38,7 +38,6 @@ void SimpleFFTSpectrometer<HandlerType>::init(RawBytes& block)
 template <class HandlerType>
 bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 {
-    CUDA_ERROR_CHECK(cudaHostRegister(block.ptr(), block.used_bytes(), cudaHostRegisterDefault));
     int nsamps_in_block = 8 * block.used_bytes() / _nbits;
     int nchans = _fft_length / 2 + 1;
 
