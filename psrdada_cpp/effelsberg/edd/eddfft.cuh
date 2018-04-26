@@ -66,7 +66,7 @@ private:
     thrust::device_vector<float> _edd_unpacked;
     thrust::device_vector<cufftComplex> _channelised;
     thrust::device_vector<float> _detected;
-    thrust::device_vector<float> _detected_host;
+    thrust::host_vector<float> _detected_host;
     //cudaStream_t _h2d_stream;
     //cudaStream_t _proc_stream;
     //cudaStream_t _d2h_stream;
