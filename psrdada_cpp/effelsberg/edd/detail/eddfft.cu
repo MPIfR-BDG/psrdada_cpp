@@ -62,7 +62,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
         int n[] = {_fft_length};
         CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
             NULL, 1, _fft_length/2 + 1, CUFFT_R2C, batch));
-        cufftSetStream(_fft_plan, _proc_stream);
+        //cufftSetStream(_fft_plan, _proc_stream);
         _edd_raw.resize(n64bit_words);
         _edd_unpacked.resize(_nsamps);
         _channelised.resize(nchans * batch);
@@ -139,7 +139,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
     cudaMemcpy((char*) _edd_raw_ptr, block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice);
 
-    RawBytes bytes((char*) thrust::raw_pointer_cast(_detected_host),
+    RawBytes bytes((char*) _detected_host.data(),
         _detected_host.size()*sizeof(float),
         _detected_host.size()*sizeof(float));
     return _handler(bytes);
