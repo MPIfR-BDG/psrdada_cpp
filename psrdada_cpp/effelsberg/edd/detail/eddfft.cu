@@ -42,11 +42,6 @@ void SimpleFFTSpectrometer<HandlerType>::init(RawBytes& block)
     _handler.init(block);
 }
 
-template <class HandlerType>
-void SimpleFFTSpectrometer<HandlerType>::launch_processing_kernels(thrust::device_vector<uint64_t> const& input)
-{
-
-}
 
 template <class HandlerType>
 bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
