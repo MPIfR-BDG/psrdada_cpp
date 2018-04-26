@@ -48,10 +48,10 @@ int main(int argc, char** argv)
            "The shared memory key for the dada buffer to connect to (hex string)")
 
         ("fft_length,n", po::value<int>(&fft_length)->required(),
-            "The length of the FFT to perform on the data");
+            "The length of the FFT to perform on the data")
 
         ("naccumulate,a", po::value<int>(&naccumulate)->required(),
-            "The number of samples to integrate in each channel");
+            "The number of samples to integrate in each channel")
 
         ("outfile,o", po::value<std::string>(&filename)
             ->default_value(filename),

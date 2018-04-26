@@ -139,7 +139,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
     cudaMemcpy((char*) _edd_raw_ptr, block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice);
 
-    RawBytes bytes((char*) _detected_host.data(),
+    RawBytes bytes((char*) thrust::raw_pointer_cast(_detected_host.data()),
         _detected_host.size()*sizeof(float),
         _detected_host.size()*sizeof(float));
     return _handler(bytes);
