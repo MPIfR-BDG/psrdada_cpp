@@ -95,7 +95,7 @@ void SimpleFFTSpectrometer<HandlerType>::init(RawBytes& block)
 
 
 template <class HandlerType>
-bool SimpleFFTSpectrometer<HandlerType>::process(
+void SimpleFFTSpectrometer<HandlerType>::process(
     thrust::device_vector<uint64_t> const& digitiser_raw,
     thrust::device_vector<float>& detected)
 {
