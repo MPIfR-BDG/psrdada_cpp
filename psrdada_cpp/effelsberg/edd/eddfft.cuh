@@ -69,6 +69,7 @@ private:
     int _nchans;
     bool _first;
     bool _second;
+    bool _third;
 
     thrust::device_vector<float> _edd_unpacked;
     thrust::device_vector<cufftComplex> _channelised;
