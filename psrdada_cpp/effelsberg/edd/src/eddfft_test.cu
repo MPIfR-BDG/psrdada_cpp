@@ -18,7 +18,7 @@ int main()
     data.resize(size);
     RawBytes dada_input(data.data(), data.size(), data.size());
     DummyHandler _handler;
-    effelsberg::edd::SimpleFFTSpectrometer<DummyHandler> spectrometer(8192, 1, 12, _handler);
+    effelsberg::edd::SimpleFFTSpectrometer<DummyHandler> spectrometer(4096*4096, 8192, 1, 12, _handler);
     for (int ii=0; ii<100; ++ii)
     {
         spectrometer(dada_input);
