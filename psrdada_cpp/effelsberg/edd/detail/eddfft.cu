@@ -2,6 +2,7 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
+#include <cuda.h>
 
 namespace psrdada_cpp {
 namespace effelsberg {
@@ -78,6 +79,13 @@ void SimpleFFTSpectrometer<HandlerType>::init(RawBytes& block)
 template <class HandlerType>
 bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 {
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+
     BOOST_LOG_TRIVIAL(debug) << "SimpleFFTSpectrometer operator() called";
     int nsamps_in_block = 8 * block.used_bytes() / _nbits;
     int nchans = _fft_length / 2 + 1;
@@ -153,6 +161,14 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
         _detected_host.size()*sizeof(float),
         _detected_host.size()*sizeof(float));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    BOOST_LOG_TRIVIAL(debug) << "Operator took " << milliseconds << " milliseconds";
+
     return _handler(bytes);
 }
 
