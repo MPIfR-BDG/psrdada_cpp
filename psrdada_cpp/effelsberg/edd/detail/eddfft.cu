@@ -114,7 +114,7 @@ void SimpleFFTSpectrometer<HandlerType>::process(
     CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal*) digitiser_unpacked_ptr, channelised_ptr));
 
     BOOST_LOG_TRIVIAL(debug) << "Detecting and accumulating";
-    kernels::detect_and_accumulate<<<1024, 1024>>>(channelised_ptr, detected_ptr, _nchans, _nsamps/_fft_length, _naccumulate);
+    kernels::detect_and_accumulate<<<1024, 1024, 0, _proc_stream>>>(channelised_ptr, detected_ptr, _nchans, _nsamps/_fft_length, _naccumulate);
 }
 
 
