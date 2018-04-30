@@ -61,15 +61,15 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     _edd_raw_previous = &_edd_raw_b;
 
     _edd_unpacked.resize(_nsamps);
-    _channelised.resize(nchans * batch);
+    _channelised.resize(_nchans * batch);
 
-    _detected_a.resize(nchans * batch / _naccumulate);
-    _detected_b.resize(nchans * batch / _naccumulate);
+    _detected_a.resize(_nchans * batch / _naccumulate);
+    _detected_b.resize(_nchans * batch / _naccumulate);
     _detected_current = &_detected_a;
     _detected_previous = &_detected_b;
 
-    _detected_host_a.resize(nchans * batch / _naccumulate);
-    _detected_host_b.resize(nchans * batch / _naccumulate);
+    _detected_host_a.resize(_nchans * batch / _naccumulate);
+    _detected_host_b.resize(_nchans * batch / _naccumulate);
     _detected_host_current = &_detected_host_a;
     _detected_host_previous = &_detected_host_b;
 

@@ -56,7 +56,7 @@ public:
     bool operator()(RawBytes& block);
 
 private:
-    void process(thrust::device_vector<uint64_t> const& digitiser_raw,
+    void process(thrust::device_vector<uint64_t>& digitiser_raw,
         thrust::device_vector<float>& detected);
 
 private:
