@@ -147,7 +147,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     std::swap(_edd_raw_current, _edd_raw_previous);
 
     // Guaranteed that copy is completed here
-    process(_edd_raw_previous, _detected_current);
+    process(&_edd_raw_previous, &_detected_current);
     // If this is the first pass, start processing and exit
     if (_first)
     {
