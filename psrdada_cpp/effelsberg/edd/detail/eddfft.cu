@@ -166,7 +166,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     }
 
     //Wrap _detected_host_previous in a RawBytes object here;
-    RawBytes bytes(thrust::raw_pointer_cast(_detected_host_previous->data()),
+    RawBytes bytes((char*) thrust::raw_pointer_cast(_detected_host_previous->data()),
         _detected_host_previous->size() * sizeof(float),
         _detected_host_previous->size() * sizeof(float));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";
