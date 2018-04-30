@@ -27,7 +27,7 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     //cudaStreamCreate(&_h2d_stream);
     //cudaStreamCreate(&_proc_stream);
     //cudaStreamCreate(&_d2h_stream);
-
+    int nchans = _fft_length / 2 + 1;
     int n64bit_words = 3 * _nsamps / 16;
     if (_nsamps % _fft_length != 0)
     {
