@@ -5,6 +5,7 @@
 #include "psrdada_cpp/dada_output_stream.hpp"
 #include "psrdada_cpp/simple_file_writer.hpp"
 #include "psrdada_cpp/effelsberg/edd/eddfft.cuh"
+#include "psrdada_cpp/dada_null_sink.hpp"
 #include "boost/program_options.hpp"
 #include <time.h>
 #include <ctime>
@@ -87,8 +88,9 @@ int main(int argc, char** argv)
          * All the application code goes here
          */
         MultiLog log("eddfft");
-        SimpleFileWriter outwriter(filename);
-        effelsberg::edd::SimpleFFTSpectrometer<decltype(outwriter)> spectrometer(fft_length, naccumulate, 12, outwriter);
+        //SimpleFileWriter outwriter(filename);
+        NullSink sink;
+        effelsberg::edd::SimpleFFTSpectrometer<decltype(sink)> spectrometer(fft_length, naccumulate, 12, sink);
         DadaInputStream<decltype(spectrometer)> istream(input_key, log, spectrometer);
         istream.start();
         /**
