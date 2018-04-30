@@ -142,6 +142,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     std::swap(_edd_raw_current, _edd_raw_previous);
 
     // Start host to device copy
+    process(_edd_raw_previous, _detected_current);
     cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_edd_raw_current->data()),
         block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice, _h2d_stream);
     if (_first)
