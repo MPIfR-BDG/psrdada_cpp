@@ -155,9 +155,9 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
     BOOST_LOG_TRIVIAL(debug) << "Copying resultant data to host";
-    cudaMemcpy((char*) _edd_raw_ptr, block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice);
-
-    RawBytes bytes((char*) thrust::raw_pointer_cast(_detected_host.data()),
+    float* _detected_host_ptr = thrust::raw_pointer_cast(_detected_host.data());
+    cudaMemcpy((char*) _detected_host_ptr, _detected_ptr, _detected.size() * sizeof(float), cudaMemcpyDeviceToHost);
+    RawBytes bytes((char*) _detected_host_ptr,
         _detected_host.size()*sizeof(float),
         _detected_host.size()*sizeof(float));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";
