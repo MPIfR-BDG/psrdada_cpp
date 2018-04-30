@@ -84,8 +84,8 @@ private:
     thrust::device_vector<float>* _detected_current;
     thrust::device_vector<float>* _detected_previous;
 
-    thrust::host_vector<float> _detected_host_a;
-    thrust::host_vector<float> _detected_host_b;
+    thrust::host_vector<float, thrust::system::cuda::experimental::pinned_allocator<float> > _detected_host_a;
+    thrust::host_vector<float, thrust::system::cuda::experimental::pinned_allocator<float> > _detected_host_b;
     thrust::host_vector<float>* _detected_host_current;
     thrust::host_vector<float>* _detected_host_previous;
 

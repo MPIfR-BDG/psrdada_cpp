@@ -2,6 +2,7 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
 #include <cuda.h>
 
 namespace psrdada_cpp {
