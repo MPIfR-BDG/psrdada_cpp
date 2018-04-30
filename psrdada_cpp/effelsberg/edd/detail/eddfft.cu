@@ -138,7 +138,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     std::swap(_detected_host_current, _detected_host_previous);
 
     // Start host to device copy
-    cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_edd_raw_current->data());,
+    cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_edd_raw_current->data()),
         block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice, _h2d_stream);
 
     // Need to always synchronize this stream as it relies on the correct DADA
