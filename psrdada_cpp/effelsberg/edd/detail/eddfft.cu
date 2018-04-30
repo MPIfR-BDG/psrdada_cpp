@@ -21,9 +21,9 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     , _nbits(nbits)
     , _handler(handler)
     , _fft_plan(0)
-    , _first(false)
-    , _second(false)
-    , _third(false)
+    , _first(true)
+    , _second(true)
+    , _third(true)
 {
     BOOST_LOG_TRIVIAL(debug)
     << "Creating new SimpleFFTSpectrometer instance with parameters: \n"
