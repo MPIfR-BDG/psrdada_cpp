@@ -2,11 +2,10 @@
 
 namespace psrdada_cpp {
 
-    RawBytes::RawBytes(char* ptr, std::size_t total, std::size_t used, bool device_memory)
+    RawBytes::RawBytes(char* ptr, std::size_t total, std::size_t used)
     : _ptr(ptr)
     , _total_bytes(total)
     , _used_bytes(used)
-    , _on_device(device_memory)
     {
     }
 
@@ -34,9 +33,9 @@ namespace psrdada_cpp {
         return _ptr;
     }
 
-    bool RawBytes::on_device() const
+    std::size_t RawBytes::remaining_bytes() const
     {
-        return _on_device;
+        return _total_bytes - _used_bytes;
     }
 
 } //namespace psrdada_cpp

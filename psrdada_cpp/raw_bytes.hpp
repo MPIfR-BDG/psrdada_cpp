@@ -22,7 +22,6 @@ namespace psrdada_cpp {
         char* _ptr;
         std::size_t _total_bytes;
         std::size_t _used_bytes;
-        bool _on_device;
 
     public:
         /**
@@ -34,7 +33,7 @@ namespace psrdada_cpp {
          * @oaram[in]  device_memory  Indicates whether the memory in this buffer resides
          *                            on a GPU or not
          */
-        RawBytes(char* ptr, std::size_t total, std::size_t used=0, bool device_memory=false);
+        RawBytes(char* ptr, std::size_t total, std::size_t used=0);
         RawBytes(RawBytes const&) = delete;
         ~RawBytes();
 
@@ -58,15 +57,31 @@ namespace psrdada_cpp {
         void used_bytes(std::size_t);
 
         /**
+         * @brief Return the number of unused bytes in the buffer
+         */
+        std::size_t remaining_bytes() const;
+
+
+        /**
          * @brief      Get a raw pointer to the start of the buffer
          */
         char* ptr();
-
-        /**
-         * @brief      Does the buffer reside in GPU memory
-         */
-        bool on_device() const;
     };
+
+
+    /**
+     * @brief Type-safe derivative of RawBytes for handling GPU memory
+     *
+     * @details This class does not add anything to RawBytes but provides
+     *          type saftey and opens up opportunities for overloading in
+     *          operators.
+     *
+     */
+    class RawDeviceBytes: public RawBytes
+    {
+    };
+
+
 
 } //namespace psrdada_cpp
 #endif //PSRDADA_CPP_RAW_BYTES_HPP
