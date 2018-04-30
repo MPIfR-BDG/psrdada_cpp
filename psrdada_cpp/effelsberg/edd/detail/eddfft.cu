@@ -96,19 +96,19 @@ void SimpleFFTSpectrometer<HandlerType>::init(RawBytes& block)
 
 template <class HandlerType>
 void SimpleFFTSpectrometer<HandlerType>::process(
-    thrust::device_vector<uint64_t> & digitiser_raw,
-    thrust::device_vector<float>& detected)
+    thrust::device_vector<uint64_t>* digitiser_raw,
+    thrust::device_vector<float>* detected)
 {
 
-    uint64_t* digitiser_raw_ptr = thrust::raw_pointer_cast(digitiser_raw.data());
+    uint64_t* digitiser_raw_ptr = thrust::raw_pointer_cast(digitiser_raw->data());
     float* digitiser_unpacked_ptr = thrust::raw_pointer_cast(_edd_unpacked.data());
     cufftComplex* channelised_ptr = thrust::raw_pointer_cast(_channelised.data());
-    float* detected_ptr = thrust::raw_pointer_cast(detected.data());
+    float* detected_ptr = thrust::raw_pointer_cast(detected->data());
 
     BOOST_LOG_TRIVIAL(debug) << "Unpacking 12-bit data";
-    int nblocks = digitiser_raw.size() / NTHREADS_UNPACK;
+    int nblocks = digitiser_raw->size() / NTHREADS_UNPACK;
     kernels::unpack_edd_12bit_to_float32<<< nblocks, NTHREADS_UNPACK, 0, _proc_stream>>>(
-        digitiser_raw_ptr, digitiser_unpacked_ptr, digitiser_raw.size());
+        digitiser_raw_ptr, digitiser_unpacked_ptr, digitiser_raw->size());
 
     BOOST_LOG_TRIVIAL(debug) << "Performing FFT";
     CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal*) digitiser_unpacked_ptr, channelised_ptr));
@@ -147,7 +147,7 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     std::swap(_edd_raw_current, _edd_raw_previous);
 
     // Guaranteed that copy is completed here
-    process(&_edd_raw_previous, &_detected_current);
+    process(_edd_raw_previous, _detected_current);
     // If this is the first pass, start processing and exit
     if (_first)
     {

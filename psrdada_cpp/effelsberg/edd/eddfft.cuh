@@ -56,8 +56,8 @@ public:
     bool operator()(RawBytes& block);
 
 private:
-    void process(thrust::device_vector<uint64_t>& digitiser_raw,
-        thrust::device_vector<float>& detected);
+    void process(thrust::device_vector<uint64_t>* digitiser_raw,
+        thrust::device_vector<float>* detected);
 
 private:
     int _nsamps;
