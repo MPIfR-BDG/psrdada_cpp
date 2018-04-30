@@ -9,16 +9,16 @@ namespace edd {
 
 template <class HandlerType>
 SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
+    int nsamps_per_block,
     int fft_length,
     int naccumulate,
     int nbits,
     HandlerType& handler)
-    : _fft_length(fft_length)
+    : _nsamps(nsamps_per_block)
+    , _fft_length(fft_length)
     , _naccumulate(naccumulate)
     , _nbits(nbits)
     , _handler(handler)
-    , _first_block(true)
-    , _nsamps(0)
     , _fft_plan(0)
 {
     BOOST_LOG_TRIVIAL(debug) << "Creating new SimpleFFTSpectrometer instance with parameters: \n"
@@ -27,6 +27,33 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     //cudaStreamCreate(&_h2d_stream);
     //cudaStreamCreate(&_proc_stream);
     //cudaStreamCreate(&_d2h_stream);
+
+    int n64bit_words = 3 * _nsamps / 16;
+    if (_nsamps % _fft_length != 0)
+    {
+        throw std::runtime_error("Number of samples is not multiple of FFT size");
+    }
+    int batch = _nsamps/_fft_length;
+
+    BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
+        // Only do these things once
+    int n[] = {_fft_length};
+    CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
+        NULL, 1, _fft_length/2 + 1, CUFFT_R2C, batch));
+
+    BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
+        //cufftSetStream(_fft_plan, _proc_stream);
+    _edd_raw.resize(n64bit_words);
+    _edd_unpacked.resize(_nsamps);
+    _channelised.resize(nchans * batch);
+    _detected.resize(nchans * batch / _naccumulate);
+    _detected_host.resize(nchans * batch / _naccumulate);
+
+    //The first memcopy must be blocking
+    //cudaMemcpy((char*) _edd_raw_ptr, block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice);
+    //CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    //launch_processing_kernels();
+
 }
 
 template <class HandlerType>
@@ -55,39 +82,6 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     int nsamps_in_block = 8 * block.used_bytes() / _nbits;
     int nchans = _fft_length / 2 + 1;
     BOOST_LOG_TRIVIAL(debug) << nsamps_in_block << " samples in RawBytes block";
-    if (_first_block)
-    {
-        BOOST_LOG_TRIVIAL(debug) << "Processing first block";
-        _nsamps = nsamps_in_block;
-        int n64bit_words = 3 * _nsamps / 16;
-        if (_nsamps % _fft_length != 0)
-        {
-            throw std::runtime_error("Number of samples is not multiple of FFT size");
-        }
-        int batch = _nsamps/_fft_length;
-
-        BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
-        // Only do these things once
-        int n[] = {_fft_length};
-        CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
-            NULL, 1, _fft_length/2 + 1, CUFFT_R2C, batch));
-
-        BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
-        //cufftSetStream(_fft_plan, _proc_stream);
-        _edd_raw.resize(n64bit_words);
-        _edd_unpacked.resize(_nsamps);
-        _channelised.resize(nchans * batch);
-        _detected.resize(nchans * batch / _naccumulate);
-        _detected_host.resize(nchans * batch / _naccumulate);
-        _first_block = false;
-
-        //The first memcopy must be blocking
-        //cudaMemcpy((char*) _edd_raw_ptr, block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice);
-        //CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-        //launch_processing_kernels();
-        return false;
-    }
-
 
     //cudaStreamSynchronize(_h2d_stream);
     //cudaStreamSynchronize(_proc_stream);

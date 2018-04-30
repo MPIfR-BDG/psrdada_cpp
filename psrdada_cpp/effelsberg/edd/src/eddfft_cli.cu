@@ -26,6 +26,7 @@ int main(int argc, char** argv)
     {
         key_t input_key;
         int fft_length;
+        int nsamps_per_block;
         int naccumulate;
         std::time_t now = std::time(NULL);
         std::tm * ptm = std::localtime(&now);
@@ -47,6 +48,9 @@ int main(int argc, char** argv)
                     input_key = string_to_key(in);
                 }),
            "The shared memory key for the dada buffer to connect to (hex string)")
+
+        ("nsamps_per_block,s", po::value<int>(&nsamps_per_block)->required(),
+            "The number of samples in each dada block")
 
         ("fft_length,n", po::value<int>(&fft_length)->required(),
             "The length of the FFT to perform on the data")

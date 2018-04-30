@@ -27,6 +27,7 @@ class SimpleFFTSpectrometer
 {
 public:
     SimpleFFTSpectrometer(
+        int nsamps_per_block,
         int fft_length,
         int naccumulate,
         int nbits,
@@ -55,12 +56,11 @@ public:
     bool operator()(RawBytes& block);
 
 private:
+    int _nsamps;
     int _fft_length;
     int _naccumulate;
     int _nbits;
     HandlerType& _handler;
-    bool _first_block;
-    int _nsamps;
     cufftHandle _fft_plan;
     thrust::device_vector<uint64_t> _edd_raw;
     thrust::device_vector<float> _edd_unpacked;
