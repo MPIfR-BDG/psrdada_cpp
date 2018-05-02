@@ -4,6 +4,7 @@
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "thrust/device_vector.h"
 #include "thrust/host_vector.h"
+#include "thrust/system/cuda/experimental/pinned_allocator.h"
 #include "cufft.h"
 
 #define NTHREADS_UNPACK 512
