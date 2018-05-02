@@ -8,6 +8,10 @@ namespace psrdada_cpp {
     , _header_stream(*this)
     , _data_stream(*this)
     {
+
+#ifdef __CUDACC__
+        dada_cuda_dbregister(_hdu);
+#endif
         lock();
     }
 
