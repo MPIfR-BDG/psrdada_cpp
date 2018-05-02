@@ -5,6 +5,8 @@
 
 using namespace psrdada_cpp;
 
+#define SIZE 100663296
+
 struct DummyHandler
 {
     void init(RawBytes& header){}
@@ -13,12 +15,12 @@ struct DummyHandler
 
 int main()
 {
-    int size = 4096 * 12 * 4096 / 8;
+    int size = SIZE * 12 / 8;
     thrust::host_vector<char> data;
     data.resize(size);
     RawBytes dada_input(data.data(), data.size(), data.size());
     DummyHandler _handler;
-    effelsberg::edd::SimpleFFTSpectrometer<DummyHandler> spectrometer(4096*4096, 8192, 1, 12, _handler);
+    effelsberg::edd::SimpleFFTSpectrometer<DummyHandler> spectrometer(SIZE, 8192, 1, 12, _handler);
     for (int ii=0; ii<100; ++ii)
     {
         spectrometer(dada_input);
