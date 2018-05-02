@@ -25,6 +25,7 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     , _first(true)
     , _second(true)
     , _third(true)
+    , _pass(0)
 {
     BOOST_LOG_TRIVIAL(debug)
     << "Creating new SimpleFFTSpectrometer instance with parameters: \n"
@@ -182,6 +183,11 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
     std::swap(_edd_raw_current, _edd_raw_previous);
 
+    if (_pass >= 30)
+    {
+        return true;
+    }
+    ++_pass;
     return _handler(bytes);
 }
 
