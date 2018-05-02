@@ -16,7 +16,7 @@ struct DummyHandler
 int main()
 {
     int size = SIZE * 12 / 8;
-    thrust::host_vector<char> data;
+    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> > data;
     data.resize(size);
     RawBytes dada_input(data.data(), data.size(), data.size());
     DummyHandler _handler;
