@@ -3,9 +3,7 @@
 
 #include "dada_hdu.h"
 #include "dada_def.h"
-#ifdef __CUDACC__
 #include "dada_cuda.h"
-#endif //__CUDACC__
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/common.hpp"
 
