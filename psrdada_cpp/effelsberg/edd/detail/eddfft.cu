@@ -22,7 +22,6 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     , _nbits(nbits)
     , _handler(handler)
     , _fft_plan(0)
-    , _data_valid(true)
     , _pass(0)
 {
     BOOST_LOG_TRIVIAL(debug)
@@ -153,7 +152,6 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
         _detected_host_previous->size() * sizeof(float),
         _detected_host_previous->size() * sizeof(float));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";
-
 
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
     std::swap(_edd_raw_current, _edd_raw_previous);

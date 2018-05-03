@@ -110,7 +110,7 @@ void detect_and_accumulate(float2* __restrict__ in, float* __restrict__ out, int
                 float y = tmp.y * tmp.y;
                 sum += x + y;
             }
-            out[write_offset + chan_idx] = sum;
+            out[write_offset + chan_idx] = sum / naccumulate;
         }
     }
 }
