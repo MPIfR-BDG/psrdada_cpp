@@ -2,6 +2,7 @@
 #define PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
 
 #include "psrdada_cpp/raw_bytes.hpp"
+#include "psrdada_cpp/double_buffer.hpp"
 #include "thrust/device_vector.h"
 #include "thrust/host_vector.h"
 #include "thrust/system/cuda/experimental/pinned_allocator.h"
@@ -14,12 +15,12 @@ namespace effelsberg {
 namespace edd {
 namespace kernels {
 
-    __global__
-    void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
+__global__
+void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
 
-    __global__
-    void detect_and_accumulate(cufftComplex* __restrict__ in, char* __restrict__ out,
-        int nchans, int nsamps, int naccumulate, float scale, float offset);
+__global__
+void detect_and_accumulate(cufftComplex* __restrict__ in, char* __restrict__ out,
+    int nchans, int nsamps, int naccumulate, float scale, float offset);
 
 
 } //kernels
@@ -73,22 +74,9 @@ private:
 
     thrust::device_vector<float> _edd_unpacked;
     thrust::device_vector<cufftComplex> _channelised;
-
-    thrust::device_vector<uint64_t> _edd_raw_a;
-    thrust::device_vector<uint64_t> _edd_raw_b;
-    thrust::device_vector<uint64_t>* _edd_raw_current;
-    thrust::device_vector<uint64_t>* _edd_raw_previous;
-
-    thrust::device_vector<char> _detected_a;
-    thrust::device_vector<char> _detected_b;
-    thrust::device_vector<char>* _detected_current;
-    thrust::device_vector<char>* _detected_previous;
-
-    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> > _detected_host_a;
-    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> > _detected_host_b;
-    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> >* _detected_host_current;
-    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> >* _detected_host_previous;
-
+    DoubleBuffer<thrust::device_vector<uint64_t>> _edd_raw;
+    DoubleBuffer<thrust::device_vector<char>> _detected;
+    DoubleBuffer<thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char>>> _detected_host;
     cudaStream_t _h2d_stream;
     cudaStream_t _proc_stream;
     cudaStream_t _d2h_stream;

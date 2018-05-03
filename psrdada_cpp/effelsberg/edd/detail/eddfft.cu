@@ -55,24 +55,11 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     cufftSetStream(_fft_plan, _proc_stream);
 
     BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
-    _edd_raw_a.resize(n64bit_words);
-    _edd_raw_b.resize(n64bit_words);
-    _edd_raw_current  = &_edd_raw_a;
-    _edd_raw_previous = &_edd_raw_b;
-
+    _edd_raw.resize(n64bit_words);
     _edd_unpacked.resize(_nsamps);
     _channelised.resize(_nchans * batch);
-
-    _detected_a.resize(_nchans * batch / _naccumulate);
-    _detected_b.resize(_nchans * batch / _naccumulate);
-    _detected_current = &_detected_a;
-    _detected_previous = &_detected_b;
-
-    _detected_host_a.resize(_nchans * batch / _naccumulate);
-    _detected_host_b.resize(_nchans * batch / _naccumulate);
-    _detected_host_current = &_detected_host_a;
-    _detected_host_previous = &_detected_host_b;
-
+    _detected.resize(_nchans * batch / _naccumulate);
+    _detected_host.resize(_nchans * batch / _naccumulate);
 }
 
 template <class HandlerType>
@@ -130,31 +117,31 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
     // Synchronize all streams
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-    std::swap(_detected_current, _detected_previous);
+    _detected.swap();
 
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
-    std::swap(_detected_host_current, _detected_host_previous);
+    _detected_host.swap();
 
     // Start host to device copy
-    cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_edd_raw_current->data()),
+    cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_edd_raw.a()->data()),
         block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice, _h2d_stream);
 
     // Guaranteed that the previous copy is completed here
-    process(_edd_raw_previous, _detected_current);
+    process(_edd_raw.b(), _detected.a());
 
-    cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_detected_host_current->data()),
-        (char*) thrust::raw_pointer_cast(_detected_previous->data()),
-        _detected_previous->size() * sizeof(char),
+    cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_detected_host.a()->data()),
+        (char*) thrust::raw_pointer_cast(_detected.b()->data()),
+        _detected.b()->size() * sizeof(char),
         cudaMemcpyDeviceToHost, _d2h_stream);
 
     //Wrap _detected_host_previous in a RawBytes object here;
-    RawBytes bytes((char*) thrust::raw_pointer_cast(_detected_host_previous->data()),
-        _detected_host_previous->size() * sizeof(char),
-        _detected_host_previous->size() * sizeof(char));
+    RawBytes bytes((char*) thrust::raw_pointer_cast(_detected_host.b()->data()),
+        _detected_host.b()->size() * sizeof(char),
+        _detected_host.b()->size() * sizeof(char));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";
 
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
-    std::swap(_edd_raw_current, _edd_raw_previous);
+    _edd_raw.swap();
 
     // Due to the double buffering the data the output data is only
     // valid by the third pass through. Until that time the code
