@@ -24,19 +24,19 @@ namespace psrdada_cpp {
     }
 
     template <typename T>
-    void DoubleBuffer<T>::swap(std::size_t)
+    void DoubleBuffer<T>::swap()
     {
         std::swap(_a_ptr, _b_ptr);
     }
 
     template <typename T>
-    T* DoubleBuffer<T>::a(std::size_t) const
+    T* DoubleBuffer<T>::a() const
     {
         return _a_ptr;
     }
 
     template <typename T>
-    T* DoubleBuffer<T>::b(std::size_t) const
+    T* DoubleBuffer<T>::b() const
     {
         return _b_ptr;
     }
