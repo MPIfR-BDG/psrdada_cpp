@@ -99,7 +99,7 @@ namespace psrdada_cpp {
             _parent._log.write(LOG_ERR, "Could not mark filled header block\n");
             throw std::runtime_error("Could not mark filled header block");
         }
-        _current_block.reset(nullptr);
+        _current_block.reset();
     }
 
     DadaWriteClient::DataStream::DataStream(DadaWriteClient& parent)
@@ -149,7 +149,7 @@ namespace psrdada_cpp {
                 _parent._log.write(LOG_ERR, "close_buffer: ipcio_close_block_write failed\n");
                 throw std::runtime_error("Could not close ipcio data block");
             }
-            _current_block.reset(nullptr);
+            _current_block.reset();
         }
     }
 

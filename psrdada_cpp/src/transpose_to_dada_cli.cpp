@@ -5,6 +5,7 @@
 #include "psrdada_cpp/dada_output_stream.hpp"
 #include "psrdada_cpp/transpose_to_dada.hpp"
 #include <memory>
+#include <fstream>
 
 #include "boost/program_options.hpp"
 
@@ -31,6 +32,8 @@ int main(int argc, char** argv)
         std::uint32_t ntime;
         std::uint32_t nfreq;
         std::uint32_t nbeams;
+        std::string filename;
+        std::fstream fkeys;
         key_t* output_keys = new key_t[nbeams];
         std::vector<std::string> keys;
         /** Define and parse the program options
@@ -49,17 +52,9 @@ int main(int argc, char** argv)
          ("nbeams,b", po::value<std::uint32_t>(&nbeams)->required(),
             "The number of beams in the stream")
 
-         ("output_key,o", po::value<std::vector<std::string> >(&keys)->required()
-            ->notifier([&output_keys](std::vector<std::string> in)
-                {
-                    std::uint32_t ii;
-                    for (ii=0 ; ii < in.size(); ii++)
-                    {
-                        output_keys[ii] = string_to_key(in[ii]);
-                    }
-                }),
+         ("key_file,o", po::value<std::string> (&filename)->required(),
+          "File containing the keys for each dada buffer corresponding to each beam")
 
-          "The shared memory key for the dada buffer to connect to based on the beams (hex string)")
          ("nchannels,c", po::value<std::uint32_t>(&nchans)->required(),
             "The number of frequency channels per packet in the stream")
          ("nsamples,s", po::value<std::uint32_t>(&nsamples)->required(),
@@ -89,13 +84,22 @@ int main(int argc, char** argv)
             return ERROR_IN_COMMAND_LINE;
         }
 
+       /* Open file to parse all values to the key_t object*/
+        fkeys.open(filename,std::fstream::in);
+        std::uint32_t ii;
+        for (ii=0; ii < nbeams; ii++)
+        {
+            std::string key;
+            std::getline(fkeys,key);
+            output_keys[ii] = string_to_key(key);
+        }
 
+        fkeys.close();
        /* Application Code */
  
         MultiLog log("outstream");
         std::vector<std::shared_ptr<DadaOutputStream>> outstreams;
 
-        std::uint32_t ii;
         for (ii=0 ; ii < nbeams; ii++)
         {
             outstreams.emplace_back(std::make_shared<DadaOutputStream>(output_keys[ii],log));
