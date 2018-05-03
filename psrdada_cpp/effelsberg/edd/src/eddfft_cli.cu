@@ -92,8 +92,8 @@ int main(int argc, char** argv)
          * All the application code goes here
          */
         MultiLog log("eddfft");
-        //SimpleFileWriter outwriter(filename);
-        NullSink sink;
+        SimpleFileWriter sink(filename);
+        //NullSink sink;
         effelsberg::edd::SimpleFFTSpectrometer<decltype(sink)> spectrometer(nsamps_per_block, fft_length, naccumulate, 12, sink);
         DadaInputStream<decltype(spectrometer)> istream(input_key, log, spectrometer);
         istream.start();
