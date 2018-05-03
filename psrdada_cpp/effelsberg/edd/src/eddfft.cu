@@ -94,7 +94,8 @@ void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ 
 }
 
 __global__
-void detect_and_accumulate(float2* __restrict__ in, float* __restrict__ out, int nchans, int nsamps, int naccumulate)
+void detect_and_accumulate(float2* __restrict__ in, char* __restrict__ out,
+    int nchans, int nsamps, int naccumulate, float scale, float offset)
 {
     for (int block_idx = blockIdx.x; block_idx < nsamps/naccumulate; block_idx+=gridDim.x)
     {
@@ -110,7 +111,7 @@ void detect_and_accumulate(float2* __restrict__ in, float* __restrict__ out, int
                 float y = tmp.y * tmp.y;
                 sum += x + y;
             }
-            out[write_offset + chan_idx] = sum / naccumulate;
+            out[write_offset + chan_idx] = (char) ((sum / naccumulate) - offset)/scale;
         }
     }
 }

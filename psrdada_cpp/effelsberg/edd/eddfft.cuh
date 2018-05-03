@@ -18,7 +18,8 @@ namespace kernels {
     void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
 
     __global__
-    void detect_and_accumulate(cufftComplex* __restrict__ in, float* __restrict__ out, int nchans, int nsamps, int naccumulate);
+    void detect_and_accumulate(cufftComplex* __restrict__ in, char* __restrict__ out,
+        int nchans, int nsamps, int naccumulate, float scale, float offset);
 
 
 } //kernels
@@ -58,7 +59,7 @@ public:
 
 private:
     void process(thrust::device_vector<uint64_t>* digitiser_raw,
-        thrust::device_vector<float>* detected);
+        thrust::device_vector<char>* detected);
 
 private:
     int _nsamps;
@@ -78,16 +79,15 @@ private:
     thrust::device_vector<uint64_t>* _edd_raw_current;
     thrust::device_vector<uint64_t>* _edd_raw_previous;
 
-    thrust::device_vector<float> _detected_a;
-    thrust::device_vector<float> _detected_b;
-    thrust::device_vector<float>* _detected_current;
-    thrust::device_vector<float>* _detected_previous;
+    thrust::device_vector<char> _detected_a;
+    thrust::device_vector<char> _detected_b;
+    thrust::device_vector<char>* _detected_current;
+    thrust::device_vector<char>* _detected_previous;
 
-    thrust::host_vector<float, thrust::system::cuda::experimental::pinned_allocator<float> > _detected_host_a;
-    thrust::host_vector<float, thrust::system::cuda::experimental::pinned_allocator<float> > _detected_host_b;
-    thrust::host_vector<float, thrust::system::cuda::experimental::pinned_allocator<float> >* _detected_host_current;
-    thrust::host_vector<float, thrust::system::cuda::experimental::pinned_allocator<float> >* _detected_host_previous;
-
+    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> > _detected_host_a;
+    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> > _detected_host_b;
+    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> >* _detected_host_current;
+    thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char> >* _detected_host_previous;
 
     cudaStream_t _h2d_stream;
     cudaStream_t _proc_stream;

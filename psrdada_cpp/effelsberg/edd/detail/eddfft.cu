@@ -93,17 +93,16 @@ void SimpleFFTSpectrometer<HandlerType>::init(RawBytes& block)
     _handler.init(block);
 }
 
-
 template <class HandlerType>
 void SimpleFFTSpectrometer<HandlerType>::process(
     thrust::device_vector<uint64_t>* digitiser_raw,
-    thrust::device_vector<float>* detected)
+    thrust::device_vector<char>* detected)
 {
 
     uint64_t* digitiser_raw_ptr = thrust::raw_pointer_cast(digitiser_raw->data());
     float* digitiser_unpacked_ptr = thrust::raw_pointer_cast(_edd_unpacked.data());
     cufftComplex* channelised_ptr = thrust::raw_pointer_cast(_channelised.data());
-    float* detected_ptr = thrust::raw_pointer_cast(detected->data());
+    char* detected_ptr = thrust::raw_pointer_cast(detected->data());
 
     BOOST_LOG_TRIVIAL(debug) << "Unpacking 12-bit data";
     int nblocks = digitiser_raw->size() / NTHREADS_UNPACK;
@@ -114,7 +113,8 @@ void SimpleFFTSpectrometer<HandlerType>::process(
     CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal*) digitiser_unpacked_ptr, channelised_ptr));
 
     BOOST_LOG_TRIVIAL(debug) << "Detecting and accumulating";
-    kernels::detect_and_accumulate<<<1024, 1024, 0, _proc_stream>>>(channelised_ptr, detected_ptr, _nchans, _nsamps/_fft_length, _naccumulate);
+    kernels::detect_and_accumulate<<<1024, 1024, 0, _proc_stream>>>(channelised_ptr, detected_ptr,
+        _nchans, _nsamps/_fft_length, _naccumulate, 1.0f, 0.0f);
 }
 
 template <class HandlerType>
@@ -144,13 +144,13 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 
     cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_detected_host_current->data()),
         (char*) thrust::raw_pointer_cast(_detected_previous->data()),
-        _detected_previous->size() * sizeof(float),
+        _detected_previous->size() * sizeof(char),
         cudaMemcpyDeviceToHost, _d2h_stream);
 
     //Wrap _detected_host_previous in a RawBytes object here;
     RawBytes bytes((char*) thrust::raw_pointer_cast(_detected_host_previous->data()),
-        _detected_host_previous->size() * sizeof(float),
-        _detected_host_previous->size() * sizeof(float));
+        _detected_host_previous->size() * sizeof(char),
+        _detected_host_previous->size() * sizeof(char));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";
 
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
