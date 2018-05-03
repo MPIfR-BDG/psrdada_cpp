@@ -23,4 +23,6 @@ namespace psrdada_cpp {
 
 } //namespace psrdada_cpp
 
+#include "psrdada_cpp/detail/double_buffer.cpp"
+
 #endif //PSRDADA_CPP_DOUBLE_BUFFER_HPP
