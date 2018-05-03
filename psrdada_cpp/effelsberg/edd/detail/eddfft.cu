@@ -22,9 +22,7 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     , _nbits(nbits)
     , _handler(handler)
     , _fft_plan(0)
-    , _first(true)
-    , _second(true)
-    , _third(true)
+    , _data_valid(true)
     , _pass(0)
 {
     BOOST_LOG_TRIVIAL(debug)
@@ -120,7 +118,6 @@ void SimpleFFTSpectrometer<HandlerType>::process(
     kernels::detect_and_accumulate<<<1024, 1024, 0, _proc_stream>>>(channelised_ptr, detected_ptr, _nchans, _nsamps/_fft_length, _naccumulate);
 }
 
-
 template <class HandlerType>
 bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
 {
@@ -131,7 +128,6 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
         throw std::runtime_error("Received expected number of samples");
     }
     BOOST_LOG_TRIVIAL(debug) << nsamps_in_block << " samples in RawBytes block";
-
 
     // Synchronize all streams
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
@@ -144,34 +140,13 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_edd_raw_current->data()),
         block.ptr(), block.used_bytes(), cudaMemcpyHostToDevice, _h2d_stream);
 
-    /*
-    if (_first)
-    {
-        _first = false;
-        return false;
-    }*/
-
     // Guaranteed that the previous copy is completed here
     process(_edd_raw_previous, _detected_current);
-    // If this is the first pass, start processing and exit
-    /*
-    if (_second)
-    {
-        _second = false;
-        return false;
-    }*/
 
     cudaMemcpyAsync((char*) thrust::raw_pointer_cast(_detected_host_current->data()),
         (char*) thrust::raw_pointer_cast(_detected_previous->data()),
         _detected_previous->size() * sizeof(float),
         cudaMemcpyDeviceToHost, _d2h_stream);
-
-    /*
-    if (_third)
-    {
-        _third = false;
-        return false;
-    }*/
 
     //Wrap _detected_host_previous in a RawBytes object here;
     RawBytes bytes((char*) thrust::raw_pointer_cast(_detected_host_previous->data()),
@@ -183,11 +158,14 @@ bool SimpleFFTSpectrometer<HandlerType>::operator()(RawBytes& block)
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
     std::swap(_edd_raw_current, _edd_raw_previous);
 
-    if (_pass >= 30)
+    // Due to the double buffering the data the output data is only
+    // valid by the third pass through. Until that time the code
+    // should return the continue flag.
+    if (_pass < 2)
     {
-        return true;
+        ++_pass;
+        return false;
     }
-    ++_pass;
     return _handler(bytes);
 }
 

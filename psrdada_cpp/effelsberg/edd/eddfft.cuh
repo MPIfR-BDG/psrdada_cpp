@@ -68,9 +68,6 @@ private:
     HandlerType& _handler;
     cufftHandle _fft_plan;
     int _nchans;
-    bool _first;
-    bool _second;
-    bool _third;
     int _pass;
 
     thrust::device_vector<float> _edd_unpacked;
