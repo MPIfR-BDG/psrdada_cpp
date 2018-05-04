@@ -34,7 +34,16 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
         throw std::runtime_error("Number of samples is not multiple of FFT size");
     }
 
-    if (_nbits != 12)
+    int n64bit_words;
+    if (_nbits == 12)
+    {
+        n64bit_words = 3 * _nsamps / 16;
+    }
+    else if (_nbits == 8)
+    {
+        n64bit_words = _nsamps / 8;
+    }
+    else
     {
         throw std::runtime_error("Only 12-bit mode is supported");
     }
@@ -44,8 +53,6 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     cudaStreamCreate(&_d2h_stream);
 
     _nchans = _fft_length / 2 + 1;
-
-    int n64bit_words = 3 * _nsamps / 16;
     int batch = _nsamps/_fft_length;
 
     BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
@@ -91,10 +98,20 @@ void SimpleFFTSpectrometer<HandlerType>::process(
     cufftComplex* channelised_ptr = thrust::raw_pointer_cast(_channelised.data());
     char* detected_ptr = thrust::raw_pointer_cast(detected->data());
 
-    BOOST_LOG_TRIVIAL(debug) << "Unpacking 12-bit data";
-    int nblocks = digitiser_raw->size() / NTHREADS_UNPACK;
-    kernels::unpack_edd_12bit_to_float32<<< nblocks, NTHREADS_UNPACK, 0, _proc_stream>>>(
-        digitiser_raw_ptr, digitiser_unpacked_ptr, digitiser_raw->size());
+    if (_nbits == 12)
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Unpacking 12-bit data";
+        int nblocks = digitiser_raw->size() / NTHREADS_UNPACK;
+        kernels::unpack_edd_12bit_to_float32<<< nblocks, NTHREADS_UNPACK, 0, _proc_stream>>>(
+            digitiser_raw_ptr, digitiser_unpacked_ptr, digitiser_raw->size());
+    }
+    else if (_nbits == 8)
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Unpacking 8-bit data";
+        int nblocks = digitiser_raw->size() / NTHREADS_UNPACK;
+        kernels::unpack_edd_8bit_to_float32<<< nblocks, NTHREADS_UNPACK, 0, _proc_stream>>>(
+            digitiser_raw_ptr, digitiser_unpacked_ptr, digitiser_raw->size());
+    }
 
     BOOST_LOG_TRIVIAL(debug) << "Performing FFT";
     CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal*) digitiser_unpacked_ptr, channelised_ptr));
