@@ -18,6 +18,8 @@ set(psrdada_cpp_src
     src/transpose_to_dada.cpp
     src/transpose_to_dada_cli.cpp
     src/simple_file_writer.cpp
+    src/sigprocheader.cpp
+    src/psrdadaheader.cpp
    )
 
 set(psrdada_cpp_inc
@@ -36,6 +38,9 @@ set(psrdada_cpp_inc
   transpose_to_dada.hpp
   cuda_utils.hpp
   simple_file_writer.hpp
+  sigprocheader.hpp
+  psrdadaheader.hpp
+  psrdada_to_sigproc_header.hpp
   )
 
 # -- the main library target

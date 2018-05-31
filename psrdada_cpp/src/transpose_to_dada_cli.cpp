@@ -4,6 +4,7 @@
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_output_stream.hpp"
 #include "psrdada_cpp/transpose_to_dada.hpp"
+#include "psrdada_cpp/psrdada_to_sigproc_header.hpp"
 #include <memory>
 #include <fstream>
 
@@ -107,9 +108,16 @@ int main(int argc, char** argv)
 
         TransposeToDada<DadaOutputStream> transpose(nbeams,std::move(outstreams));
 
+        transpose.set_nsamples(nsamples);
+        transpose.set_nchans(nchans);
+        transpose.set_ntime(ntime);
+        transpose.set_nfreq(nfreq);
+
+        PsrDadaToSigprocHeader<decltype(transpose)> ptos(transpose);
+
         MultiLog log1("instream");
 
-        DadaInputStream<decltype(transpose)> input(input_key,log1,transpose);
+        DadaInputStream<decltype(ptos)> input(input_key,log1,ptos);
          
         input.start();
         

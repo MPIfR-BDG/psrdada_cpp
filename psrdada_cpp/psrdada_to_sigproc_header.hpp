@@ -13,7 +13,7 @@ class PsrDadaToSigprocHeader
 
 public:
     PsrDadaToSigprocHeader(HandlerType& handler);
-    ~TransposeToDada();
+    ~PsrDadaToSigprocHeader();
 
     /**
      * @brief      A header manipulation method for PSRDADA and SIGPROC
