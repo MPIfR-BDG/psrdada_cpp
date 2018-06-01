@@ -57,7 +57,12 @@ target_link_libraries (transpose_to_dada_cli ${PSRDADA_CPP_LIBRARIES})
 #dbnull
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
-install (TARGETS junkdb dbnull  transpose_to_dada_cli DESTINATION bin)
+#install (TARGETS junkdb dbnull  transpose_to_dada_cli DESTINATION bin)
 #install (FILES MathFunctions.h DESTINATION include)
+install (TARGETS ${CMAKE_PROJECT_NAME}
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
+install(FILES ${psrdada_cpp_inc} DESTINATION include/psrdada_cpp)
 
 add_subdirectory(meerkat)
