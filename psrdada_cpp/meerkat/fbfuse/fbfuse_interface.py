@@ -2,10 +2,14 @@ import logging
 import json
 import tornado
 import signal
+import time
+import copy
 from threading import Lock
 from optparse import OptionParser
 from katcp import Sensor, Message, AsyncDeviceServer, KATCPClientResource, AsyncReply
 from katcp.kattypes import request, return_reply, Int, Str, Discrete, Float
+from katportalclient import KATPortalClient
+from katpoint import Antenna, Target
 
 log = logging.getLogger("reynard.fbfuse_interface")
 
@@ -33,7 +37,7 @@ def next_power_of_two(n):
 ###################
 # Custom exceptions
 ###################
-#
+
 class ServerAllocationError(Exception):
     pass
 
@@ -43,6 +47,19 @@ class ProductLookupError(Exception):
 class ProductExistsError(Exception):
     pass
 
+class KatportalClientWrapper(object):
+    def __init__(self, host):
+        self._client = KATPortalClient('http://{host}/api/client'.format(host=host),
+            on_update_callback=None, logger=logging.getLogger('katcp'))
+
+    @tornado.gen.coroutine
+    def get_observer_string(self, antenna):
+        sensor_name = "{}_observer".format(antenna)
+        now = time.time()
+        start = now - 3600.0
+        history = yield self._client.sensor_history(
+            sensor_name, start, now, timeout_sec = 20.0)
+        raise tornado.gen.Return(history[0].value)
 
 ####################
 # Classes for communicating with and wrapping
@@ -195,6 +212,9 @@ class FbfWorkerPool(object):
         """
         return list(self._allocated)
 
+####################
+# The main CAM interface for FBFUSE
+####################
 
 class FbfMasterController(AsyncDeviceServer):
     """This is the main KATCP interface for the FBFUSE
@@ -207,7 +227,6 @@ class FbfMasterController(AsyncDeviceServer):
     VERSION_INFO = ("reynard-fbf-api", 0, 1)
     BUILD_INFO = ("reynard-fbf-implementation", 0, 1, "rc1")
     DEVICE_STATUSES = ["ok", "degraded", "fail"]
-
     def __init__(self, ip, port, dummy=True):
         """
         @brief       Construct new FbfMasterController instance
@@ -404,26 +423,41 @@ class FbfMasterController(AsyncDeviceServer):
         # of antennas that allows one to determine the number of nodes to run. Currently we
         # just assume one antennas worth of data per NIC on our servers, so two antennas per
         # node.
-        antennas = antennas_csv.split(",")
-        nantennas = len(antennas)
-        if not is_power_of_two(nantennas):
-            log.warning("Number of antennas was not a power of two. Rounding up to next power of two for resource allocation.")
-        required_servers = next_power_of_two(nantennas)//2
-
-        # This may be removed in future.
-        # Currently if _dummy is set no actual server allocation will be requested.
-        if not self._dummy:
-            try:
+        @tornado.gen.coroutine
+        def configure():
+            antennas = antennas_csv.split(",")
+            nantennas = len(antennas)
+            if not is_power_of_two(nantennas):
+                log.warning("Number of antennas was not a power of two. Rounding up to next power of two for resource allocation.")
+            required_servers = next_power_of_two(nantennas)//2
+            # This may be removed in future.
+            # Currently if _dummy is set no actual server allocation will be requested.
+            if not self._dummy:
                 servers = self._server_pool.allocate(required_servers)
-            except Exception as error:
-                return ("fail", str(error))
-        else:
-            servers = []
-        streams = json.loads(streams_json)
-        product = FbfProductController(self, product_id, antennas, n_channels, streams, proxy_name, servers)
-        self._products[product_id] = product
-        self._update_products_sensor()
-        return ("ok",)
+            else:
+                servers = []
+            streams = json.loads(streams_json)
+            kpc = KatportalClientWrapper("portal.mkat.karoo.kat.ac.za")
+            futures, observers = [],[]
+            antennas = antennas_csv.split(",")
+            for antenna in antennas:
+                log.debug("Fetching katpoint string for antenna {}".format(antenna))
+                futures.append(kpc.get_observer_string(antenna))
+            for ii,future in enumerate(futures):
+                try:
+                    observer = yield future
+                except Exception as error:
+                    print error
+                    req.inform("Error retrieving katpoint string for {}".format(antennas[ii]))
+                else:
+                    log.debug("Fetched katpoint antenna: {}".format(observer))
+                    observers.append(Antenna(observer))
+            product = FbfProductController(self, product_id, observers, n_channels, streams, proxy_name, servers)
+            self._products[product_id] = product
+            self._update_products_sensor()
+            req.reply("ok",)
+        self.ioloop.add_callback(configure)
+        raise AsyncReply
 
     @request(Str())
     @return_reply()
@@ -528,13 +562,71 @@ class FbfMasterController(AsyncDeviceServer):
 
     @request(Str())
     @return_reply()
-    def request_start_beams(self, req, product_id):
+    def request_capture_start(self, req, product_id):
         """
         @brief      Request that FBFUSE start beams streaming
 
-        @detail     Upon this call the provided coherent and incoherent beam confgurations will be evaluated
+        @detail     Upon this call the provided coherent and incoherent beam configurations will be evaluated
                     to determine if they are physical and can be met with the existing hardware. If the configurations
                     are acceptable then servers allocated to this instance will be triggered to begin production of beams.
+
+        @param      req               A katcp request object
+
+        @param      product_id        This is a name for the data product, used to track which subarray is being deconfigured.
+                                      For example "array_1_bc856M4k".
+
+        @return     katcp reply object [[[ !start-beams ok | (fail [error description]) ]]]
+        """
+        timeout = 20.0
+        start = time.time()
+        product = self._get_product(product_id)
+        @tornado.gen.coroutine
+        def start():
+            state = product._state_sensor.value()
+            if state == FbfProductController.STARTING:
+                while time.time() < start + timeout:
+                    yield tornado.gen.sleep(0.5)
+                    state = product._state_sensor.value()
+                    if state == FbfProductController.self.CAPTURING:
+                        req.reply("ok",)
+                        break
+                    elif state == FbfProductController.STARTING:
+                        continue
+                    else:
+                        req.reply("fail", "Expected product state to go from 'starting' -> "
+                            "'capturing' but it went 'starting' -> '{}'".format(state))
+                else:
+                    req.reply("fail", "Exceeded timeout on transition from 'starting' to 'capturing' state")
+            elif state == FbfProductController.CAPTURING:
+                req.reply("ok",)
+            elif state == FbfProductController.STOPPING:
+                req.reply("fail", "Product is in the process of stopping")
+            elif state == FbfProductController.IDLE:
+                product.start_beams()
+                # Here we should proxy the relevant sensors from the delay engine
+                # for the product controller up to this level
+                req.reply("ok",)
+
+        self.ioloop.add_callback(start)
+        raise AsyncReply
+
+    @request(Str())
+    @return_reply()
+    def request_provision_beams(self, req, product_id):
+        """
+        @brief      Request that FBFUSE asynchronously start beams streaming
+
+        @detail     Upon this call the provided coherent and incoherent beam configurations will be evaluated
+                    to determine if they are physical and can be met with the existing hardware. If the configurations
+                    are acceptable then servers allocated to this instance will be triggered to begin production of beams.
+                    Unlike a call to ?capture-start, ?provision-beams will not wait for completion before returning, instead
+                    it will start the process of beamformer resource alloction and compilation. To determine when the process
+                    is complete, the user must wait on the value of the product "state" sensor becoming "capturing", e.g.
+
+                    @code
+                        client.sensor['{}-state'.format(proxy_name)].wait(
+                            lambda reading: reading.value == 'capturing')
+                    @endcode
 
         @param      req               A katcp request object
 
@@ -547,16 +639,37 @@ class FbfMasterController(AsyncDeviceServer):
         @tornado.gen.coroutine
         def start():
             product.start_beams()
+
+        state = product._state_sensor.value()
+        if state != FbfProductController.IDLE:
+            return ("fail", "Can only provision beams on an idle FBF product")
+        else:
+            self.ioloop.add_callback(start)
+            return ("ok",)
+
+
+    @request(Str())
+    @return_reply()
+    def request_capture_stop(self, req, product_id):
+        """
+        @brief      Stop FBFUSE streaming
+
+        @param      product_id      This is a name for the data product, used to track which subarray is being deconfigured.
+                                    For example "array_1_bc856M4k".
+        """
+        product = self._get_product(product_id)
+        @tornado.gen.coroutine
+        def stop():
+            product.stop_beams()
             # Here we should proxy the relevant sensors from the delay engine
             # for the product controller up to this level
             req.reply("ok",)
-
-        self.ioloop.add_callback(start)
+        self.ioloop.add_callback(stop)
         raise AsyncReply
 
-    @request(Str(), Float(), Float(), Str())
+    @request(Str(), Str())
     @return_reply(Str())
-    def request_add_beam(self, req, product_id, ra, dec, source_name):
+    def request_add_beam(self, req, product_id, target):
         """
         @brief      Configure the parameters of one beam
 
@@ -568,20 +681,17 @@ class FbfMasterController(AsyncDeviceServer):
         @param      product_id      This is a name for the data product, used to track which subarray is being deconfigured.
                                     For example "array_1_bc856M4k".
 
-        @param      ra              The Right Ascension for the beam in degrees
-
-        @param      dec             The Declination for the beam in degrees
-
-        @param      source_name     An optional user identifier for this beam (e.g. a pulsar name)
+        @param      target          A KATPOINT target string
 
         @return     katcp reply object [[[ !add-beam ok | (fail [error description]) ]]]
         """
-        beam = self._get_product(product_id).add_beam(ra, dec, source_name)
+        target = Target(target)
+        beam = self._get_product(product_id).add_beam(target)
         return ("ok", beam.idx)
 
-    @request(Str(), Float(), Float(), Str(), Int(), Float(), Float(), Float())
+    @request(Str(), Str(), Int(), Float(), Float(), Float())
     @return_reply(Str())
-    def request_add_tiling(self, req, product_id, ra, dec, source_name, nbeams, reference_frequency, overlap, epoch):
+    def request_add_tiling(self, req, product_id, target, nbeams, reference_frequency, overlap, epoch):
         """
         @brief      Configure the parameters of a static beam tiling
 
@@ -596,11 +706,7 @@ class FbfMasterController(AsyncDeviceServer):
         @param      product_id      This is a name for the data product, used to track which subarray is being deconfigured.
                                     For example "array_1_bc856M4k".
 
-        @param      ra              The Right Ascension for the beam in degrees
-
-        @param      dec             The Declination for the beam in degrees
-
-        @param      source_name     An optional user identifier for this tiling (e.g. a survey pointing name)
+        @param      target          A KATPOINT target string
 
         @param      nbeams          The number of beams in this tiling pattern.
 
@@ -625,12 +731,13 @@ class FbfMasterController(AsyncDeviceServer):
         @return     katcp reply object [[[ !add-tiling ok | (fail [error description]) ]]]
         """
         product = self._get_product(product_id)
-        tiling = product.add_tiling(ra, dec, source_name, nbeams, reference_frequency, overlap, epoch)
+        target = Target(target)
+        tiling = product.add_tiling(target, nbeams, reference_frequency, overlap, epoch)
         return ("ok", tiling.idxs())
 
-    @request(Str(), Float(), Float(), Str(), Int(), Float(), Float(), Float())
+    @request(Str(), Str(), Int(), Float(), Float(), Float())
     @return_reply(Str())
-    def request_add_dynamic_tiling(self, req, product_id, ra, dec, source_name, nbeams, reference_frequency, overlap, tolerance):
+    def request_add_dynamic_tiling(self, req, product_id, target, nbeams, reference_frequency, overlap, tolerance):
         """
         @brief      Configure the parameters of one beam
 
@@ -643,11 +750,9 @@ class FbfMasterController(AsyncDeviceServer):
         @param      product_id        This is a name for the data product, used to track which subarray is being deconfigured.
                                       For example "array_1_bc856M4k".
 
-        @param      ra              The Right Ascension for the beam in degrees
+        @param      target          A KATPOINT target string
 
-        @param      dec             The Declination for the beam in degrees
-
-        @param      source_name     An optional user identifier for this name (e.g. a pulsar name)
+        @param      nbeams          The number of beams in this tiling pattern.
 
         @param      reference_frequency     The reference frequency at which to calculate the synthesised beam shape,
                                             and thus the tiling pattern. Typically this would be chosen to be the
@@ -670,6 +775,7 @@ class FbfMasterController(AsyncDeviceServer):
         @return     katcp reply object [[[ !add-dynamic-tiling ok | (fail [error description]) ]]]
         """
         product = self._get_product(product_id)
+        target = Target(target)
         tiling = product.add_tiling(ra, dec, source_name, nbeams, reference_frequency, overlap, epoch)
         return ("ok", tiling.idxs())
 
@@ -693,33 +799,94 @@ class FbfMasterController(AsyncDeviceServer):
             req.inform(as_json)
         return ("ok",len(self._products))
 
+    @request(Str())
+    @return_reply()
+    def request_set_default_target_configuration(self, req, product_id, target):
+        """
+        @brief      Set the configuration of FBFUSE from the FBFUSE configuration server
+
+        @param      product_id      This is a name for the data product, used to track which subarray is being deconfigured.
+                                    For example "array_1_bc856M4k".
+
+        @param      target          A KATPOINT target string
+        """
+        product = self._get_product(product_id)
+        target = katpoint.Target(target)
+        if not product.capturing:
+            raise Exception("Product must be capturing before a target confiugration can be set.")
+        product.reset_beams()
+        # TBD: Here we connect to some database and request the default configurations
+        # For example this may return secondary target in the FoV
+        #
+        # As a default the current system will put one beam directly on target and
+        # the rest of the beams in a static tiling pattern around this target
+        now = time.time()
+        nbeams = product._beam_manager.nbeams
+        product.add_tiling(target, nbeams-1, 1.4e9, 0.5, now)
+        product.add_beam(target)
+        return ("ok",)
+
+    @request(Str())
+    @return_reply()
+    def request_set_default_sb_configuration(self, req, product_id, sb_id):
+        """
+        @brief      Set the configuration of FBFUSE from the FBFUSE configuration server
+
+        @param      product_id      This is a name for the data product, used to track which subarray is being deconfigured.
+                                    For example "array_1_bc856M4k".
+
+        @param      sb_id           The schedule block ID. Decisions of the configuarion of FBFUSE will be made dependent on
+                                    the configuration of the current subarray, the primary and secondary science projects
+                                    active and the targets expected to be visted during the execution of the schedule block.
+        """
+        product = self._get_product(product_id)
+        if product.capturing:
+            raise Exception("Cannot reconfigure a currently capturing instance.")
+        product.configure_coherent_beams(400, product._katpoint_antennas, 1, 16)
+        product.configure_incoherent_beam(product._katpoint_antennas, 1, 16)
+        now = time.time()
+        nbeams = product._beam_manager.nbeams
+        product.add_tiling(target, nbeams-1, 1.4e9, 0.5, now)
+        product.add_beam(target)
+        return ("ok",)
+
+####################
+# Classes representing the different
+# beams and tilings that can be provided
+# by FBFUSE
+####################
+
+DEFAULT_KATPOINT_TARGET = "unset, radec, 0, 0"
 
 class Beam(object):
     """Wrapper class for a single beam to be produced
     by FBFUSE"""
-    def __init__(self, idx, ra=0, dec=0, source_name=""):
+    def __init__(self, idx, target=DEFAULT_KATPOINT_TARGET):
         """
         @brief   Create a new Beam object
 
         @params   idx   a unique identifier for this beam.
 
-        @params   ra    The Right Ascension in degrees (epoch?)
-
-        @params   dec   The Declination in degrees (epoch?)
-
-        @params   source_name   The source name for this beam (can be any string)
+        @param      target          A KATPOINT target object
         """
         self.idx = idx
-        self.source_name = source_name
-        self.ra = ra
-        self.dec = dec
+        self._target = target
         self._observers = set()
+
+    @property
+    def target(self):
+        return self._target
+
+    @target.setter
+    def target(self, new_target):
+        self._target = new_target
+        self.notify()
 
     def notify(self):
         """
         @brief  Notify all observers of a change to the beam parameters
         """
-        for observers in self._observers:
+        for observer in self._observers:
             observer(self)
 
     def register_observer(self, func):
@@ -742,27 +909,21 @@ class Beam(object):
         """
         @brief   Reset the beam to default parameters
         """
-        self.ra = 0
-        self.dec = 0
-        self.source_name = ""
+        self._target = Target(DEFAULT_KATPOINT_TARGET)
 
     def __repr__(self):
-        return "{},{},{},{}".format(
-            self.idx, self.ra, self.dec, self.source_name)
+        return "{}, {}".format(
+            self.idx, self.target.format_katcp())
 
 
 class Tiling(object):
     """Wrapper class for a collection of beams in a tiling pattern
     """
-    def __init__(self, ra, dec, source_name, reference_frequency, overlap):
+    def __init__(self, target, reference_frequency, overlap):
         """
         @brief   Create a new tiling object
 
-        @param      ra              The Right Ascension for the beam in degrees (epoch)
-
-        @param      dec             The Declination for the beam in degrees (epoch)
-
-        @param      source_name     An optional user identifier for this name (e.g. a pulsar name)
+        @param      target          A KATPOINT target object
 
         @param      reference_frequency     The reference frequency at which to calculate the synthesised beam shape,
                                             and thus the tiling pattern. Typically this would be chosen to be the
@@ -777,9 +938,7 @@ class Tiling(object):
                                     in multiples of the FWHM of the beam.]
         """
         self._beams = []
-        self.ra = ra
-        self.dec = dec
-        self.source_name = source_name
+        self.target = target
         self.reference_frequency = reference_frequency
         self.overlap = overlap
 
@@ -813,15 +972,11 @@ class Tiling(object):
 class DynamicTiling(Tiling):
     """Subclass of Tiling that provide mechanisms
     for periodically updating the tiling pattern"""
-    def __init__(self, ra, dec, source_name, reference_frequency, overlap, tolerance):
+    def __init__(self, target_reference_frequency, overlap, tolerance):
         """
         @brief   Create a new dynamic tiling object
 
-        @param      ra              The Right Ascension for the beam in degrees (epoch)
-
-        @param      dec             The Declination for the beam in degrees (epoch)
-
-        @param      source_name     An optional user identifier for this name (e.g. a pulsar name)
+        @param      target          A KATPOINT target object
 
         @param      reference_frequency     The reference frequency at which to calculate the synthesised beam shape,
                                             and thus the tiling pattern. Typically this would be chosen to be the
@@ -841,7 +996,7 @@ class DynamicTiling(Tiling):
                                     sounds nebulous and loose, thats because it is. A value of 0.1 corresponds to a 10%
                                     change in tiling efficency.
         """
-        super(DynamicTiling, self).__init__(ra, dec, source_name, reference_frequency, overlap)
+        super(DynamicTiling, self).__init__(target, reference_frequency, overlap)
         self.tolerance = tolerance
         self._update_cycle = 30.0
         self._update_callback = None
@@ -866,7 +1021,7 @@ class BeamManager(object):
         """
         self._nbeams = nbeams
         self._antennas = antennas
-        self._beam = [Beam("cfbf%05d"%(i)) for i in range(self._nbeams)]
+        self._beams = [Beam("cfbf%05d"%(i)) for i in range(self._nbeams)]
         self.reset()
 
     @property
@@ -883,34 +1038,28 @@ class BeamManager(object):
 
         @note   All tiling will be lost on this call and must be remade for subsequent observations
         """
-        self._free_beams = self.get_beams()
-        for beam in self._free_beams:
+        for beam in self._beams:
             beam.reset()
+        self._free_beams = copy.copy(self._beams)
         self._allocated_beams = []
         self._tilings = []
         self._dynamic_tilings = []
 
-    def __add_beam(self, ra, dec, source_name):
+    def __add_beam(self, target):
         beam = self._free_beams.pop(0)
-        beam.ra = ra
-        beam.dec = dec
-        beam.source_name = source_name
+        beam.target = target
         self._allocated_beams.append(beam)
         return beam
 
-    def add_beam(self, ra, dec, source_name):
+    def add_beam(self, target):
         """
         @brief   Specify the parameters of one managed beam
 
-        @param      ra              The Right Ascension for the beam in degrees (epoch)
-
-        @param      dec             The Declination for the beam in degrees (epoch)
-
-        @param      source_name     An optional user identifier for this name (e.g. a pulsar name)
+        @param      target          A KATPOINT target object
 
         @return     Returns the allocated Beam object
         """
-        beam = self.__add_beam(ra, dec, source_name)
+        beam = self.__add_beam(target)
         return beam
 
     def __make_tiling(self, nbeams, tiling_type, *args):
@@ -923,15 +1072,11 @@ class BeamManager(object):
             self._allocated_beams.append(beam)
         return tiling
 
-    def add_tiling(self, ra, dec, source_name, nbeams, reference_frequency, overlap):
+    def add_tiling(self, target, nbeams, reference_frequency, overlap):
         """
         @brief   Add a tiling to be managed
 
-        @param      ra              The Right Ascension for the beam in degrees (epoch)
-
-        @param      dec             The Declination for the beam in degrees (epoch)
-
-        @param      source_name     An optional user identifier for this name (e.g. a pulsar name)
+        @param      target          A KATPOINT target object
 
         @param      reference_frequency     The reference frequency at which to calculate the synthesised beam shape,
                                             and thus the tiling pattern. Typically this would be chosen to be the
@@ -947,20 +1092,16 @@ class BeamManager(object):
 
         @returns    The created Tiling object
         """
-        tiling = self.__make_tiling(nbeams, Tiling, ra, dec, source_name,
+        tiling = self.__make_tiling(nbeams, Tiling, target,
             reference_frequency, overlap)
         self._tilings.append(tiling)
         return tiling
 
-    def add_dynamic_tiling(self, ra, dec, source_name, nbeams, reference_frequency, overlap, tolerance):
+    def add_dynamic_tiling(self, target, nbeams, reference_frequency, overlap, tolerance):
         """
         @brief   Create a new dynamic tiling object
 
-        @param      ra              The Right Ascension for the beam in degrees (epoch)
-
-        @param      dec             The Declination for the beam in degrees (epoch)
-
-        @param      source_name     An optional user identifier for this name (e.g. a pulsar name)
+        @param      target          A KATPOINT target object
 
         @param      reference_frequency     The reference frequency at which to calculate the synthesised beam shape,
                                             and thus the tiling pattern. Typically this would be chosen to be the
@@ -982,7 +1123,7 @@ class BeamManager(object):
 
         @returns    The created DynamicTiling object
         """
-        tiling = self.__make_tiling(nbeams, DynamicTiling, ra, dec, source_name,
+        tiling = self.__make_tiling(nbeams, DynamicTiling, target,
             reference_frequency, overlap, tolerance)
         self._dynamic_tilings.append(tiling)
         return tiling
@@ -993,6 +1134,11 @@ class BeamManager(object):
         """
         return self._allocated_beams + self._free_beams
 
+
+####################
+# Classes for wrapping an individual
+# configuration of FBFUSE (i.e. an FBF product)
+####################
 
 class DelayEngine(AsyncDeviceServer):
     """A server for maintining delay models used
@@ -1014,9 +1160,6 @@ class DelayEngine(AsyncDeviceServer):
         """
         self._beam_manager = beam_manager
         super(DelayEngine, self).__init__(ip,port)
-
-    def _beam_to_sensor_string(self, beam):
-        return "{ra},{dec},{source_name}".format(**vars(beam))
 
     def setup_sensors(self):
         """
@@ -1084,21 +1227,31 @@ class FbfProductController(object):
     """
     Wrapper class for an FBFUSE product.
     """
+    STATES = ["idle", "starting", "stopping", "capturing"]
+    IDLE, STARTING, STOPPING, CAPTURING = STATES
+
     def __init__(self, parent, product_id, antennas, n_channels, streams, proxy_name, servers):
         """
         @brief      Construct new instance
 
+        @param      parent            The parent FbfMasterController instance
+
         @param      product_id        The name of the product
 
-        @param      antennas_csv      A list of antenna names
+        @param      antennas          A list of katpoint.Antenna objects
 
         @param      n_channels        The integer number of frequency channels provided by the CBF.
 
         @param      streams           A dictionary containing config keys and values describing the streams.
+
+        @param      proxy_name        The name of the proxy associated with this subarray (used as a sensor prefix)
+
+        @param      servers           A list of FbfWorkerServer instances allocated to this product controller
         """
         self._parent = parent
         self._product_id = product_id
-        self._antennas = antennas
+        self._antennas = ",".join([_.name for _ in antennas])
+        self._katpoint_antennas = antennas
         self._n_channels = n_channels
         self._streams = streams
         self._proxy_name = proxy_name
@@ -1113,17 +1266,31 @@ class FbfProductController(object):
         self.teardown_sensors()
 
     def info(self):
+        """
+        @brief    Return a metadata dictionary describing this product controller
+        """
         out = {
-        "antennas":self._antennas,
-        "nservers":len(self.servers),
-        "capturing":self.capturing,
-        "streams":self._streams,
-        "nchannels":self._n_channels,
-        "proxy_name":self._proxy_name
+            "antennas":self._antennas,
+            "nservers":len(self.servers),
+            "capturing":self.capturing,
+            "streams":self._streams,
+            "nchannels":self._n_channels,
+            "proxy_name":self._proxy_name
         }
         return out
 
     def add_sensor(self, sensor):
+        """
+        @brief    Add a sensor to the parent object
+
+        @note     This method is used to wrap calls to the add_sensor method
+                  on the parent FbfMasterController instance. In order to
+                  disambiguate between sensors from describing different products
+                  the associated proxy name is used as sensor prefix. For example
+                  the "servers" sensor will be seen by clients connected to the
+                  FbfMasterController server as "<proxy_name>-servers" (e.g.
+                  "FBFUSE_1-servers").
+        """
         prefix = "{}-".format(self._proxy_name)
         if sensor.name.startswith(prefix):
             self._parent.add_sensor(sensor)
@@ -1133,6 +1300,28 @@ class FbfProductController(object):
         self._managed_sensors.append(sensor)
 
     def setup_sensors(self):
+        """
+        @brief    Setup the default KATCP sensors.
+
+        @note     As this call is made only upon an FBFUSE configure call a mass inform
+                  is required to let connected clients know that the proxy interface has
+                  changed.
+        """
+        self._state_sensor = Sensor.discrete(
+            "state",
+            description = "Denotes the state of this FBF instance",
+            params = self.STATES,
+            default = self.IDLE,
+            initial_status = Sensor.UNKNOWN)
+        self.add_sensor(self._state_sensor)
+
+        self._available_antennas_sensor = Sensor.string(
+            "available-antennas",
+            description = "The antennas that are currently available for beamforming",
+            default = self._antennas,
+            initial_status = Sensor.NOMINAL)
+        self.add_sensor(self._available_antennas_sensor)
+
         self._cbc_nbeams_sensor = Sensor.integer(
             "coherent-beam-count",
             description = "The number of coherent beams that this FBF instance can currently produce",
@@ -1155,7 +1344,7 @@ class FbfProductController(object):
         self.add_sensor(self._cbc_fscrunch_sensor)
 
         self._cbc_antennas_sensor = Sensor.string(
-            "coherent-beam-antennas",
+            " v",
             description = "The antennas that will be used when producing coherent beams",
             default = self._antennas,
             initial_status = Sensor.NOMINAL)
@@ -1189,13 +1378,6 @@ class FbfProductController(object):
             initial_status = Sensor.NOMINAL)
         self.add_sensor(self._ibc_antennas_sensor)
 
-        self._capturing_sensor = Sensor.boolean(
-            "capturing",
-            description = "Denotes whether this FBF instance is currently producing beams",
-            default = False,
-            initial_status = Sensor.UNKNOWN)
-        self.add_sensor(self._capturing_sensor)
-
         self._servers_sensor = Sensor.string(
             "servers",
             description = "The server instances currently allocated to this product",
@@ -1212,6 +1394,12 @@ class FbfProductController(object):
         self._parent.mass_inform(Message.inform('interface-changed'))
 
     def teardown_sensors(self):
+        """
+        @brief    Remove all sensors created by this product from the parent server.
+
+        @note     This method is required for cleanup to stop the FBF sensor pool
+                  becoming swamped with unused sensors.
+        """
         for sensor in self._managed_sensors:
             self._parent.remove_sensor(sensor)
         self._parent.mass_inform(Message.inform('interface-changed'))
@@ -1222,18 +1410,49 @@ class FbfProductController(object):
 
     @property
     def capturing(self):
-        return self._capturing
+        return self._state_sensor.value() == self.CAPTURING
 
-    @capturing.setter
-    def capturing(self, value):
-        if not value in [True, False]:
-            raise Exception("capturing must have a boolean value")
-        self._capturing = value
-        self._capturing_sensor.set_value(value)
+    @property
+    def idle(self):
+        return self._state_sensor.value() == self.IDLE
+
+    @property
+    def starting(self):
+        return self._state_sensor.value() == self.STARTING
+
+    @property
+    def stopping(self):
+        return self._state_sensor.value() == self.STOPPING
+
+    def _verify_antennas(self, antennas):
+        """
+        @brief      Verify that a set of antennas is available to this instance.
+
+        @param      antennas   A CSV list of antenna names
+        """
+        antennas_set = set([ant.name for ant in self._katpoint_antennas])
+        requested_antennas = set(antennas)
+        return requested_antennas.issubset(antennas_set)
 
     def configure_coherent_beams(self, nbeams, antennas, fscrunch, tscrunch):
-        if self.capturing:
-            raise Exception("Configuration calls must be made before start_beams is called")
+        """
+        @brief      Set the configuration for coherent beams producted by this instance
+
+        @param      nbeams          The number of beams that will be produced for the provided product_id
+
+        @param      antennas        A comma separated list of physical antenna names. Only these antennas will be used
+                                    when generating coherent beams (e.g. m007,m008,m009). The antennas provided here must
+                                    be a subset of the antennas in the current subarray. If not an exception will be
+                                    raised.
+
+        @param      fscrunch        The number of frequency channels to integrate over when producing coherent beams.
+
+        @param      tscrunch        The number of time samples to integrate over when producing coherent beams.
+        """
+        if not self.idle:
+            raise Exception("Configuration calls can only be made on a product in an idle state")
+        if not self._verify_antennas(antennas):
+            raise Exception("Requested antennas are not a subset of the current subarray")
         self._cbc_nbeams_sensor.set_value(nbeams)
         #need a check here to determine if this is a subset of the subarray antennas
         self._cbc_fscrunch_sensor.set_value(fscrunch)
@@ -1241,22 +1460,40 @@ class FbfProductController(object):
         self._cbc_antennas_sensor.set_value(antennas)
 
     def configure_incoherent_beam(self, antennas, fscrunch, tscrunch):
-        if self.capturing:
-            raise Exception("Configuration calls must be made before start_beams is called")
+        """
+        @brief      Set the configuration for incoherent beams producted by this instance
+
+        @param      antennas        A comma separated list of physical antenna names. Only these antennas will be used
+                                    when generating incoherent beams (e.g. m007,m008,m009). The antennas provided here must
+                                    be a subset of the antennas in the current subarray. If not an exception will be
+                                    raised.
+
+        @param      fscrunch        The number of frequency channels to integrate over when producing incoherent beams.
+
+        @param      tscrunch        The number of time samples to integrate over when producing incoherent beams.
+        """
+        if not self.idle:
+            raise Exception("Configuration calls can only be made on a product in an idle state")
+        if not self._verify_antennas(antennas):
+            raise Exception("Requested antennas are not a subset of the current subarray")
         #need a check here to determine if this is a subset of the subarray antennas
         self._ibc_fscrunch_sensor.set_value(fscrunch)
         self._ibc_tscrunch_sensor.set_value(tscrunch)
         self._ibc_antennas_sensor.set_value(antennas)
 
     def _beam_to_sensor_string(self, beam):
-        return "{ra},{dec},{source_name}".format(**vars(beam))
+        return beam.target.format_katcp()
 
     def start_beams(self):
         """
-        @brief      start_beams
+        @brief      Start the beamformer servers streaming
+
+        @detail     This method evaluates the current configuration creates a new DelayEngine
+                    and passes a start call to all allocated servers.
         """
-        if self.capturing:
-            raise Exception("Beam streaming has already been started")
+        if not self.idle:
+            raise Exception("Beams can only be started from an IDLE state")
+        self._state_sensor.set_value(self.STARTING)
         self._beam_manager = BeamManager(self._cbc_nbeams_sensor.value(), self._cbc_antennas_sensor.value())
         self._delay_engine = DelayEngine("127.0.0.1", 0, self._beam_manager)
         self._delay_engine.start()
@@ -1280,35 +1517,91 @@ class FbfProductController(object):
                 description="R.A. (deg), declination (deg) and source name for coherent beam with ID {}".format(beam.idx),
                 default=self._beam_to_sensor_string(beam),
                 initial_status=Sensor.UNKNOWN)
-            def updater(beam):
-                sensor.set_value(self._beam_to_sensor_string(beam))
-            beam.register_observer(updater)
+            beam.register_observer(lambda beam, sensor=sensor:
+                sensor.set_value(self._beam_to_sensor_string(beam)))
             self._beam_sensors.append(sensor)
             self.add_sensor(sensor)
-        self.capturing = True
+        self._capturing = True
+        self._state_sensor.set_value(self.CAPTURING)
         self._parent.mass_inform(Message.inform('interface-changed'))
 
     def stop_beams(self):
+        """
+        @brief      Stops the beamformer servers streaming.
+        """
         if not self.capturing:
             return
+        self._state_sensor.set_value(self.STOPPING)
         for server in self._servers:
             #yield server.req.deconfigure()
             pass
+        self._state_sensor.set_value(self.IDLE)
 
-    def add_beam(self, ra, dec, source_name):
+    def add_beam(self, target):
+        """
+        @brief      Specify the parameters of one managed beam
+
+        @param      target      A KATPOINT target object
+
+        @return     Returns the allocated Beam object
+        """
         if not self.capturing:
             raise Exception("Beam configurations should be specified after a call to start_beams")
-        return self._beam_manager.add_beam(ra, dec, source_name)
+        return self._beam_manager.add_beam(target)
 
 
-    def add_tiling(self, ra, dec, source_name, number_of_beams, reference_frequency, overlap, epoch):
+    def add_tiling(self, target, number_of_beams, reference_frequency, overlap, epoch):
+        """
+        @brief   Add a tiling to be managed
+
+        @param      target      A KATPOINT target object
+
+        @param      reference_frequency     The reference frequency at which to calculate the synthesised beam shape,
+                                            and thus the tiling pattern. Typically this would be chosen to be the
+                                            centre frequency of the current observation.
+
+        @param      overlap         The desired overlap point between beams in the pattern. The overlap defines
+                                    at what power point neighbouring beams in the tiling pattern will meet. For
+                                    example an overlap point of 0.1 corresponds to beams overlapping only at their
+                                    10%-power points. Similarly a overlap of 0.5 corresponds to beams overlapping
+                                    at their half-power points. [Note: This is currently a tricky parameter to use
+                                    when values are close to zero. In future this may be define in sigma units or
+                                    in multiples of the FWHM of the beam.]
+
+        @returns    The created Tiling object
+        """
         if not self.capturing:
             raise Exception("Tiling configurations should be specified after a call to start_beams")
-        tiling = self._beam_manager.add_tiling(ra, dec, source_name, number_of_beams, reference_frequency, overlap)
+        tiling = self._beam_manager.add_tiling(target, number_of_beams, reference_frequency, overlap)
         #tiling.generate(epoch)
         return tiling
 
     def add_dynamic_tiling(self, ra, dec, source_name, number_of_beams, reference_frequency, overlap, tolerance):
+        """
+        @brief   Create a new dynamic tiling object
+
+        @param      target      A KATPOINT target object
+
+        @param      reference_frequency     The reference frequency at which to calculate the synthesised beam shape,
+                                            and thus the tiling pattern. Typically this would be chosen to be the
+                                            centre frequency of the current observation.
+
+        @param      overlap         The desired overlap point between beams in the pattern. The overlap defines
+                                    at what power point neighbouring beams in the tiling pattern will meet. For
+                                    example an overlap point of 0.1 corresponds to beams overlapping only at their
+                                    10%-power points. Similarly a overlap of 0.5 corresponds to beams overlapping
+                                    at their half-power points. [Note: This is currently a tricky parameter to use
+                                    when values are close to zero. In future this may be define in sigma units or
+                                    in multiples of the FWHM of the beam.]
+
+        @param      tolerance       The tolerance criterion for triggering a re-tiling of the beam pattern. The tolerance
+                                    is based around the percentage change in tiling efficiency. The tiling efficiency is
+                                    calculated based on a combined measure of beam separation and covariance. If this all
+                                    sounds nebulous and loose, thats because it is. A value of 0.1 corresponds to a 10%
+                                    change in tiling efficency.
+
+        @returns    The created DynamicTiling object
+        """
         if not self.capturing:
             raise Exception("Tiling configurations should be specified after a call to start_beams")
         tiling = self._beam_manager.add_tiling(ra, dec, source_name, number_of_beams, reference_frequency, overlap, tolerance)
@@ -1316,10 +1609,14 @@ class FbfProductController(object):
         return tiling
 
     def reset_beams(self):
+        """
+        @brief  reset and deallocate all beams and tilings managed by this instance
+
+        @note   All tiling will be lost on this call and must be remade for subsequent observations
+        """
         if not self.capturing:
             raise Exception("Beam reset can only be performed after a call to start_beams")
         self._beam_manager.reset()
-
 
 
 @tornado.gen.coroutine
@@ -1344,7 +1641,7 @@ def main():
     logger = logging.getLogger('reynard')
     logging.basicConfig(format=FORMAT)
     logger.setLevel(opts.log_level.upper())
-    logging.getLogger('katcp').setLevel(opts.log_level.upper())
+    logging.getLogger('katcp').setLevel('INFO')
     ioloop = tornado.ioloop.IOLoop.current()
     log.info("Starting FbfMasterController instance")
     server = FbfMasterController(opts.host, opts.port, dummy=opts.dummy)
@@ -1353,11 +1650,10 @@ def main():
     def start_and_display():
         server.start()
         log.info("Listening at {0}, Ctrl-C to terminate server".format(server.bind_address))
+
     ioloop.add_callback(start_and_display)
     ioloop.start()
 
 if __name__ == "__main__":
     main()
-
-
 
