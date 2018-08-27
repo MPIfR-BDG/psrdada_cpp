@@ -7,19 +7,22 @@ namespace psrdada_cpp
 {
     
     template<class String>
-    void SigprocHeader::header_write(RawBytes& block, String str)
+    void SigprocHeader::header_write(char*& ptr, String str)
     {
         std::string s = str;
         int len = s.size();
-        std::copy((char*)&len,(char*)&len + sizeof(len),block.ptr());
-        std::copy(str.begin(),str.end(),block.ptr());
+        std::memcpy(ptr,(char*)&len,sizeof(len));
+	ptr += sizeof(len);
+        std::copy(str.begin(),str.end(),ptr);
+	ptr += sizeof(str);
     }
     
     template<class String, typename NumericT>
-    void SigprocHeader::header_write(RawBytes& block, String name, NumericT val)
+    void SigprocHeader::header_write(char*& ptr, String name, NumericT val)
     {
-        header_write<String>(block,name);
-        std::copy((char*)&val, (char*)&val + sizeof(val),block.ptr());
+        header_write<String>(ptr,name);
+        std::memcpy(ptr,(char*)&val,sizeof(val));
+	ptr += sizeof(val);
     }
 
 } // namnespace psrdada_cpp 

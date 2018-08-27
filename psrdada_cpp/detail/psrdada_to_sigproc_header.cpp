@@ -20,19 +20,19 @@ namespace psrdada_cpp {
     template <class HandlerType>
     void PsrDadaToSigprocHeader<HandlerType>::init(RawBytes& block)
     {
-    	/* Do the psrdada to sigproc conversion here */
-        SigprocHeader h;
+	SigprocHeader h;
         PsrDadaHeader ph;
         ph.from_bytes(block);
-        //Not sure if overwriting works--KR
-        h.write_header(block,ph);
-        _handler.init(block);
+	char* new_ptr = new char[block.total_bytes()];
+	RawBytes new_block(new_ptr,block.total_bytes(),std::size_t(0));
+        h.write_header(new_block,ph);
+        _handler.init(new_block);
     }
 
     template <class HandlerType>
     bool PsrDadaToSigprocHeader<HandlerType>::operator()(RawBytes& block)
     {
-    	_handler(block);
+	_handler(block);
         return false;
     }
  

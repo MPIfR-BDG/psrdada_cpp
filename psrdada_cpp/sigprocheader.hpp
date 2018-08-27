@@ -48,13 +48,13 @@ class SigprocHeader
          * @brief write string to the header
          */ 
         template<class String>
-        void header_write(RawBytes& block, String str); 
+        void header_write(char*& ptr, String str); 
  
         /*
          * @brief write a value to the stream
          */
         template<class String, typename NumericT>
-        void header_write(RawBytes& block, String name, NumericT val); 
+        void header_write(char*& ptr, String name, NumericT val); 
 
 };
 

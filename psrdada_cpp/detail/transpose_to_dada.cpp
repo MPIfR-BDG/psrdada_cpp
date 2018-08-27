@@ -44,7 +44,7 @@ namespace psrdada_cpp {
                 RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq),std::size_t(0));
                 transpose::do_transpose(block,transpose,_nchans,_nsamples,_ntime,_nfreq,ii);
                 (*_handler[ii])(transpose);
-           }));
+	    }));
 
         }
 
