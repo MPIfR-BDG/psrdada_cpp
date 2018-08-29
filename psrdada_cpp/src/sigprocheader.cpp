@@ -43,7 +43,6 @@ namespace psrdada_cpp
         header_write<std::string,float>(ptr,"tstart",ph.tstart());
         header_write<std::string,double>(ptr,"tsamp",ph.tsamp());
         header_write<std::string>(ptr,"HEADER_END");
-	block.used_bytes(block.total_bytes());
     }
 
 } // namespace psrdada_cpp

@@ -11,36 +11,40 @@ namespace transpose{
      * of SPEAD2 packets. This can change in time
      */  
 
-    void do_transpose(RawBytes& transposed_data, RawBytes& input_data,std::uint32_t nchans, std::uint32_t nsamples, std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum)
+    void do_transpose(RawBytes& transposed_data, RawBytes& input_data,std::uint32_t nchans, std::uint32_t nsamples, std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum, std::uint32_t nbeams, std::uint32_t ngroups)
     {
-        std::uint32_t j,k,l,m;
+        std::uint32_t j,k,l,m,n;
         std::uint32_t a =0;
 
-        for (j =0; j < nsamples; j++)
-        {
-            for (k = 0; k < ntime ; k++)
-            {
+	for (n =0; n < ngroups; n++)
+	{
 
-                for (l = 0; l < nfreq ; l++)
-                {
+        	for (j =0; j < nsamples; j++)
+       		{
+            		for (k = 0; k < ntime ; k++)
+            		{
 
-
-                    for (m=0;m < nchans ; m++)
-                    {
-
-                        transposed_data.ptr()[a] = input_data.ptr()[m + ntime * nchans * nsamples * l + nchans * (j * ntime + k) + nsamples * nchans * ntime* nfreq * beamnum];
-                        a++;
-
-                    }
+                		for (l = 0; l < nfreq ; l++)
+                		{
 
 
-                }
+                    			for (m=0;m < nchans ; m++)
+                    			{
+                        			transposed_data.ptr()[a] = input_data.ptr()[m + ntime * nchans * nsamples * l + nchans * (j * ntime + k) + nsamples * nchans * ntime* nfreq * beamnum + ntime * nchans * nsamples * nfreq * nbeams * n];
+                        			a++;
+
+                    			}
 
 
-            }
+                		}		
 
-       }
+
+            		}
+
+       		}
         
+    	}
+	
     }
 
 /* Setters and Getters */

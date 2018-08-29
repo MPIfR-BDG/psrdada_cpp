@@ -26,6 +26,7 @@ namespace psrdada_cpp {
 	char* new_ptr = new char[block.total_bytes()];
 	RawBytes new_block(new_ptr,block.total_bytes(),std::size_t(0));
         h.write_header(new_block,ph);
+	new_block.used_bytes(new_block.total_bytes());
         _handler.init(new_block);
     }
 

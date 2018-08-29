@@ -1,6 +1,5 @@
 #include "psrdada_cpp/transpose_to_dada.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
-#include <thread>
 
 namespace psrdada_cpp {
 
@@ -12,6 +11,7 @@ namespace psrdada_cpp {
     , _nsamples(64)
     , _ntime(64)
     , _nfreq(32)
+    , _ngroups(10)
     {
     }
 
@@ -35,24 +35,16 @@ namespace psrdada_cpp {
     {
       
         std::uint32_t ii;
-        std::vector<std::thread> threads;
         for(ii=0; ii< _numbeams; ii++)
         {
-            threads.emplace_back(std::thread([&]()
-            {
-                char* o_data = new char[_nchans*_nsamples*_ntime*_nfreq];
-                RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq),std::size_t(0));
-                transpose::do_transpose(block,transpose,_nchans,_nsamples,_ntime,_nfreq,ii);
-                (*_handler[ii])(transpose);
-	    }));
+		char* o_data = new char[_nchans*_nsamples*_ntime*_nfreq*_ngroups];
+		RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq*_ngroups),std::size_t(0));
+		transpose::do_transpose(block,transpose,_nchans,_nsamples,_ntime,_nfreq,ii,_numbeams,_ngroups);
+		std::cout << "Transpose done" << "\n";
+		transpose.used_bytes(transpose.total_bytes());
+		(*_handler[ii])(transpose);
 
-        }
-
-        for (ii=0; ii< _numbeams; ii++)
-        {
-            threads[ii].join();
-        }
-
+	}
         return false;
     }
  
@@ -60,6 +52,18 @@ namespace psrdada_cpp {
     void TransposeToDada<HandlerType>::set_nchans(const int nchans)
     {
         _nchans = nchans;
+    }
+
+    template <class HandlerType>
+    void TransposeToDada<HandlerType>::set_nbeams(const int nbeams)
+    {
+        _numbeams = nbeams;
+    }
+
+    template <class HandlerType>
+    void TransposeToDada<HandlerType>::set_ngroups(const int ngroups)
+    {
+        _ngroups = ngroups;
     }
 
     template <class HandlerType>
@@ -102,6 +106,18 @@ namespace psrdada_cpp {
     std::uint32_t TransposeToDada<HandlerType>::nfreq()
     {
         return _nfreq;
+    }
+
+    template <class HandlerType>
+    std::uint32_t TransposeToDada<HandlerType>::nbeams()
+    {
+	return _numbeams;
+    }
+
+    template <class HandlerType>
+    std::uint32_t TransposeToDada<HandlerType>::ngroups()
+    {
+	return _ngroups;
     }
 
 } //psrdada_cpp

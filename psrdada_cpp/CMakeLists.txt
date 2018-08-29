@@ -17,6 +17,7 @@ set(psrdada_cpp_src
     src/raw_bytes.cpp
     src/transpose_to_dada.cpp
     src/transpose_to_dada_cli.cpp
+    src/transpose_to_file_cli.cpp
     src/simple_file_writer.cpp
     src/sigprocheader.cpp
     src/psrdadaheader.cpp
@@ -53,6 +54,10 @@ target_link_libraries (junkdb ${PSRDADA_CPP_LIBRARIES})
 #transpose_to_dada_cli
 add_executable(transpose_to_dada_cli src/transpose_to_dada_cli.cpp)
 target_link_libraries (transpose_to_dada_cli ${PSRDADA_CPP_LIBRARIES}) 
+
+#transpose_to_files_cli
+add_executable(transpose_to_file_cli src/transpose_to_file_cli.cpp)
+target_link_libraries (transpose_to_file_cli ${PSRDADA_CPP_LIBRARIES})
 
 #dbnull
 add_executable(dbnull examples/dbnull.cpp)

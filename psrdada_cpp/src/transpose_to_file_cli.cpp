@@ -2,7 +2,7 @@
 #include "psrdada_cpp/cli_utils.hpp"
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
-#include "psrdada_cpp/dada_output_stream.hpp"
+#include "psrdada_cpp/simple_file_writer.hpp"
 #include "psrdada_cpp/transpose_to_dada.hpp"
 #include "psrdada_cpp/psrdada_to_sigproc_header.hpp"
 #include <memory>
@@ -35,9 +35,6 @@ int main(int argc, char** argv)
         std::uint32_t nbeams;
 	std::uint32_t ngroups;
         std::string filename;
-        std::fstream fkeys;
-        key_t* output_keys = new key_t[nbeams];
-        std::vector<std::string> keys;
         /** Define and parse the program options
  *         */
         namespace po = boost::program_options;
@@ -55,10 +52,6 @@ int main(int argc, char** argv)
           "Number of heap groups in one DADA block")
          ("nbeams,b", po::value<std::uint32_t>(&nbeams)->required(),
             "The number of beams in the stream")
-
-         ("key_file,o", po::value<std::string> (&filename)->required(),
-          "File containing the keys for each dada buffer corresponding to each beam")
-
          ("nchannels,c", po::value<std::uint32_t>(&nchans)->required(),
             "The number of frequency channels per packet in the stream")
          ("nsamples,s", po::value<std::uint32_t>(&nsamples)->required(),
@@ -75,7 +68,7 @@ int main(int argc, char** argv)
             po::store(po::parse_command_line(argc, argv, desc), vm);
             if ( vm.count("help")  )
             {
-                std::cout << "Transpose2Dada -- read MeerKAT beamformed dada from DADA buffer, transpose per beam and write to an output DADA buffer"
+                std::cout << "Transpose2files -- read MeerKAT beamformed dada from DADA buffer, transpose per beam and write to an output file"
                 << std::endl << desc << std::endl;
                 return SUCCESS;
             }
@@ -88,17 +81,7 @@ int main(int argc, char** argv)
             return ERROR_IN_COMMAND_LINE;
         }
 
-       /* Open file to parse all values to the key_t object*/
-        fkeys.open(filename,std::fstream::in);
-        std::uint32_t ii;
-        for (ii=0; ii < nbeams; ii++)
-        {
-            std::string key;
-            std::getline(fkeys,key);
-            output_keys[ii] = string_to_key(key);
-        }
 
-        fkeys.close();
        /* Application Code */
  
         MultiLog log("outstream");
@@ -106,13 +89,16 @@ int main(int argc, char** argv)
        /* Setting up the pipeline based on the type of sink*/
 
 
-	std::vector<std::shared_ptr<DadaOutputStream>> outstreams;
-	for (ii=0 ; ii < nbeams; ++ii)
+	std::uint32_t ii;
+	std::vector<std::shared_ptr<SimpleFileWriter>> files;
+	for (ii=0; ii < nbeams; ++ii)
 	{
-		outstreams.emplace_back(std::make_shared<DadaOutputStream>(output_keys[ii],log));
+		std::string filename = "beam" + std::to_string(ii) + ".fil";
+		files.emplace_back(std::make_shared<SimpleFileWriter>(filename));
 	}
 
-	TransposeToDada<DadaOutputStream> transpose(nbeams,std::move(outstreams));
+
+	TransposeToDada<SimpleFileWriter> transpose(nbeams,std::move(files));
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
         transpose.set_ntime(ntime);
