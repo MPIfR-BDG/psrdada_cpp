@@ -23,11 +23,10 @@ namespace psrdada_cpp {
 	SigprocHeader h;
         PsrDadaHeader ph;
         ph.from_bytes(block);
-	char* new_ptr = new char[block.total_bytes()];
-	RawBytes new_block(new_ptr,block.total_bytes(),std::size_t(0));
-        h.write_header(new_block,ph);
-	new_block.used_bytes(new_block.total_bytes());
-        _handler.init(new_block);
+	std::memset(block.ptr(), 0, block.total_bytes());
+        h.write_header(block,ph);
+        block.used_bytes(block.total_bytes());
+        _handler.init(block);
     }
 
     template <class HandlerType>

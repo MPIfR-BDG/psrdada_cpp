@@ -15,10 +15,8 @@ namespace transpose{
     {
         std::uint32_t j,k,l,m,n;
         std::uint32_t a =0;
-
 	for (n =0; n < ngroups; n++)
 	{
-
         	for (j =0; j < nsamples; j++)
        		{
             		for (k = 0; k < ntime ; k++)
@@ -26,13 +24,10 @@ namespace transpose{
 
                 		for (l = 0; l < nfreq ; l++)
                 		{
-
-
                     			for (m=0;m < nchans ; m++)
                     			{
                         			transposed_data.ptr()[a] = input_data.ptr()[m + ntime * nchans * nsamples * l + nchans * (j * ntime + k) + nsamples * nchans * ntime* nfreq * beamnum + ntime * nchans * nsamples * nfreq * nbeams * n];
-                        			a++;
-
+                        			++a;
                     			}
 
 
@@ -47,9 +42,6 @@ namespace transpose{
 	
     }
 
-/* Setters and Getters */
-
-    
 
 
 } //transpose

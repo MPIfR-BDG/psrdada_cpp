@@ -1,5 +1,6 @@
 #include "psrdada_cpp/transpose_to_dada.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
+#include <ctime>
 
 namespace psrdada_cpp {
 
@@ -33,18 +34,20 @@ namespace psrdada_cpp {
     template <class HandlerType>
     bool TransposeToDada<HandlerType>::operator()(RawBytes& block)
     {
-      
+    	  
         std::uint32_t ii;
         for(ii=0; ii< _numbeams; ii++)
         {
 		char* o_data = new char[_nchans*_nsamples*_ntime*_nfreq*_ngroups];
 		RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq*_ngroups),std::size_t(0));
-		transpose::do_transpose(block,transpose,_nchans,_nsamples,_ntime,_nfreq,ii,_numbeams,_ngroups);
-		std::cout << "Transpose done" << "\n";
+		clock_t st = clock();
+		transpose::do_transpose(transpose,block,_nchans,_nsamples,_ntime,_nfreq,ii,_numbeams,_ngroups);
+		clock_t spt = clock();
+		std::cout << "Time taken:" << (double)(spt -st)/CLOCKS_PER_SEC << "\n";
 		transpose.used_bytes(transpose.total_bytes());
 		(*_handler[ii])(transpose);
-
 	}
+
         return false;
     }
  
