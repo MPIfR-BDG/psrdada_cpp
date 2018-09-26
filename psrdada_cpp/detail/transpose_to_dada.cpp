@@ -38,7 +38,9 @@ namespace psrdada_cpp {
         std::uint32_t ii;
         for(ii=0; ii< _numbeams; ii++)
         {
-		char* o_data = new char[_nchans*_nsamples*_ntime*_nfreq*_ngroups];
+	        // NOTE: THIS IS A MEMORY LEAK LIKE FROM HERE TO THE MOON!!
+                // TODO: Just put it outside the beam loop and reuse the same block of memory for every beam
+    	        char* o_data = new char[_nchans*_nsamples*_ntime*_nfreq*_ngroups];
 		RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq*_ngroups),std::size_t(0));
 		clock_t st = clock();
 		transpose::do_transpose(transpose,block,_nchans,_nsamples,_ntime,_nfreq,ii,_numbeams,_ngroups);

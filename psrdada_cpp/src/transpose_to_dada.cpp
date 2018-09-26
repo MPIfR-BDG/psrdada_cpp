@@ -1,5 +1,7 @@
 #include "psrdada_cpp/transpose_to_dada.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
+#include <iostream>
+
 
 namespace psrdada_cpp {
 
@@ -15,7 +17,64 @@ namespace transpose{
     {
         std::uint32_t j,k,l,m,n;
         std::uint32_t a =0;
-	for (n =0; n < ngroups; n++)
+	
+        size_t tocopy = ngroups * nsamples * ntime * nfreq * nchans;
+        char *tmpindata = new char[tocopy / ngroups];
+        char *tmpoutdata = new char[tocopy];
+
+        /*for (int isamp = 0; isamp < tocopy; ++isamp) {
+            tmpdata[isamp] = input_data.ptr()[isamp];
+        }*/
+
+        memcpy(tmpindata, input_data.ptr(), tocopy);
+
+        //std::cout << tmpdata[0] << " " << tmpdata[tocopy - 1] << std::endl;
+
+        size_t skipgroup = nchans * nsamples * ntime * nfreq * nbeams;
+        size_t skipbeam = beamnum * nchans * nsamples * ntime * nfreq;
+	size_t skipband = nchans * nsamples * ntime;
+                
+        size_t skipallchans = nchans * nfreq;
+        size_t skipsamps = nsamples * skipallchans;
+
+/*        for (int igroup = 0; igroup < ngroups; ++igroup) {
+
+            memcpy(tmpindata, input_data.ptr() + skipbeam + igroup * skipgroup, tocopy / ngroups);
+
+            for (int itime = 0; itime < ntime; ++itime) {
+                
+                for (int isamp = 0; isamp < nsamples; ++isamp) {
+
+                    for (int iband = 0; iband < nfreq; ++iband) {
+                        memcpy(tmpoutdata + iband * nchans + isamp * skipallchans + itime * skipsamps + igroup * skipgroup,
+				tmpindata + iband * skipband + isamp * nchans + itime * nchans * nsamples,
+				nchans * sizeof(char));
+                    } // BAND LOOP
+                } // SAMPLES LOOP
+            } // TIME LOOP
+        } // GROUP LOOP
+*/
+
+        for (int igroup = 0; igroup < ngroups; ++igroup) {
+
+            memcpy(tmpindata, input_data.ptr() + skipbeam + igroup * skipgroup, tocopy / ngroups);
+
+            for (int isamp = 0; isamp < nsamples; ++isamp) {
+                
+                for (int itime = 0; itime < ntime; ++itime) {
+
+                    for (int iband = 0; iband < nfreq; ++iband) {
+                        memcpy(tmpoutdata + iband * nchans + isamp * skipallchans + itime * skipsamps + igroup * skipgroup,
+				tmpindata + iband * skipband + itime * nchans + isamp * nchans * ntime,
+				nchans * sizeof(char));
+                    } // BAND LOOP
+                } // SAMPLES LOOP
+            } // TIME LOOP
+        } // GROUP LOOP
+
+	
+
+        /*for (n =0; n < ngroups; n++)
 	{
         	for (j =0; j < nsamples; j++)
        		{
@@ -26,7 +85,7 @@ namespace transpose{
                 		{
                     			for (m=0;m < nchans ; m++)
                     			{
-                        			transposed_data.ptr()[a] = input_data.ptr()[m + ntime * nchans * nsamples * l + nchans * (j * ntime + k) + nsamples * nchans * ntime* nfreq * beamnum + ntime * nchans * nsamples * nfreq * nbeams * n];
+                        			tmpoutdata[a] = tmpindata[a]; //[m + ntime * nchans * nsamples * l + nchans * (j * ntime + k) + nsamples * nchans * ntime* nfreq * beamnum + ntime * nchans * nsamples * nfreq * nbeams * n];
                         			++a;
                     			}
 
@@ -38,8 +97,11 @@ namespace transpose{
 
        		}
         
-    	}
-	
+    	}*/
+
+        memcpy(input_data.ptr(), tmpoutdata, tocopy);	
+        delete [] tmpoutdata;
+        delete [] tmpindata;
     }
 
 
