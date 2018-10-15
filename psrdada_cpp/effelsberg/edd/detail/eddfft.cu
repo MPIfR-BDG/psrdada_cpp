@@ -45,7 +45,7 @@ SimpleFFTSpectrometer<HandlerType>::SimpleFFTSpectrometer(
     }
     else
     {
-        throw std::runtime_error("Only 12-bit mode is supported");
+        throw std::runtime_error("Only 12- and 8-bit modes are supported");
     }
 
     cudaStreamCreate(&_h2d_stream);

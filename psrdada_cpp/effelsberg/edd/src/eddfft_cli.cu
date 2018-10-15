@@ -28,6 +28,7 @@ int main(int argc, char** argv)
         int fft_length;
         int nsamps_per_block;
         int naccumulate;
+        int nbits;
         std::time_t now = std::time(NULL);
         std::tm * ptm = std::localtime(&now);
         char buffer[32];
@@ -57,6 +58,9 @@ int main(int argc, char** argv)
 
         ("naccumulate,a", po::value<int>(&naccumulate)->required(),
             "The number of samples to integrate in each channel")
+
+        ("nbits,b", po::value<int>(&nbits)->required(),
+            "The number of bits per sample in the packetiser output (8 or 12)")
 
         ("outfile,o", po::value<std::string>(&filename)
             ->default_value(filename),
@@ -94,7 +98,7 @@ int main(int argc, char** argv)
         MultiLog log("eddfft");
         SimpleFileWriter sink(filename);
         //NullSink sink;
-        effelsberg::edd::SimpleFFTSpectrometer<decltype(sink)> spectrometer(nsamps_per_block, fft_length, naccumulate, 12, sink);
+        effelsberg::edd::SimpleFFTSpectrometer<decltype(sink)> spectrometer(nsamps_per_block, fft_length, naccumulate, nbits, sink);
         DadaInputStream<decltype(spectrometer)> istream(input_key, log, spectrometer);
         istream.start();
         /**
