@@ -49,7 +49,7 @@ int main(int argc, char** argv)
             "The shared memory key for the dada buffer to connect to (hex string)")
         ("sync_epoch,s", po::value<std::size_t>()
             ->default_value(0)
-            ->notifier([&key](std::size_t in)
+            ->notifier([&sync_epoch](std::size_t in)
                 {
                     sync_epoch = static_cast<std::time_t>(in);
                 }),
