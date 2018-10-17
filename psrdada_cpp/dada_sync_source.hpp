@@ -37,18 +37,18 @@ namespace psrdada_cpp
 
         if (sync_epoch_tp > curr_epoch_tp)
         {
-            BOOST_LOG_INFO << "The sync epoch is " << static_cast<float>(diff)/1e6
+            BOOST_LOG_TRIVIAL(info) << "The sync epoch is " << static_cast<float>(diff)/1e6
             << " seconds in the future";
             next_block_idx = 0;
             sample_clock_start = 0;
         }
         else
         {
-            next_block_idx = static_cast<std::size_t>(std::ceil(static_cast<double>(diff) / block_duration));
+            next_block_idx = static_cast<std::size_t>((std::ceil(static_cast<double>(diff)/1e6) / block_duration));
             sample_clock_start = next_block_idx * ts_per_block;
         }
 
-        BOOST_LOG_INFO << "Setting SAMPLE_CLOCK_START to " << sample_clock_start;
+        BOOST_LOG_TRIVIAL(info) << "Setting SAMPLE_CLOCK_START to " << sample_clock_start;
         ascii_header_set(sync_header.data(), "SAMPLE_CLOCK_START", "%ld", sample_clock_start);
         handler.init(header);
         std::size_t bytes_written = 0;
