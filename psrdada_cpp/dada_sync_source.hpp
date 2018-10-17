@@ -58,7 +58,6 @@ namespace psrdada_cpp
             std::this_thread::sleep_until(epoch_of_wait);
             handler(data);
             bytes_written += data.used_bytes();
-            data.used_bytes(0);
             ++next_block_idx;
         }
     }
