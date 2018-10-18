@@ -100,7 +100,7 @@ std::uint32_t PsrDadaHeader::nchans()
     return _nchans;
 }
 
-float PsrDadaHeader::tstart()
+double PsrDadaHeader::tstart()
 {
     return _mjd;
 }
@@ -150,7 +150,7 @@ void PsrDadaHeader::set_source(std::string source)
     _source_name=source;
 }
 
-void PsrDadaHeader::set_tstart(float tstart)
+void PsrDadaHeader::set_tstart(double tstart)
 {
     _mjd = tstart;
 }

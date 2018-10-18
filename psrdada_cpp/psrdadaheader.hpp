@@ -69,7 +69,7 @@ class PsrDadaHeader
 
             std::string source_name();
             
-            float tstart();
+            double tstart();
  
             std::uint32_t nchans();
 
@@ -94,7 +94,7 @@ class PsrDadaHeader
 
             void set_source(std::string source);
 
-            void set_tstart(float tstart);
+            void set_tstart(double tstart);
 
             void set_nchans(std::uint32_t nchans); 
 
@@ -123,7 +123,7 @@ class PsrDadaHeader
             std::string _dec;
             std::string _telescope;
             std::string _instrument;
-            float _mjd;
+            double _mjd;
 
 };
 } // namespace psrdada_cpp

@@ -47,14 +47,14 @@ class SigprocHeader
         /*
          * @brief write string to the header
          */ 
-        template<class String>
-        void header_write(char*& ptr, String str); 
+        void header_write(char*& ptr, std::string const& str); 
+        void header_write(char*& ptr, std::string const& str, std::string const& name); 
  
         /*
          * @brief write a value to the stream
          */
-        template<class String, typename NumericT>
-        void header_write(char*& ptr, String name, NumericT val); 
+        template<typename NumericT>
+        void header_write(char*& ptr, std::string const& name, NumericT val); 
 
 };
 

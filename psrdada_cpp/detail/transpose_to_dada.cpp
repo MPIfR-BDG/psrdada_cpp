@@ -36,31 +36,24 @@ namespace psrdada_cpp {
     {
     	  
         std::uint32_t ii;
-	std::vector<std::thread> threads;
+	//std::vector<std::thread> threads;
+	char* o_data = new char[_nchans*_nsamples*_ntime*_nfreq*_ngroups];
         for(ii=0; ii< _numbeams; ii++)
         {
-		threads.emplace_back(std::thread([&]()
-		{
-		char* o_data = new char[_nchans*_nsamples*_ntime*_nfreq*_ngroups];
+		//threads.emplace_back(std::thread([&]()
+		//{
 		RawBytes transpose(o_data,std::size_t(_nchans*_nsamples*_ntime*_nfreq*_ngroups),std::size_t(0));
-		//clock_t st = clock();
-		for (std::uint32_t jj=202375100; jj < 202375200; ++jj)
-		{
-		    std::cout << (int)block.ptr()[jj] << "\n";
-		}
 		transpose::do_transpose(transpose,block,_nchans,_nsamples,_ntime,_nfreq,ii,_numbeams,_ngroups);
-		//clock_t spt = clock();
-		//std::cout << "Time taken:" << (double)(spt -st)/CLOCKS_PER_SEC << "\n";
 		transpose.used_bytes(transpose.total_bytes());
 		(*_handler[ii])(transpose);
-		}));
+		//}));
 		
 	}
 
-	for (ii=0; ii< _numbeams; ii++)
+	/*for (ii=0; ii< _numbeams; ii++)
 	{
 	        threads[ii].join();
-	}
+	}*/
 
         return false;
     }

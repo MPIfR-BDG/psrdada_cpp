@@ -2,6 +2,8 @@
 #include "psrdada_cpp/cli_utils.hpp"
 #include <ctime>
 #include <mutex>
+#include <iostream>
+
 
 namespace psrdada_cpp {
 
@@ -15,14 +17,41 @@ namespace transpose{
     std::mutex MyMutex;
     void do_transpose(RawBytes& transposed_data, RawBytes& input_data,std::uint32_t nchans, std::uint32_t nsamples, std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum, std::uint32_t nbeams, std::uint32_t ngroups)
     {
+
 	std::lock_guard<std::mutex> guard(MyMutex);
-        std::uint32_t j,k,l,m,n;
-        std::uint32_t a =0;
-	char* in_data = new char[ngroups*nbeams*nchans*nsamples*ntime*nfreq];
-	char* out_data = new char[ngroups*nchans*nsamples*ntime*nfreq];
-	std::memcpy(in_data,input_data.ptr(),input_data.total_bytes());
-	clock_t start = clock();
-	for (n =0; n < ngroups; n++)
+	
+        size_t tocopy = ngroups * nsamples * ntime * nfreq * nchans;
+        char *tmpindata = new char[tocopy / ngroups];
+        char *tmpoutdata = new char[tocopy];
+
+        size_t skipgroup = nchans * nsamples * ntime * nfreq * nbeams;
+        size_t skipbeam = beamnum * nchans * nsamples * ntime * nfreq;
+	size_t skipband = nchans * nsamples * ntime;
+                
+        size_t skipallchans = nchans * nfreq;
+        size_t skipsamps = ntime * skipallchans;
+
+
+        for (unsigned int igroup = 0; igroup < ngroups; ++igroup) {
+
+            memcpy(tmpindata, input_data.ptr() + skipbeam + igroup * skipgroup, tocopy / ngroups);
+
+            for (unsigned int isamp = 0; isamp < nsamples; ++isamp) {
+                
+                for (unsigned int itime = 0; itime < ntime; ++itime) {
+
+                    for (unsigned int iband = 0; iband < nfreq; ++iband) {
+                        memcpy(tmpoutdata + iband * nchans + isamp * skipsamps + itime * skipallchans + igroup * tocopy/ngroups,
+				tmpindata + iband * skipband + itime * nchans + isamp * nchans * ntime,
+				nchans * sizeof(char));
+                   } // BAND LOOP
+                } // SAMPLES LOOP
+           } // TIME LOOP
+       } // GROUP LOOP
+
+	
+
+       /* for (n =0; n < ngroups; n++)
 	{
         	for (j =0; j < nsamples; j++)
        		{
@@ -33,7 +62,8 @@ namespace transpose{
                 		{
                     			for (m=0;m < nchans ; m++)
                     			{
-                        			out_data[a] = in_data[m + ntime * nchans * nsamples * l + nchans * (j * ntime + k) + nsamples * nchans * ntime* nfreq * beamnum + ntime * nchans * nsamples * nfreq * nbeams * n];
+                        			transposed_data.ptr()[a] = input_data.ptr()[m + ntime * nchans * nsamples * l + nchans * (j * ntime + k) + nsamples * nchans * ntime* nfreq * beamnum + ntime * nchans * nsamples * nfreq * nbeams * n];
+                        			//tmpoutdata[a] = tmpindata[a]; //[m + ntime * nchans * nsamples * l + nchans * (j * ntime + k) + nsamples * nchans * ntime* nfreq * beamnum + ntime * nchans * nsamples * nfreq * nbeams * n];
                         			++a;
 					}
 
@@ -45,10 +75,11 @@ namespace transpose{
 
        		}
         
-    	}
-	clock_t stop = clock();
-	std::cout << "Time Elapsed:" << ((double)(stop - start))/CLOCKS_PER_SEC << "\n";
-	std::memcpy(transposed_data.ptr(),out_data,transposed_data.total_bytes());
+    	}*/
+
+        memcpy(transposed_data.ptr(), tmpoutdata, tocopy);	
+        delete [] tmpoutdata;
+        delete [] tmpindata;
     }
 
 
