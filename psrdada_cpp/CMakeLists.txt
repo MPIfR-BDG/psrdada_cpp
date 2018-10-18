@@ -52,9 +52,13 @@ add_library(${CMAKE_PROJECT_NAME} ${psrdada_cpp_src})
 add_executable(junkdb examples/junkdb.cpp)
 target_link_libraries (junkdb ${PSRDADA_CPP_LIBRARIES})
 
+#syncdb
+add_executable(syncdb examples/syncdb.cpp)
+target_link_libraries (syncdb ${PSRDADA_CPP_LIBRARIES})
+
 #transpose_to_dada_cli
 add_executable(transpose_to_dada_cli src/transpose_to_dada_cli.cpp)
-target_link_libraries (transpose_to_dada_cli ${PSRDADA_CPP_LIBRARIES}) 
+target_link_libraries (transpose_to_dada_cli ${PSRDADA_CPP_LIBRARIES})
 
 #transpose_to_files_cli
 add_executable(transpose_to_file_cli src/transpose_to_file_cli.cpp)
@@ -64,11 +68,12 @@ target_link_libraries (transpose_to_file_cli ${PSRDADA_CPP_LIBRARIES})
 add_executable(transpose_to_null_cli src/transpose_to_null_cli.cpp)
 target_link_libraries (transpose_to_null_cli ${PSRDADA_CPP_LIBRARIES})
 
-
 #dbnull
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
-#install (TARGETS junkdb dbnull  transpose_to_dada_cli DESTINATION bin)
+install (TARGETS junkdb dbnull syncdb transpose_to_dada_cli DESTINATION bin)
+
+
 #install (FILES MathFunctions.h DESTINATION include)
 install (TARGETS ${CMAKE_PROJECT_NAME}
   RUNTIME DESTINATION bin
