@@ -52,13 +52,19 @@ namespace psrdada_cpp
         ascii_header_set(sync_header.data(), "SAMPLE_CLOCK_START", "%ld", sample_clock_start);
         handler.init(header);
         std::size_t bytes_written = 0;
-        while (bytes_written < total_bytes)
+ 
+        bool infinite = (total_bytes == 0);
+        while (true)
         {
             auto epoch_of_wait = sync_epoch_tp + std::chrono::duration<double>(next_block_idx * block_duration);
             std::this_thread::sleep_until(epoch_of_wait);
             handler(data);
             bytes_written += data.used_bytes();
             ++next_block_idx;
+	    if (!infinite && bytes_written >= total_bytes)
+	    {
+		break;
+	    }
         }
     }
 } //namespace psrdada_cpp
