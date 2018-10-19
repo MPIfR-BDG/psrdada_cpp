@@ -18,7 +18,7 @@ namespace transpose{
     void do_transpose(RawBytes& transposed_data, RawBytes& input_data,std::uint32_t nchans, std::uint32_t nsamples, std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum, std::uint32_t nbeams, std::uint32_t ngroups)
     {
 
-	std::lock_guard<std::mutex> guard(MyMutex);
+	//std::lock_guard<std::mutex> guard(MyMutex);
 	
         size_t tocopy = ngroups * nsamples * ntime * nfreq * nchans;
         char *tmpindata = new char[tocopy / ngroups];

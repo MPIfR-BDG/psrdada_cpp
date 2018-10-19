@@ -41,9 +41,11 @@ class SigprocHeader
         SigprocHeader();
         ~SigprocHeader();
         void write_header(RawBytes& block,PsrDadaHeader ph);
-
+       
+        std::size_t header_size() const;
      
     private:
+	std::size_t _header_size;
         /*
          * @brief write string to the header
          */ 

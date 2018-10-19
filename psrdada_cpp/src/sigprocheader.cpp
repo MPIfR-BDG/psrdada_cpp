@@ -3,11 +3,13 @@
 #include <string>
 #include <chrono>
 #include <boost/algorithm/string.hpp>
-
+#include <iterator>
 
 namespace psrdada_cpp
 {
     SigprocHeader::SigprocHeader()
+    :
+    _header_size(0)
     {
     }
     
@@ -58,6 +60,12 @@ namespace psrdada_cpp
         header_write<double>(ptr,"tstart",ph.tstart());
         header_write<double>(ptr,"tsamp",ph.tsamp());
         header_write(ptr,"HEADER_END");
+        _header_size = std::distance(block.ptr(),ptr);
+    }
+
+    std::size_t SigprocHeader::header_size() const
+    {
+	return _header_size;
     }
 
 

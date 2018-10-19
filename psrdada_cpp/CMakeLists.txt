@@ -56,6 +56,10 @@ target_link_libraries (junkdb ${PSRDADA_CPP_LIBRARIES})
 add_executable(syncdb examples/syncdb.cpp)
 target_link_libraries (syncdb ${PSRDADA_CPP_LIBRARIES})
 
+#fbfuse_output_db
+add_executable(fbfuse_output_db examples/fbfuse_output_db.cpp)
+target_link_libraries (fbfuse_output_db ${PSRDADA_CPP_LIBRARIES})
+
 #transpose_to_dada_cli
 add_executable(transpose_to_dada_cli src/transpose_to_dada_cli.cpp)
 target_link_libraries (transpose_to_dada_cli ${PSRDADA_CPP_LIBRARIES})
@@ -71,7 +75,7 @@ target_link_libraries (transpose_to_null_cli ${PSRDADA_CPP_LIBRARIES})
 #dbnull
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
-install (TARGETS junkdb dbnull syncdb transpose_to_dada_cli DESTINATION bin)
+install (TARGETS junkdb dbnull syncdb fbfuse_output_db transpose_to_dada_cli DESTINATION bin)
 
 
 #install (FILES MathFunctions.h DESTINATION include)
