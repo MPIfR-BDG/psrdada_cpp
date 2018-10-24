@@ -65,6 +65,8 @@ inline void cuda_assert_success(cudaError_t code, const char *file, int line)
 #define NPOL 2
 #define MAX_ANTENNAS 32
 
+//Split transpose to convert from TAFTP order to FTPA order
+
 
 __global__
 void split_transpose_k(
