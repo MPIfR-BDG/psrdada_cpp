@@ -89,7 +89,7 @@ bool FakeBeams<HandlerType>::operator()(RawBytes& block)
     {
       std::vector<char> beam_data(_size,_beam_num);
       std::copy(beam_data.begin(),beam_data.end(),ptr);
-      ptr += static_cast<int>(_size);
+      ptr += _size;
       bytes_written = bytes_written +  _size;
       ++_beam_num;
       if (_beam_num > _beam_num_end)
