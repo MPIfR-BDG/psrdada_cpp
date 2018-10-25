@@ -13,6 +13,7 @@ PipelineConfig::PipelineConfig()
     , _cb_dada_key(0xcaca)
     , _ib_dada_key(0xeaea)
 {
+    _channel_frequencies.resize(nchans());
 }
 
 PipelineConfig::~PipelineConfig()

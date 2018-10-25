@@ -57,6 +57,9 @@ private:
     key_t _input_dada_key;
     key_t _cb_dada_key;
     key_t _ib_dada_key;
+    std::vector<float> _channel_frequencies;
+
+
 };
 
 } //namespace fbfuse
