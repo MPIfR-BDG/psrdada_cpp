@@ -11,7 +11,7 @@ namespace transpose{
     /**
      * @brief the method that does the actual transpose
      */ 
-    void do_transpose(RawBytes& transposed_data, RawBytes& input_data, std::uint32_t nchans, std::uint32_t nsamples,std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum, std::uint32_t numbeams, std::uint32_t ngroups);
+    void do_transpose(RawBytes& transposed_data, RawBytes& input_data, std::uint32_t nchans, std::uint32_t nsamples, std::uint32_t nfreq, std::uint32_t beamnum, std::uint32_t numbeams, std::uint32_t ngroups);
 }
 
 template <class HandlerType>
@@ -63,16 +63,10 @@ public:
         void set_nchans(const int nchans);
 
        /**
-        * @brief Setter of number of samples
+        * @brief Setter of number of time samples
         */
 
         void set_nsamples(const int nsamples);
-  
-       /**
-        * @brief Setter for number of time samples
-        */
-
-        void set_ntime(const int ntime);
 
        /**
         * @brief Setter for number of frequency blocks
@@ -87,16 +81,10 @@ public:
         std::uint32_t nchans();
 
        /**
-        * @brief getter for number of time blocks
+        * @brief getter for number of time samples
         */
 
         std::uint32_t nsamples();
-
-       /**
-        * @brief getter for number of time samples 
-        */
-
-        std::uint32_t ntime();
         
        /**
         * @brief getter for frequency blocks 
@@ -121,7 +109,6 @@ private:
     std::vector<std::shared_ptr<HandlerType>> _handler;
     std::uint32_t _nchans;
     std::uint32_t _nsamples;
-    std::uint32_t _ntime;
     std::uint32_t _nfreq;
     std::uint32_t _ngroups;
 
