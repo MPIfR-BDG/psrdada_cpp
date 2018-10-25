@@ -2,6 +2,7 @@
 #define PSRDADA_CPP_MEERKAT_PIPELINECONFIG_HPP
 
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
+#include "psrdada_cpp/common.hpp"
 
 namespace psrdada_cpp {
 namespace meerkat {

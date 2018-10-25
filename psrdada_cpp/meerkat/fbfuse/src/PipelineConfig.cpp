@@ -1,7 +1,4 @@
-#ifndef PSRDADA_CPP_MEERKAT_PIPELINECONFIG_HPP
-#define PSRDADA_CPP_MEERKAT_PIPELINECONFIG_HPP
-
-#include "psrdada/meerkat/fbfuse/PipelineConfig.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
 #include <fstream>
 
 namespace psrdada_cpp {
@@ -87,4 +84,3 @@ void PipelineConfig::ib_dada_key(key_t key)
 } //namespace meerkat
 } //namespace psrdada_cpp
 
-#endif //PSRDADA_CPP_MEERKAT_PIPELINECONFIG_HPP

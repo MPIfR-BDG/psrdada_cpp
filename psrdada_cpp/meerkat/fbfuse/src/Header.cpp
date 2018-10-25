@@ -2,6 +2,8 @@ namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {
 
+#include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
+
 Header::Header(RawBlock& header)
     : _header(header)
 {
