@@ -73,6 +73,18 @@ namespace psrdada_cpp {
         connect();
     }
 
+    void DadaClientBase::cuda_register_memory()
+    {
+#if ENABLE_CUDA
+        if (dada_cuda_dbregister(_hdu) < 0)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Failed to register HDU DADA buffers as pinned memory";
+        }
+#else
+        BOOST_LOG_TRIVIAL(warning) << "cuda_register_memory can only be used with ENABLE_CUDA is defined";
+#endif //ENABLE_CUDA
+    }
+
     std::string const& DadaClientBase::id() const
     {
         return _id;

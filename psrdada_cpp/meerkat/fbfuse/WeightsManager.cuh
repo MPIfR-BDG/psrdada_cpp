@@ -38,7 +38,7 @@ public:
      * @param      config          The pipeline configuration
      * @param      _delay_manager  A DelayManager instance
      */
-    WeightsManager(PipelineConfig const& config, DelayManager& _delay_manager);
+    WeightsManager(PipelineConfig const& config, DelayManager& _delay_manager, cudaStream_t stream);
     ~WeightsManager();
     WeightsManager(WeightsManager const&) == delete;
 
