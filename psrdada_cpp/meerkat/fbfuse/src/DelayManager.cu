@@ -1,4 +1,5 @@
-#include "psrdada_cpp/meerkat/fbfuse/DelayManager.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
+#include "psrdada_cpp/cuda_utils.hpp"
 #include <sys/mman.h>
 #include <sys/stat.h>        /* For mode constants */
 #include <fcntl.h>           /* For O_* constants */
@@ -26,7 +27,7 @@ DelayManager::DelayManager(PipelineConfig const& config, cudaStream_t stream)
     }
     BOOST_LOG_TRIVIAL(debug) << "Opening delay buffer mutex semaphore";
     _delay_mutex_sem = sem_open(_config.delay_buffer_mutex().c_str(), O_EXCL);
-    if (_delay_mutex_sem == -1)
+    if (_delay_mutex_sem == SEM_FAILED)
     {
         throw std::runtime_error(std::string(
             "Failed to open delay buffer mutex semaphore: "
@@ -34,7 +35,7 @@ DelayManager::DelayManager(PipelineConfig const& config, cudaStream_t stream)
     }
     BOOST_LOG_TRIVIAL(debug) << "Opening delay buffer counting semaphore";
     _delay_count_sem = sem_open(_config.delay_buffer_sem().c_str(), O_EXCL);
-    if (_delay_count_sem == -1)
+    if (_delay_count_sem == SEM_FAILED)
     {
         throw std::runtime_error(std::string(
             "Failed to open delay buffer counting semaphore: "
@@ -71,17 +72,17 @@ DelayManager::DelayManager(PipelineConfig const& config, cudaStream_t stream)
 
     // To maximise the copy throughput for the delays we here register the host memory
     BOOST_LOG_TRIVIAL(debug) << "Registering shared memory segement with CUDA driver";
-    CUDA_SAFE_CALL(cudaHostRegister(static_cast<void*>(_delay_model.delays),
-        sizeof(_delay_model.delays), cudaHostRegisterMapped));
+    CUDA_ERROR_CHECK(cudaHostRegister(static_cast<void*>(_delay_model->delays),
+        sizeof(_delay_model->delays), cudaHostRegisterMapped));
 
     // Resize the GPU array for the delays
-    _delays.resize(NBEAMS * NANTENNAS);
+    _delays.resize(FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS);
 }
 
 DelayManager::~DelayManager()
 {
     BOOST_LOG_TRIVIAL(debug) << "Destroying DelayManager instance";
-    CUDA_SAFE_CALL(cudaHostUnregister(static_cast<void*>(_delay_model.delays)));
+    CUDA_ERROR_CHECK(cudaHostUnregister(static_cast<void*>(_delay_model->delays)));
     munmap(_delay_model, sizeof(DelayModel));
     close(_delay_buffer_fd);
     sem_close(_delay_mutex_sem);
@@ -121,7 +122,7 @@ bool DelayManager::update_available()
     }
 }
 
-DelayManager::DelayVectorType const& delays()
+DelayManager::DelayVectorType const& DelayManager::delays()
 {
     // This function should return the delays in GPU memory
     // First check if we need to update GPU memory
@@ -143,12 +144,12 @@ DelayManager::DelayVectorType const& delays()
         // as such we use an async memcpy in a dedicated stream.
         void* dst = static_cast<void*>(thrust::raw_pointer_cast(_delays.data()));
         BOOST_LOG_TRIVIAL(debug) << "Copying delays to GPU";
-        CUDA_SAFE_CALL(cudaMemcpyAsync(dst, (void*) _delay_model.delays, sizeof(_delay_model.delays),
+        CUDA_ERROR_CHECK(cudaMemcpyAsync(dst, (void*) _delay_model->delays, sizeof(_delay_model->delays),
             cudaMemcpyHostToDevice, _copy_stream));
-        CUDA_SAFE_CALL(cudaStreamSynchronize(_copy_stream));
+        CUDA_ERROR_CHECK(cudaStreamSynchronize(_copy_stream));
 
         BOOST_LOG_TRIVIAL(debug) << "Releasing shared memory mutex";
-        int retval = sem_post(_delay_mutex_sem);
+        retval = sem_post(_delay_mutex_sem);
         if (retval != 0)
         {
             throw std::runtime_error(std::string(

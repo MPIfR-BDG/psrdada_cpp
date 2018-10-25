@@ -42,7 +42,7 @@ public:
      */
     DelayManager(PipelineConfig const& config, cudaStream_t stream);
     ~DelayManager();
-    DelayManager(DelayManager const&) == delete;
+    DelayManager(DelayManager const&) = delete;
 
     /**
      * @brief      Get the current delay model
@@ -58,8 +58,8 @@ public:
     DelayVectorType const& delays();
 
     //needs implemented
-    double epoch() const;
-    double duration() const;
+    //double epoch() const;
+    //double duration() const;
 
 private:
     bool update_available();
@@ -69,8 +69,8 @@ private:
     DelayModel* _delay_model;
     cudaStream_t _copy_stream;
     int _delay_buffer_fd;
-    sem_t _delay_mutex_sem;
-    sem_t _delay_count_sem;
+    sem_t* _delay_mutex_sem;
+    sem_t* _delay_count_sem;
     int _last_sem_value;
     DelayVectorType _delays;
 };
