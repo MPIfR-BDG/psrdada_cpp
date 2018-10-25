@@ -1,5 +1,5 @@
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
-#include "psrdada_cpp/meerkat/fbfuse/DelayManager.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include <thrust/device_vector.h>
 
 namespace psrdada_cpp {
@@ -40,7 +40,7 @@ public:
      */
     WeightsManager(PipelineConfig const& config, DelayManager& _delay_manager, cudaStream_t stream);
     ~WeightsManager();
-    WeightsManager(WeightsManager const&) == delete;
+    WeightsManager(WeightsManager const&) = delete;
 
     /**
      * @brief      Calculate beamforming weights for a given epock
@@ -63,10 +63,11 @@ public:
     WeightsVectorType const& weights(TimeType epoch);
 
 private:
+    PipelineConfig const& _config;
     DelayManager& _delay_manager;
+    cudaStream_t _stream;
     WeightsVectorType _weights;
     FreqVectorType _channel_frequencies;
-    cudaStream_t _stream;
 };
 
 } //namespace fbfuse

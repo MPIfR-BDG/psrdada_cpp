@@ -1,6 +1,10 @@
+#include "psrdada_cpp/meerkat/fbfuse/WeightsManager.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
-#include "psrdada_cpp/meerkat/fbfuse/DelayManager.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
+#include "psrdada_cpp/cuda_utils.hpp"
 #include <thrust/device_vector.h>
+
+#define TWOPI 6.283185307179586f
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -82,8 +86,8 @@ WeightsManager::WeightsManager(PipelineConfig const& config, DelayManager& delay
     , _delay_manager(delay_manager)
     , _stream(stream)
 {
-    std::size_t nbeams = _config.coherent_beam_config().nbeams();
-    std::size_t nantennas = _config.coherent_beam_config().nantennas();
+    std::size_t nbeams = _config.cb_nbeams();
+    std::size_t nantennas = _config.cb_nantennas();
     BOOST_LOG_TRIVIAL(debug) << "Constructing WeightsManager instance to hold weights for "
     << nbeams << " beams and " << nantennas << " antennas";
     _weights.resize(nbeams * nantennas);
@@ -104,17 +108,17 @@ WeightsManager::WeightsVectorType const& WeightsManager::weights(TimeType epoch)
     DelayManager::DelayType const* delays_ptr = thrust::raw_pointer_cast(delays.data());
     WeightsType* weights_ptr = thrust::raw_pointer_cast(_weights.data());
     FreqType const* frequencies_ptr = thrust::raw_pointer_cast(_channel_frequencies.data());
-    dim3 grid(_config.coherent_beam_config().nbeams(),
+    dim3 grid(_config.cb_nbeams(),
         _channel_frequencies.size(), 1);
     dim3 block(32, 32, 1);
     BOOST_LOG_TRIVIAL(debug) << "Launching weights generation kernel";
-    generate_weights_k<<< grid, block, 0, _stream >>>(delays_ptr,
+    kernels::generate_weights_k<<< grid, block, 0, _stream >>>(delays_ptr,
         weights_ptr, frequencies_ptr,
-        _config.coherent_beam_config().nantennas(),
-        _config.coherent_beam_config().nbeams(),
+        _config.cb_nantennas(),
+        _config.cb_nbeams(),
         _channel_frequencies.size(),
         epoch, 0.0, 1);
-    CUDA_SAFE_CALL(cudaStreamSynchronize(_stream));
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
     BOOST_LOG_TRIVIAL(debug) << "Weights successfully generated";
     return _weights;
 }
