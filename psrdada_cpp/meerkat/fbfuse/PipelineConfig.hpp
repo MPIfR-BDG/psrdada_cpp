@@ -40,10 +40,15 @@ public:
     std::size_t cb_fscrunch() const {return FBFUSE_CB_FSCRUNCH;}
     std::size_t cb_nantennas() const {return FBFUSE_CB_NANTENNAS;}
     std::size_t cb_anntena_offset() const {return FBFUSE_CB_ANTENNA_OFFSET;}
+    std::size_t cb_nbeams() const {return FBFUSE_CB_NBEAMS;}
     std::size_t ib_tscrunch() const {return FBFUSE_IB_TSCRUNCH;}
     std::size_t ib_fscrunch() const {return FBFUSE_IB_FSCRUNCH;}
     std::size_t ib_nantennas() const {return FBFUSE_IB_NANTENNAS;}
     std::size_t ib_anntena_offset() const {return FBFUSE_IB_ANTENNA_OFFSET;}
+    std::size_t ib_nbeams() const {return FBFUSE_IB_NBEAMS;}
+    std::size_t total_nantennas() const {return FBFUSE_TOTAL_NANTENNAS;}
+    std::size_t nchans() const {return FBFUSE_NCHANS;}
+    std::size_t total_nchans() const {return FBFUSE_NCHANS_TOTAL;}
 
 private:
     std::string _delay_buffer_shm;
