@@ -33,6 +33,8 @@ public:
     key_t ib_dada_key() const;
     void ib_dada_key(key_t);
 
+    std::vector<float> const& channel_frequencies() const;
+
     // These are all just wrappers to provide programmatic access
     // to the compile time constants that we are forced to use for
     // beamformer perofmance.

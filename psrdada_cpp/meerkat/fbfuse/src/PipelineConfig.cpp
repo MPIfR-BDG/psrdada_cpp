@@ -81,6 +81,11 @@ void PipelineConfig::ib_dada_key(key_t key)
     _ib_dada_key = key;
 }
 
+std::vector<float> const& PipelineConfig::channel_frequencies() const
+{
+    return _channel_frequencies;
+}
+
 } //namespace fbfuse
 } //namespace meerkat
 } //namespace psrdada_cpp
