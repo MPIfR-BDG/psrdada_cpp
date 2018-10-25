@@ -2,6 +2,7 @@
 #define PSRDADA_CPP_MEERKAT_FBFUSE_HEADER_HPP
 
 #include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/raw_bytes.hpp"
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -10,7 +11,7 @@ namespace fbfuse {
 class Header
 {
 public:
-    explicit Header(RawBlock&);
+    explicit Header(RawBytes&);
     ~Header();
     Header(Header const&) = delete;
 
@@ -26,7 +27,7 @@ private:
     void fetch_header_string(char const* key);
 
 private:
-    RawBlock& _header;
+    RawBytes& _header;
     char _buffer[1024];
 };
 

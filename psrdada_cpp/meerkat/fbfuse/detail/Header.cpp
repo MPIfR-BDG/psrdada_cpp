@@ -1,3 +1,6 @@
+#include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
+#include "ascii_header.h"
+
 namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {
@@ -14,22 +17,22 @@ long double Header::get<long double>(char const* key)
 template <>
 std::size_t Header::get<std::size_t>(char const* key)
 {
-    fetch_header_string(key);
-    std::size_t value = std::strtoul(_buffer, NULL);
+  fetch_header_string(key);
+    std::size_t value = std::strtoul(_buffer, NULL, 0);
     BOOST_LOG_TRIVIAL(info) << key << " = " << value;
     return value;
 }
 
 template <>
-long double Header::set<long double>(char const* key, T value)
+void Header::set<long double>(char const* key, long double value)
 {
-    ascii_header_set(_header.ptr(), key, "%ld", value);
+    ascii_header_set(this->_header.ptr(), key, "%ld", value);
 }
 
 template <>
-std::size_t Header::set<std::size_t>(char const* key, T value)
+void Header::set<std::size_t>(char const* key, std::size_t value)
 {
-    ascii_header_set(_header.ptr(), key, "%ul", value);
+    ascii_header_set(this->_header.ptr(), key, "%ul", value);
 }
 
 } //namespace fbfuse
