@@ -39,7 +39,7 @@ public:
     float bandwidth() const;
     void bandwidth(float bw);
 
-    std::vector<float> const& channel_frequencies() const;
+    std::vector<float> const& channel_frequencies();
 
     // These are all just wrappers to provide programmatic access
     // to the compile time constants that we are forced to use for
