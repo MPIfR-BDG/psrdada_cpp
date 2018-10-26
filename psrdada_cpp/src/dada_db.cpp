@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#incldue "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/dada_db.hpp"
 #include <sys/shm.h>
 #include <time.h>
@@ -64,7 +64,7 @@ key_t random_dada_key()
 
 } // namespace detail
 
-TestDadaDB::TestDadaDB(uint64_t nbufs, uint64_t bufsz, uint64_t nhdrs,  uint64_t hdrsz)
+DadaDB::DadaDB(uint64_t nbufs, uint64_t bufsz, uint64_t nhdrs,  uint64_t hdrsz)
     : _nbufs(nbufs)
     , _bufsz(bufsz)
     , _nhdrs(nhdrs)
@@ -77,12 +77,12 @@ TestDadaDB::TestDadaDB(uint64_t nbufs, uint64_t bufsz, uint64_t nhdrs,  uint64_t
 {
 }
 
-TestDadaDB::~TestDadaDB()
+DadaDB::~DadaDB()
 {
     destroy();
 }
 
-void TestDadaDB::create()
+void DadaDB::create()
 {
     std::lock_guard<std::mutex> lock(_lock);
     if (_data_blocks_created)
@@ -109,14 +109,14 @@ void TestDadaDB::create()
     BOOST_LOG_TRIVIAL(debug) << "Create DADA header block with nhdrs=" << _nhdrs << " hdrsz=" << _hdrsz;
 }
 
-void TestDadaDB::destroy()
+void DadaDB::destroy()
 {
     std::lock_guard<std::mutex> lock(_lock);
     BOOST_LOG_TRIVIAL(debug) << "Destroying the buffers";
     do_destroy();
 }
 
-void TestDadaDB::do_destroy()
+void DadaDB::do_destroy()
 {
     if (_data_blocks_created)
     {
@@ -132,27 +132,27 @@ void TestDadaDB::do_destroy()
     }
 }
 
-uint64_t TestDadaDB::num_data_buffers() const
+uint64_t DadaDB::num_data_buffers() const
 {
     return _nbufs;
 }
 
-uint64_t TestDadaDB::data_buffer_size() const
+uint64_t DadaDB::data_buffer_size() const
 {
     return _bufsz;
 }
 
-uint64_t TestDadaDB::num_header_buffers() const
+uint64_t DadaDB::num_header_buffers() const
 {
     return _nhdrs;
 }
 
-uint64_t TestDadaDB::header_buffer_size() const
+uint64_t DadaDB::header_buffer_size() const
 {
     return _hdrsz;
 }
 
-key_t TestDadaDB::key() const
+key_t DadaDB::key() const
 {
     return _dada_key;
 }

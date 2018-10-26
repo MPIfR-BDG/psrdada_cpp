@@ -17,11 +17,11 @@ namespace psrdada_cpp {
  *          metadata and then uses that to determine how to handle the data in the data buffers.
  *
  */
-class TestDadaDB
+class DadaDB
 {
     public:
         /**
-         * @brief      Constructa new TestDadaDB instance
+         * @brief      Constructa new DadaDB instance
          *
          * @param[in]  _key    A hexidecimal shared memory key
          * @param[in]  _nbufs  The number of data buffers
@@ -29,12 +29,12 @@ class TestDadaDB
          * @param[in]  _nhdrs  The number of header buffers
          * @param[in]  _hdrsz  The size in bytes of each header buffer
          */
-        TestDadaDB(uint64_t nbufs = DADA_DEFAULT_BLOCK_NUM,
+        DadaDB(uint64_t nbufs = DADA_DEFAULT_BLOCK_NUM,
                    uint64_t bufsz = DADA_DEFAULT_BLOCK_SIZE,
                    uint64_t nhdrs = IPCBUF_XFERS,
                    uint64_t hdrsz = DADA_DEFAULT_HEADER_SIZE);
-        TestDadaDB(TestDadaDB const&) = delete;
-        ~TestDadaDB();
+        DadaDB(DadaDB const&) = delete;
+        ~DadaDB();
 
         /**
          * @brief      Create the data and header blocks in shared memory
