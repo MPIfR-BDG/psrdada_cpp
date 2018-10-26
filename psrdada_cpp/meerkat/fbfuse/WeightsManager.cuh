@@ -1,3 +1,6 @@
+#ifndef PSRDADA_CPP_MEERKAT_FBFUSE_WEIGHTSMANAGER_HPP
+#define PSRDADA_CPP_MEERKAT_FBFUSE_WEIGHTSMANAGER_HPP
+
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include <thrust/device_vector.h>
@@ -74,5 +77,6 @@ private:
 } //namespace meerkat
 } //namespace psrdada_cpp
 
+#endif // PSRDADA_CPP_MEERKAT_FBFUSE_WEIGHTSMANAGER_HPP
 
 
