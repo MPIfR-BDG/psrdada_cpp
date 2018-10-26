@@ -11,7 +11,7 @@ class DoubleDeviceBuffer
 public:
     DoubleDeviceBuffer();
     ~DoubleDeviceBuffer();
-    void resize(std::size_t size, T fill_value);
+    void resize(std::size_t size);
     void swap();
     T* a() const;
     T* b() const;

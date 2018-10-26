@@ -17,10 +17,10 @@ DoubleDeviceBuffer<T>::~DoubleDeviceBuffer()
 }
 
 template <typename T>
-void DoubleDeviceBuffer<T>::resize(std::size_t size, T fill_value)
+void DoubleDeviceBuffer<T>::resize(std::size_t size)
 {
-    _buf0.resize(size, fill_value);
-    _buf1.resize(size, fill_value);
+    _buf0.resize(size);
+    _buf1.resize(size);
     _a_ptr = thrust::raw_pointer_cast(_buf0);
     _b_ptr = thrust::raw_pointer_cast(_buf1);
 }
