@@ -5,23 +5,23 @@
 
 namespace psrdada_cpp {
 
-    template <typename T>
-    class DoubleBuffer
-    {
-    public:
-        DoubleBuffer();
-        ~DoubleBuffer();
-        void resize(std::size_t size);
-        void swap();
-        T* a() const;
-        T* b() const;
+template <typename T>
+class DoubleDeviceBuffer
+{
+public:
+    DoubleDeviceBuffer();
+    ~DoubleDeviceBuffer();
+    void resize(std::size_t size);
+    void swap();
+    T* a() const;
+    T* b() const;
 
-    private:
-        thrust::device_vector<T> _buf0;
-        thrust::device_vector<T> _buf1;
-        T* _a_ptr;
-        T* _b_ptr;
-    };
+private:
+    thrust::device_vector<T> _buf0;
+    thrust::device_vector<T> _buf1;
+    T* _a_ptr;
+    T* _b_ptr;
+};
 
 } //namespace psrdada_cpp
 
