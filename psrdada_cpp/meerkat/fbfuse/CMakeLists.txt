@@ -15,4 +15,8 @@ set(psrdada_cpp_meerkat_fbfuse_src
 
 cuda_add_library(${CMAKE_PROJECT_NAME}_meerkat_fbfuse ${psrdada_cpp_meerkat_fbfuse_src})
 
+cuda_add_executable(fbfuse src/fbfuse_cli.cu)
+target_link_libraries(fbfuse ${PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES})
+install(TARGETS fbfuse DESTINATION bin)
+
 endif(ENABLE_CUDA)

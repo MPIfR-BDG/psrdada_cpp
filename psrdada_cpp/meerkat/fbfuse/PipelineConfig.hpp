@@ -61,7 +61,6 @@ public:
     std::size_t npol() const {return FBFUSE_NPOL;}
     std::size_t nsamples_per_heap() const {return FBFUSE_NSAMPLES_PER_HEAP;}
 
-private:
     void calculate_channel_frequencies();
 
 private:
