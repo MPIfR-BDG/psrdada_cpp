@@ -7,6 +7,7 @@ include_directories(${PROJECT_BINARY_DIR})
 set(psrdada_cpp_src
     src/cli_utils.cpp
     src/dada_client_base.cpp
+    src/dada_db.cpp
     src/dada_write_client.cpp
     src/dada_null_sink.cpp
     src/dada_output_stream.cpp
