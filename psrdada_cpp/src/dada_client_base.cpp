@@ -47,7 +47,8 @@ namespace psrdada_cpp {
         dada_hdu_set_key(_hdu, _key);
         if (dada_hdu_connect (_hdu) < 0){
             _log.write(LOG_ERR, "could not connect to hdu\n");
-            throw std::runtime_error("Unable to connect to hdu\n");
+            throw std::runtime_error(std::string("Unable to connect to buffer with key: ")
+                + std::as_string(_key));
         }
         BOOST_LOG_TRIVIAL(debug) << this->id() << "Header buffer is " << header_buffer_count()
             << " x " << header_buffer_size() << " bytes";
@@ -61,7 +62,8 @@ namespace psrdada_cpp {
         BOOST_LOG_TRIVIAL(debug) << this->id() << "Disconnecting from dada buffer";
         if (dada_hdu_disconnect (_hdu) < 0){
             _log.write(LOG_ERR, "could not disconnect from hdu\n");
-            throw std::runtime_error("Unable to disconnect from hdu\n");
+            throw std::runtime_error(std::string("Unable to disconnect from buffer with key: ")
+                + std::as_string(_key));
         }
         dada_hdu_destroy(_hdu);
         _connected = false;
