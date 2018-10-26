@@ -66,6 +66,21 @@ int main(int argc, char** argv)
                     config.delay_buffer_sem(key + "_sem");
                 }),
            "The root of the POSIX key for the delay buffer shared memory and semaphores")
+        ("bandwidth", po::value<float>()
+            ->required()
+            ->notifier([&config](float value)
+                {
+                    config.bandwidth(value);
+                }),
+           "The bandwidth (Hz) of the subband this instance will process")
+
+        ("cfreq", po::value<float>()
+            ->required()
+            ->notifier([&config](float value)
+                {
+                    config.centre_frequency(value);
+                }),
+           "The centre frequency (Hz) of the subband this instance will process")
         ("log_level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)

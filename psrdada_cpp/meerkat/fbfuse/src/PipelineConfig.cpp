@@ -13,7 +13,6 @@ PipelineConfig::PipelineConfig()
     , _cb_dada_key(0xcaca)
     , _ib_dada_key(0xeaea)
 {
-    _channel_frequencies.resize(nchans());
 }
 
 PipelineConfig::~PipelineConfig()
@@ -81,8 +80,40 @@ void PipelineConfig::ib_dada_key(key_t key)
     _ib_dada_key = key;
 }
 
-std::vector<float> const& PipelineConfig::channel_frequencies() const
+float PipelineConfig::centre_frequency() const
 {
+    return _cfreq;
+}
+
+void PipelineConfig::centre_frequency(float cfreq)
+{
+    _cfreq = cfreq;
+}
+
+float PipelineConfig::bandwidth() const
+{
+    return _bw;
+}
+
+void PipelineConfig::bandwidth(float bw)
+{
+    _bw = bw;
+}
+
+std::vector<float> const& PipelineConfig::channel_frequencies()
+{
+    /**
+     * Need to revisit this implementation as it is not clear how the
+     * frequencies are labeled for the data out of the F-engine. Either
+     * way is a roughly correct place-holder.
+     */
+    float chbw = bandwidth()/nchans();
+    float fbottom = centre_frequency() - bandwidth()/2.0f;
+    _channel_frequencies.clear();
+    for (std::size_t chan_idx=0; chan_idx < nchans(); ++chan_idx)
+    {
+        _channel_frequencies.push_back(fbottom + chbw/2.0f + (chbw * chan_idx));
+    }
     return _channel_frequencies;
 }
 

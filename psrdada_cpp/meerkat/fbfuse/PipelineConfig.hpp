@@ -33,6 +33,12 @@ public:
     key_t ib_dada_key() const;
     void ib_dada_key(key_t);
 
+    float centre_frequency() const;
+    void centre_frequency(float cfreq);
+
+    float bandwidth() const;
+    void bandwidth(float bw);
+
     std::vector<float> const& channel_frequencies() const;
 
     // These are all just wrappers to provide programmatic access
@@ -62,6 +68,8 @@ private:
     key_t _input_dada_key;
     key_t _cb_dada_key;
     key_t _ib_dada_key;
+    float _cfreq;
+    float _bw;
     std::vector<float> _channel_frequencies;
 
 
