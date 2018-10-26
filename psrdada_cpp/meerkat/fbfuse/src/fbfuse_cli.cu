@@ -100,6 +100,7 @@ int main(int argc, char** argv)
                 return SUCCESS;
             }
             po::notify(vm);
+            config.calculate_channel_frequencies();
         }
         catch(po::error& e)
         {
@@ -107,6 +108,8 @@ int main(int argc, char** argv)
             std::cerr << desc << std::endl;
             return ERROR_IN_COMMAND_LINE;
         }
+
+        //
 
         /**
          * All the application code goes here

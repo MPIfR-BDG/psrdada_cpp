@@ -39,7 +39,7 @@ public:
     float bandwidth() const;
     void bandwidth(float bw);
 
-    std::vector<float> const& channel_frequencies();
+    std::vector<float> const& channel_frequencies() const;
 
     // These are all just wrappers to provide programmatic access
     // to the compile time constants that we are forced to use for
@@ -60,6 +60,9 @@ public:
     std::size_t total_nchans() const {return FBFUSE_NCHANS_TOTAL;}
     std::size_t npol() const {return FBFUSE_NPOL;}
     std::size_t nsamples_per_heap() const {return FBFUSE_NSAMPLES_PER_HEAP;}
+
+private:
+    void calculate_channel_frequencies();
 
 private:
     std::string _delay_buffer_shm;

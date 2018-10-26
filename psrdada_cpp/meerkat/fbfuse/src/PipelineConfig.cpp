@@ -100,7 +100,12 @@ void PipelineConfig::bandwidth(float bw)
     _bw = bw;
 }
 
-std::vector<float> const& PipelineConfig::channel_frequencies()
+std::vector<float> const& PipelineConfig::channel_frequencies() const
+{
+    return _channel_frequencies;
+}
+
+void PipelineConfig::calculate_channel_frequencies()
 {
     /**
      * Need to revisit this implementation as it is not clear how the
@@ -114,7 +119,6 @@ std::vector<float> const& PipelineConfig::channel_frequencies()
     {
         _channel_frequencies.push_back(fbottom + chbw/2.0f + (chbw * chan_idx));
     }
-    return _channel_frequencies;
 }
 
 } //namespace fbfuse
