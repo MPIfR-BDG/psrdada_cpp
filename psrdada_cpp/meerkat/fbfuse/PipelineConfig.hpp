@@ -51,6 +51,8 @@ public:
     std::size_t total_nantennas() const {return FBFUSE_TOTAL_NANTENNAS;}
     std::size_t nchans() const {return FBFUSE_NCHANS;}
     std::size_t total_nchans() const {return FBFUSE_NCHANS_TOTAL;}
+    std::size_t npol() const {return FBFUSE_NPOL;}
+    std::size_t nsamples_per_heap() const {return FBFUSE_NSAMPLES_PER_HEAP;}
 
 private:
     std::string _delay_buffer_shm;
