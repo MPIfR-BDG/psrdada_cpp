@@ -21,6 +21,20 @@ void DoubleDeviceBuffer<T>::resize(std::size_t size)
 {
     _buf0.resize(size);
     _buf1.resize(size);
+    update_pointers();
+}
+
+template <typename T>
+void DoubleDeviceBuffer<T>::resize(std::size_t size, T fill_value)
+{
+    _buf0.resize(size, fill_value);
+    _buf1.resize(size, fill_value);
+    update_pointers();
+}
+
+template <typename T>
+void DoubleDeviceBuffer<T>::update_pointers()
+{
     _a_ptr = thrust::raw_pointer_cast(_buf0.data());
     _b_ptr = thrust::raw_pointer_cast(_buf1.data());
 }
