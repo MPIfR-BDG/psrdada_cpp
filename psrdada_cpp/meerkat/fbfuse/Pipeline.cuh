@@ -1,5 +1,14 @@
-#ifndef PSRDADA_CPP_MEERKAT_FBFUSE_PIPELINE_HPP
-#define PSRDADA_CPP_MEERKAT_FBFUSE_PIPELINE_HPP
+#ifndef PSRDADA_CPP_MEERKAT_FBFUSE_PIPELINE_CUH
+#define PSRDADA_CPP_MEERKAT_FBFUSE_PIPELINE_CUH
+
+#include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
+#include "psrdada_cpp/meerkat/fbfuse/WeightsManager.cuh"
+#include "psrdada_cpp/dada_write_client.hpp"
+#include "psrdada_cpp/double_device_buffer.cuh"
+#include "psrdada_cpp/raw_bytes.hpp"
+#include "cuda.h"
+#include <memory>
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -61,4 +70,4 @@ private:
 } //namespace meerkat
 } //namespace psrdada_cpp
 
-#endif //PSRDADA_CPP_MEERKAT_FBFUSE_PIPELINE_HPP
+#endif //PSRDADA_CPP_MEERKAT_FBFUSE_PIPELINE_CUH

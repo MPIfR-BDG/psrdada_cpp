@@ -1,7 +1,7 @@
-
 #include "psrdada_cpp/meerkat/fbfuse/Pipeline.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
 #include "ascii_header.h"
+#include "cuda.h"
 #include <stdexcept>
 #include <exception>
 #include <cstdlib>
@@ -13,15 +13,6 @@
 namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {
-
-
-    std:size_t _sample_clock_start;
-    long double _sample_clock;
-    long double _sync_time;
-    long double _unix_timestamp;
-    std::size_t _sample_clock_tick_per_block;
-    std::size_t _call_count;
-
 
 Pipeline::Pipeline(PipelineConfig const& config,
     DadaWriteClient& cb_writer,
@@ -99,9 +90,9 @@ Pipeline::Pipeline(PipelineConfig const& config,
     BOOST_LOG_TRIVIAL(debug) << "Sample clock tick per block: " << _sample_clock_tick_per_block;
 
     BOOST_LOG_TRIVIAL(debug) << "Allocating CUDA streams";
-    CUDA_SAFE_CALL(cudaStreamCreate(&_h2d_copy_stream));
-    CUDA_SAFE_CALL(cudaStreamCreate(&_processing_stream));
-    CUDA_SAFE_CALL(cudaStreamCreate(&_d2h_copy_stream));
+    CUDA_ERROR_CHECK(cudaStreamCreate(&_h2d_copy_stream));
+    CUDA_ERROR_CHECK(cudaStreamCreate(&_processing_stream));
+    CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_copy_stream));
 
     BOOST_LOG_TRIVIAL(debug) << "Constructing delay and weights managers";
     delay_manager.reset(new DelayManager(config, _h2d_copy_stream));
@@ -120,9 +111,9 @@ Pipeline::~Pipeline()
         BOOST_LOG_TRIVIAL(warn) << "Non-fatal error on pipeline destruction: "
         << e.what();
     }
-    CUDA_SAFE_CALL(cudaStreamDestroy(_h2d_copy_stream));
-    CUDA_SAFE_CALL(cudaStreamDestroy(_processing_stream));
-    CUDA_SAFE_CALL(cudaStreamDestroy(_d2h_copy_stream));
+    CUDA_ERROR_CHECK(cudaStreamDestroy(_h2d_copy_stream));
+    CUDA_ERROR_CHECK(cudaStreamDestroy(_processing_stream));
+    CUDA_ERROR_CHECK(cudaStreamDestroy(_d2h_copy_stream));
 }
 
 void Pipeline::set_header(RawBlock& header)
@@ -160,7 +151,9 @@ void Pipeline::init(RawBlock& header)
 void Pipeline::process(char2* taftp_ptr, char* tbftf_ptr, char* tftf_ptr)
 {
     BOOST_LOG_TRIVIAL(debug) << "Performing coherent beamforming";
+    BOOST_LOG_TRIVIAL(debug) << "Calculating weights at unix time: " << _unix_timestamp;
     BOOST_LOG_TRIVIAL(debug) << "Performing incoherent beamforming";
+
 
     //auto const& weights_vector = weights_manager->weights(static_cast<double>(_unix_timestamp));
     // split transpose
@@ -182,9 +175,9 @@ bool Pipeline::operator()(RawBlock& data)
     // last host to device copy has completed successfully. When this is
     // done we are free to call swap on the double buffer without affecting
     // any previous copy.
-    CUDA_SAFE_CALL(cudaStreamSynchronize(_h2d_copy_stream));
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_copy_stream));
     _taftp_db.swap();
-    CUDA_SAFE_CALL(cudaMemcpyAsync(static_cast<void*>(_taftp_db.a()),
+    CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(_taftp_db.a()),
         static_cast<void*>(data.ptr()), data.used_bytes(),
         cudaMemcpyHostToDevice, _h2d_copy_stream));
 
@@ -195,17 +188,16 @@ bool Pipeline::operator()(RawBlock& data)
     {
         return false;
     }
-
-    //_sample_clock_tick_per_block FBFUSE_NCHANS_TOTAL
+    // Here we block on the processing stream before swapping
+    // the processing buffers
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_processing_stream));
+    _tbftf_db.swap();
+    _tftf_db.swap();
+    // Calculate the unix timestamp for the block that is about to be processed
+    // (which is the block passed the last time that operator() was called)
     _unix_timestamp = (_sync_time + (_sample_clock_start +
         ((_call_count - 2) * _sample_clock_tick_per_block))
     / _sample_clock);
-
-    // Here we block on the processing stream before swapping
-    // the processing buffers
-    CUDA_SAFE_CALL(cudaStreamSynchronize(_processing_stream));
-    _tbftf_db.swap();
-    _tftf_db.swap();
     process(_taftp_db.b(), _tbftf_db.a(), _tftf_db.a());
 
     // If we are on the second call we can exit here as there is not data
@@ -215,7 +207,7 @@ bool Pipeline::operator()(RawBlock& data)
         return false;
     }
 
-    CUDA_SAFE_CALL(cudaStreamSynchronize(_d2h_copy_stream));
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_copy_stream));
     // Only want to perform one copy per data block here, not d2h then h2h.
     // For this reason we need access to two DadaWriteClient instances in
     // this class.
@@ -228,10 +220,10 @@ bool Pipeline::operator()(RawBlock& data)
     }
     auto& cb_block = _cb_data_stream.next();
     auto& ib_block = _ib_data_stream.next();
-    CUDA_SAFE_CALL(cudaMemcpyAsync(static_cast<void*>(cb_block.ptr()),
+    CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(cb_block.ptr()),
         static_cast<void*>(_tbftf_db.b()), cb_block.total_bytes(),
         cudaMemcpyDeviceToHost, _d2h_copy_stream));
-    CUDA_SAFE_CALL(cudaMemcpyAsync(static_cast<void*>(ib_block.ptr()),
+    CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(ib_block.ptr()),
         static_cast<void*>(_tftf_db.b()), ib_block.total_bytes(),
         cudaMemcpyDeviceToHost, _d2h_copy_stream));
 

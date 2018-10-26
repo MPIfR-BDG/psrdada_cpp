@@ -1,7 +1,9 @@
+#include "psrdada_cpp/meerkat/fbfuse/Pipeline.cuh"
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
+#include "psrdada_cpp/DadaWriteClient.hpp"
+#include "psrdada_cpp/DadaClientBase.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
-#include "psrdada_cpp/dada_null_sink.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 
 #include "boost/program_options.hpp"
