@@ -10,6 +10,7 @@ set(psrdada_cpp_meerkat_fbfuse_src
     src/Header.cpp
     src/DelayManager.cu	
     src/WeightsManager.cu	
+    src/Pipeline.cu	
     )
 
 cuda_add_library(${CMAKE_PROJECT_NAME}_meerkat_fbfuse ${psrdada_cpp_meerkat_fbfuse_src})

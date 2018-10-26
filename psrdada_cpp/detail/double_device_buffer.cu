@@ -21,8 +21,8 @@ void DoubleDeviceBuffer<T>::resize(std::size_t size)
 {
     _buf0.resize(size);
     _buf1.resize(size);
-    _a_ptr = thrust::raw_pointer_cast(_buf0);
-    _b_ptr = thrust::raw_pointer_cast(_buf1);
+    _a_ptr = thrust::raw_pointer_cast(_buf0.data());
+    _b_ptr = thrust::raw_pointer_cast(_buf1.data());
 }
 
 template <typename T>

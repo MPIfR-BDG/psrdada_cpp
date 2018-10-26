@@ -14,7 +14,6 @@ namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {
 
-template <typename Handler>
 class Pipeline
 {
 private:
@@ -28,16 +27,17 @@ public:
     ~Pipeline();
     Pipeline(Pipeline const&) = delete;
 
-    void init(RawBlock& header);
-    bool operator()(RawBlock& data);
+    void init(RawBytes& header);
+    bool operator()(RawBytes& data);
 
 private:
-    void set_header(RawBlock& header);
+    void process(char2*, char*, char*);
+    void set_header(RawBytes& header);
 
 private:
     PipelineConfig const& _config;
 
-    std:size_t _sample_clock_start;
+    std::size_t _sample_clock_start;
     long double _sample_clock;
     long double _sync_time;
     long double _unix_timestamp;
@@ -50,10 +50,10 @@ private:
 
     DadaWriteClient& _cb_writer;
     DadaWriteClient::HeaderStream& _cb_header_stream;
-    DadaWriteClient::DataStream& _cb_header_stream;
+    DadaWriteClient::DataStream& _cb_data_stream;
     DadaWriteClient& _ib_writer;
     DadaWriteClient::HeaderStream& _ib_header_stream;
-    DadaWriteClient::DataStream& _ib_header_stream;
+    DadaWriteClient::DataStream& _ib_data_stream;
 
     cudaStream_t _h2d_copy_stream;
     cudaStream_t _processing_stream;
