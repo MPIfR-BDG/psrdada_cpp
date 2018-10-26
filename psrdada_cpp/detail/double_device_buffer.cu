@@ -1,4 +1,4 @@
-#include "psrdada_cpp/double_device_buffer.hpp"
+#include "psrdada_cpp/double_device_buffer.cuh"
 #include <utility>
 
 namespace psrdada_cpp {
