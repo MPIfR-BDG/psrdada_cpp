@@ -27,7 +27,7 @@ namespace psrdada_cpp {
         {
             _log.write(LOG_ERR, "open_hdu: could not lock read\n");
             throw std::runtime_error(std::string("Error locking HDU with key: ")
-                + std::as_string(_key));
+                + std::to_string(_key));
         }
         _locked = true;
     }
@@ -43,7 +43,7 @@ namespace psrdada_cpp {
         {
             _log.write(LOG_ERR, "open_hdu: could not release read\n");
             throw std::runtime_error(std::string("Error releasing HDU with key: ")
-                + std::as_string(_key));
+                + std::to_string(_key));
         }
         _locked = false;
     }
