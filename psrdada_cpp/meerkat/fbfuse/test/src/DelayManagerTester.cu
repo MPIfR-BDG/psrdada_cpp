@@ -28,7 +28,7 @@ DelayManagerTester::~DelayManagerTester()
 
 void DelayManagerTester::SetUp()
 {
-    _shm_fd = shm_open(_config.delay_buffer_shm().c_str(), O_CREAT | O_RDRW, 0666);
+    _shm_fd = shm_open(_config.delay_buffer_shm().c_str(), O_CREAT | O_RDWR, 0666);
     if (_shm_fd == -1)
     {
         FAIL() << "Failed to open shared memory named "
@@ -63,7 +63,7 @@ void DelayManagerTester::SetUp()
         << _config.delay_buffer_mutex() << " with error: "
         << std::strerror(errno);
     }
-    CUDA_ERROR_CHECK(cudaStreamCreate(_stream));
+    CUDA_ERROR_CHECK(cudaStreamCreate(&_stream));
 }
 
 void DelayManagerTester::TearDown()

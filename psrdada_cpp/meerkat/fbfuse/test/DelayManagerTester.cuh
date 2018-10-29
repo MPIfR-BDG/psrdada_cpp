@@ -13,6 +13,11 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <cstring>
+#include <semaphore.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -29,9 +34,7 @@ public:
     DelayManagerTester();
     ~DelayManagerTester();
 
-    void setup_buffers();
-
-private:
+protected:
     PipelineConfig _config;
     int _shm_fd;
     void* _shm_ptr;
