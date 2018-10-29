@@ -89,7 +89,7 @@ WeightsManager::WeightsManager(PipelineConfig const& config,
     std::size_t nantennas = _config.cb_nantennas();
     BOOST_LOG_TRIVIAL(debug) << "Constructing WeightsManager instance to hold weights for "
     << nbeams << " beams and " << nantennas << " antennas";
-    _weights.resize(nbeams * nantennas);
+    _weights.resize(nbeams * nantennas * _config.nchans());
     // This should be an implicit copy to the device
     BOOST_LOG_TRIVIAL(debug) << "Copying channel frequencies to the GPU";
     _channel_frequencies = _config.channel_frequencies();

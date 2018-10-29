@@ -113,7 +113,7 @@ TEST_F(WeightsManagerTester, test_real_value)
     std::size_t delays_size = FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS;
     WeightsManager weights_manager(_config, _stream);
     // This is a thrust::device_vector<float2>
-    DelayVectorType delays(delays_size, {2.0, 3.0});
+    DelayVectorType delays(delays_size, {1e-11f, 1e-10f});
     TimeType epoch = 10.0;
     // First try everything with only zeros
     auto const& weights = weights_manager.weights(delays, epoch);
