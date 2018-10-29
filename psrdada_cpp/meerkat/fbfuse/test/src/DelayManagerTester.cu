@@ -1,13 +1,6 @@
 #include "psrdada_cpp/meerkat/fbfuse/test/DelayManagerTester.cuh"
-#include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <cstring>
 
 namespace psrdada_cpp {
 namespace meerkat {

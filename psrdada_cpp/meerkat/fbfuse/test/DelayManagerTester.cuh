@@ -2,9 +2,16 @@
 #define PSRDADA_CPP_MEERKAT_FBFUSE_DELAYMANAGERTEST_CUH
 
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include <gtest/gtest.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <cstring>
 
 namespace psrdada_cpp {
 namespace meerkat {
