@@ -80,8 +80,9 @@ void generate_weights_k(
 
 } //namespace kernels
 
-
-WeightsManager::WeightsManager(PipelineConfig const& config, DelayManager& delay_manager, cudaStream_t stream)
+WeightsManager::WeightsManager(PipelineConfig const& config,
+    DelayManager& delay_manager,
+    cudaStream_t stream)
     : _config(config)
     , _delay_manager(delay_manager)
     , _stream(stream)

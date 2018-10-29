@@ -8,9 +8,9 @@ set(PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES
 set(psrdada_cpp_meerkat_fbfuse_src
     src/PipelineConfig.cpp
     src/Header.cpp
-    src/DelayManager.cu	
-    src/WeightsManager.cu	
-    src/Pipeline.cu	
+    src/DelayManager.cu
+    src/WeightsManager.cu
+    src/Pipeline.cu
     )
 
 cuda_add_library(${CMAKE_PROJECT_NAME}_meerkat_fbfuse ${psrdada_cpp_meerkat_fbfuse_src})
@@ -18,5 +18,7 @@ cuda_add_library(${CMAKE_PROJECT_NAME}_meerkat_fbfuse ${psrdada_cpp_meerkat_fbfu
 cuda_add_executable(fbfuse src/fbfuse_cli.cu)
 target_link_libraries(fbfuse ${PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES})
 install(TARGETS fbfuse DESTINATION bin)
+
+add_subdirectory(test)
 
 endif(ENABLE_CUDA)
