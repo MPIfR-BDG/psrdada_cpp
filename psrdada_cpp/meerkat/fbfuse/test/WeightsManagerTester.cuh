@@ -12,6 +12,11 @@ namespace test {
 
 class WeightsManagerTester: public ::testing::Test
 {
+public:
+    typedef WeightsManager::DelayVectorType DelayVectorType;
+    typedef WeightsManager::WeightsVectorType WeightsVectorType;
+    typedef WeightsManager::TimeType TimeType;	
+
 protected:
     void SetUp() override;
     void TearDown() override;

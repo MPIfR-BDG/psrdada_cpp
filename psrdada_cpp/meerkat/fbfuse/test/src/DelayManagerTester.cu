@@ -145,7 +145,7 @@ TEST_F(DelayManagerTester, test_bad_keys)
     config.delay_buffer_shm("bad_test_delay_buffer_shm");
     config.delay_buffer_sem("bda_test_delay_buffer_sem");
     config.delay_buffer_mutex("bad_test_delay_buffer_mutex");
-    ASSERT_THROW(DelayManager(config, _stream));
+    ASSERT_ANY_THROW(DelayManager(config, _stream));
 }
 
 } //namespace test

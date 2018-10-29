@@ -1,7 +1,9 @@
 #include "psrdada_cpp/meerkat/fbfuse/test/WeightsManagerTester.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
-#include "thrust/host_vector.hpp"
+#include "thrust/host_vector.h"
+
+#define TWOPI 6.283185307179586f
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -83,7 +85,7 @@ void WeightsManagerTester::compare_against_host(
     thrust::host_vector<char2> c_weights(cuda_weights.size());
     calc_weights_c_reference(host_delays, c_weights,
         _config.channel_frequencies(), _config.cb_nantennas(),
-        _config.cb_nbeams(), _channel_frequencies.size(),
+        _config.cb_nbeams(), _config.channel_frequencies().size(),
         epoch, 0.0, 1);
     for (int ii = 0; ii < cuda_weights.size(); ++ii)
     {
