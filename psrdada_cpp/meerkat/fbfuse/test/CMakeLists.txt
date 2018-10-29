@@ -5,6 +5,7 @@ link_directories(${GTEST_LIBRARY_DIR})
 set(
     gtest_fbfuse_src
     src/DelayManagerTester.cu
+    src/WeightsManagerTester.cu
     src/gtest_fbfuse.cu
 )
 cuda_add_executable(gtest_fbfuse ${gtest_fbfuse_src} )

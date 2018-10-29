@@ -12,6 +12,7 @@ PipelineConfig::PipelineConfig()
     , _input_dada_key(0xdada)
     , _cb_dada_key(0xcaca)
     , _ib_dada_key(0xeaea)
+    , _channel_frequencies_stale(true)
 {
 }
 
@@ -88,6 +89,7 @@ float PipelineConfig::centre_frequency() const
 void PipelineConfig::centre_frequency(float cfreq)
 {
     _cfreq = cfreq;
+    _channel_frequencies_stale = true;
 }
 
 float PipelineConfig::bandwidth() const
@@ -98,10 +100,15 @@ float PipelineConfig::bandwidth() const
 void PipelineConfig::bandwidth(float bw)
 {
     _bw = bw;
+    _channel_frequencies_stale = true;
 }
 
 std::vector<float> const& PipelineConfig::channel_frequencies() const
 {
+    if (_channel_frequencies_stale)
+    {
+        calculate_channel_frequencies();
+    }
     return _channel_frequencies;
 }
 
@@ -119,6 +126,7 @@ void PipelineConfig::calculate_channel_frequencies()
     {
         _channel_frequencies.push_back(fbottom + chbw/2.0f + (chbw * chan_idx));
     }
+    _channel_frequencies_stale = false;
 }
 
 } //namespace fbfuse

@@ -32,6 +32,7 @@ public:
     typedef float FreqType;
     typedef thrust::device_vector<FreqType> FreqVectorType;
     typedef float TimeType;
+    typedef DelayManager::DelayVectorType DelayVectorType;
 
 public:
 
@@ -39,14 +40,16 @@ public:
      * @brief      Create a new weights mananger object
      *
      * @param      config          The pipeline configuration
-     * @param      _delay_manager  A DelayManager instance
      */
-    WeightsManager(PipelineConfig const& config, DelayManager& _delay_manager, cudaStream_t stream);
+    WeightsManager(PipelineConfig const& config, cudaStream_t stream);
     ~WeightsManager();
     WeightsManager(WeightsManager const&) = delete;
 
     /**
      * @brief      Calculate beamforming weights for a given epock
+     *
+     * @param[in]  delays A vector containing delay models for all beams (produced by
+     *             an instance of DelayManager)
      *
      * @param[in]  epoch  The epoch at which to evaluate the given delay models
      *
@@ -63,11 +66,10 @@ public:
      *
      * @return     A thrust device vector containing the generated weights
      */
-    WeightsVectorType const& weights(TimeType epoch);
+    WeightsVectorType const& weights(DelayVectorType const& delays, TimeType epoch);
 
 private:
     PipelineConfig const& _config;
-    DelayManager& _delay_manager;
     cudaStream_t _stream;
     WeightsVectorType _weights;
     FreqVectorType _channel_frequencies;
