@@ -4,7 +4,7 @@ include(cmake/googletest.cmake)
 include(cmake/boost.cmake)
 include(cmake/psrdada.cmake)
 include_directories(SYSTEM ${Boost_INCLUDE_DIR} ${PSRDADA_INCLUDE_DIR})
-include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
+include_directories(BEFORE ${GTEST_INCLUDE_DIR})
 set(DEPENDENCY_LIBRARIES
     ${GTEST_LIBRARIES}
     ${Boost_LIBRARIES}
