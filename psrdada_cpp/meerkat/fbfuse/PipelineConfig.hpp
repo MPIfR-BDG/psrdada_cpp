@@ -73,6 +73,7 @@ private:
     float _cfreq;
     float _bw;
     std::vector<float> _channel_frequencies;
+    bool _channel_frequencies_stale;
 
 
 };

@@ -81,10 +81,8 @@ void generate_weights_k(
 } //namespace kernels
 
 WeightsManager::WeightsManager(PipelineConfig const& config,
-    DelayManager& delay_manager,
     cudaStream_t stream)
     : _config(config)
-    , _delay_manager(delay_manager)
     , _stream(stream)
 {
     std::size_t nbeams = _config.cb_nbeams();
@@ -101,11 +99,11 @@ WeightsManager::~WeightsManager()
 {
 }
 
-WeightsManager::WeightsVectorType const& WeightsManager::weights(TimeType epoch)
+WeightsManager::WeightsVectorType const& WeightsManager::weights(
+    DelayVectorType const& delays, TimeType epoch)
 {
     // First we retrieve new delays if there are any.
     BOOST_LOG_TRIVIAL(debug) << "Requesting weights for epoch = " << epoch;
-    DelayManager::DelayVectorType const& delays = _delay_manager.delays();
     DelayManager::DelayType const* delays_ptr = thrust::raw_pointer_cast(delays.data());
     WeightsType* weights_ptr = thrust::raw_pointer_cast(_weights.data());
     FreqType const* frequencies_ptr = thrust::raw_pointer_cast(_channel_frequencies.data());

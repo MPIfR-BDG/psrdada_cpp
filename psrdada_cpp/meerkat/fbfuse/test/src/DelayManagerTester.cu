@@ -127,7 +127,6 @@ void DelayManagerTester::compare_against_host(DelayManager::DelayVectorType cons
     }
 }
 
-
 TEST_F(DelayManagerTester, test_updates)
 {
     DelayManager delay_manager(_config, _stream);
@@ -137,6 +136,15 @@ TEST_F(DelayManagerTester, test_updates)
     std::memset(static_cast<void*>(_delay_model->delays), 1, sizeof(_delay_model->delays));
     sem_post(_sem_id);
     compare_against_host(delay_vector);
+}
+
+TEST_F(DelayManagerTester, test_bad_keys)
+{
+    PipelineConfig config;
+    config.delay_buffer_shm("bad_test_delay_buffer_shm");
+    config.delay_buffer_sem("bda_test_delay_buffer_sem");
+    config.delay_buffer_mutex("bad_test_delay_buffer_mutex");
+    ASSERT_THROW(DelayManager(config, _stream));
 }
 
 } //namespace test
