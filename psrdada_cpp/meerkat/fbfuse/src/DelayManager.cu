@@ -69,13 +69,11 @@ DelayManager::DelayManager(PipelineConfig const& config, cudaStream_t stream)
             "MMAP on delay model buffer returned a null pointer: ")
             + std::strerror(errno));
     }
-	
-    // Note: cudaHostRegister is not working below for one of a few reasons:
+    // Note: cudaHostRegister is not working below for a couple of reasons:
     //     1. The size is not a multiple of the page size on this machine
-    //     2. The memory is not page aligned
-    //     3. The memory is not page locked
-    // This issue should be solvable, but I will only come back to it if 
-    // there is a strong performance need.
+    //     2. The memory is not page aligned properly
+    // This issue is solvable by changing the DelayModel struct, but I will
+    // only fix this if there is a strong performance need.
     //
     // To maximise the copy throughput for the delays we here register the host memory
     // BOOST_LOG_TRIVIAL(debug) << "Registering shared memory segement with CUDA driver";

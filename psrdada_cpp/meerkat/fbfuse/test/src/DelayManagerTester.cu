@@ -1,6 +1,7 @@
 #include "psrdada_cpp/meerkat/fbfuse/test/DelayManagerTester.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
+#include "thrust/host_vector.hpp"
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -69,6 +70,8 @@ void DelayManagerTester::SetUp()
         << _config.delay_buffer_mutex() << " with error: "
         << std::strerror(errno);
     }
+    // Here we post once so that the mutex has a value of 1
+    // and can so be safely acquired by the DelayManger
     sem_post(_mutex_id);
     CUDA_ERROR_CHECK(cudaStreamCreate(&_stream));
 }
@@ -112,12 +115,28 @@ void DelayManagerTester::TearDown()
     CUDA_ERROR_CHECK(cudaStreamDestroy(_stream));
 }
 
+void DelayManagerTester::compare_against_host(DelayManager::DelayVectorType const& delays)
+{
+    // Implicit sync copy back to host
+    thrust::host_vector<DelayManager::DelayType> host_delays = delays;
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    for (int ii=0; ii < FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS; ++ii)
+    {
+        ASSERT_EQ(_delay_model->delays[ii].x, _dhost_delays[ii].x);
+        ASSERT_EQ(_delay_model->delays[ii].y, _dhost_delays[ii].y);
+    }
+}
 
-TEST_F(DelayManagerTester, dummy_test)
+
+TEST_F(DelayManagerTester, test_updates)
 {
     DelayManager delay_manager(_config, _stream);
-    sem_post(_sem_id);	
-    delay_manager.delays();
+    sem_post(_sem_id);
+    auto const& delay_vector = delay_manager.delays();
+    compare_against_host(delay_vector);
+    std::memset(static_cast<void*>(_delay_model->delays), 1, sizeof(_delay_model->delays));
+    sem_post(_sem_id);
+    compare_against_host(delay_vector);
 }
 
 } //namespace test

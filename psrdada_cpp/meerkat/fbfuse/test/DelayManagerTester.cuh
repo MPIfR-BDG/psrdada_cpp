@@ -22,6 +22,9 @@ public:
     ~DelayManagerTester();
 
 protected:
+    void compare_against_host(DelayManager::DelayVectorType const& delays);
+
+protected:
     PipelineConfig _config;
     int _shm_fd;
     void* _shm_ptr;
