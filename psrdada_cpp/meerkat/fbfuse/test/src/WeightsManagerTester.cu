@@ -18,12 +18,15 @@ WeightsManagerTester::WeightsManagerTester()
 WeightsManagerTester::~WeightsManagerTester()
 {
 
+
 }
 
 void WeightsManagerTester::SetUp()
 {
     _config.centre_frequency(1.4e9);
     _config.bandwidth(56.0e6);
+    _config.calculate_channel_frequencies();
+    _config.calculate_channel_frequencies();
     CUDA_ERROR_CHECK(cudaStreamCreate(&_stream));
 }
 
