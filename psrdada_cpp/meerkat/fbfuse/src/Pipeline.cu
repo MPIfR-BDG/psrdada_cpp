@@ -97,7 +97,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
 
     BOOST_LOG_TRIVIAL(debug) << "Constructing delay and weights managers";
     delay_manager.reset(new DelayManager(_config, _h2d_copy_stream));
-    weights_manager.reset(new WeightsManager(_config, *delay_manager, _processing_stream));
+    weights_manager.reset(new WeightsManager(_config, _processing_stream));
 }
 
 Pipeline::~Pipeline()
