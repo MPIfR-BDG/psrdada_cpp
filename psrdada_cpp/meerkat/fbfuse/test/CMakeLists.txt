@@ -4,9 +4,9 @@ link_directories(${GTEST_LIBRARY_DIR})
 
 set(
     gtest_fbfuse_src
-    src/DelayManagerTester.cpp
-    src/gtest_fbfuse.cpp
+    src/DelayManagerTester.cu
+    src/gtest_fbfuse.cu
 )
-add_executable(gtest_fbfuse ${gtest_fbfuse_src} )
+cuda_add_executable(gtest_fbfuse ${gtest_fbfuse_src} )
 target_link_libraries(gtest_fbfuse ${PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES})
 add_test(gtest_fbfuse gtest_fbfuse --test_data "${CMAKE_CURRENT_LIST_DIR}/data")
