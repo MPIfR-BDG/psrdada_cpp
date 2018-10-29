@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,6 +34,7 @@ public:
 private:
     PipelineConfig _config;
     int _shm_fd;
+    void* _shm_ptr;
     sem_t* _sem_id;
     sem_t* _mutex_id;
     DelayModel* _delay_model;
