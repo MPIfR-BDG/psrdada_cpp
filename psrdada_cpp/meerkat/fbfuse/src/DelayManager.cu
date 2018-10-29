@@ -69,7 +69,6 @@ DelayManager::DelayManager(PipelineConfig const& config, cudaStream_t stream)
             "MMAP on delay model buffer returned a null pointer: ")
             + std::strerror(errno));
     }
-
     // To maximise the copy throughput for the delays we here register the host memory
     BOOST_LOG_TRIVIAL(debug) << "Registering shared memory segement with CUDA driver";
     CUDA_ERROR_CHECK(cudaHostRegister(static_cast<void*>(_delay_model->delays),
@@ -83,10 +82,30 @@ DelayManager::~DelayManager()
 {
     BOOST_LOG_TRIVIAL(debug) << "Destroying DelayManager instance";
     CUDA_ERROR_CHECK(cudaHostUnregister(static_cast<void*>(_delay_model->delays)));
-    munmap(_delay_model, sizeof(DelayModel));
-    close(_delay_buffer_fd);
-    sem_close(_delay_mutex_sem);
-    sem_close(_delay_count_sem);
+    if (munmap(_delay_model, sizeof(DelayModel)) == -1)
+    {
+        throw std::runtime_error(std::string(
+            "Failed to unmap shared memory with error: ")
+            + std::strerror(errno));
+    }
+    if (close(_delay_buffer_fd) == -1)
+    {
+        throw std::runtime_error(std::string(
+            "Failed to close shared memory file descriptor with error: ")
+            + std::strerror(errno));
+    }
+    if (sem_close(_delay_count_sem) == -1)
+    {
+        throw std::runtime_error(std::string(
+            "Failed to close counting semaphore with error: ")
+            + std::strerror(errno));
+    }
+    if (sem_close(_delay_mutex_sem) == -1)
+    {
+        throw std::runtime_error(std::string(
+            "Failed to close mutex semaphore with error: ")
+            + std::strerror(errno));
+    }
 }
 
 bool DelayManager::update_available()
