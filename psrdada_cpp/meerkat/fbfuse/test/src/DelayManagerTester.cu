@@ -1,4 +1,4 @@
-#include "psrdada_cpp/meerkat/fbfuse/test/DelayManagerTester.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/test/DelayManagerTester.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
