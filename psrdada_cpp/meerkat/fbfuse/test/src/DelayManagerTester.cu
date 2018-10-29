@@ -69,6 +69,7 @@ void DelayManagerTester::SetUp()
         << _config.delay_buffer_mutex() << " with error: "
         << std::strerror(errno);
     }
+    sem_post(_mutex_id);
     CUDA_ERROR_CHECK(cudaStreamCreate(&_stream));
 }
 
@@ -115,6 +116,7 @@ void DelayManagerTester::TearDown()
 TEST_F(DelayManagerTester, dummy_test)
 {
     DelayManager delay_manager(_config, _stream);
+    sem_post(_sem_id);	
     delay_manager.delays();
 }
 

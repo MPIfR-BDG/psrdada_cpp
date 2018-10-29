@@ -69,11 +69,18 @@ DelayManager::DelayManager(PipelineConfig const& config, cudaStream_t stream)
             "MMAP on delay model buffer returned a null pointer: ")
             + std::strerror(errno));
     }
+	
+    // Note: cudaHostRegister is not working below for one of a few reasons:
+    //     1. The size is not a multiple of the page size on this machine
+    //     2. The memory is not page aligned
+    //     3. The memory is not page locked
+    // This issue should be solvable, but I will only come back to it if 
+    // there is a strong performance need.
+    //
     // To maximise the copy throughput for the delays we here register the host memory
-    BOOST_LOG_TRIVIAL(debug) << "Registering shared memory segement with CUDA driver";
-    CUDA_ERROR_CHECK(cudaHostRegister(static_cast<void*>(_delay_model->delays),
-        sizeof(_delay_model->delays), cudaHostRegisterMapped));
-
+    // BOOST_LOG_TRIVIAL(debug) << "Registering shared memory segement with CUDA driver";
+    // CUDA_ERROR_CHECK(cudaHostRegister(static_cast<void*>(_delay_model->delays),
+    //    sizeof(_delay_model->delays), cudaHostRegisterMapped));
     // Resize the GPU array for the delays
     _delays.resize(FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS);
 }
@@ -81,7 +88,7 @@ DelayManager::DelayManager(PipelineConfig const& config, cudaStream_t stream)
 DelayManager::~DelayManager()
 {
     BOOST_LOG_TRIVIAL(debug) << "Destroying DelayManager instance";
-    CUDA_ERROR_CHECK(cudaHostUnregister(static_cast<void*>(_delay_model->delays)));
+    //CUDA_ERROR_CHECK(cudaHostUnregister(static_cast<void*>(_delay_model->delays)));
     if (munmap(_delay_model, sizeof(DelayModel)) == -1)
     {
         throw std::runtime_error(std::string(
