@@ -1,7 +1,7 @@
 #include "psrdada_cpp/meerkat/fbfuse/test/DelayManagerTester.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
-#include "thrust/host_vector.hpp"
+#include "thrust/host_vector.h"
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -122,8 +122,8 @@ void DelayManagerTester::compare_against_host(DelayManager::DelayVectorType cons
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     for (int ii=0; ii < FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS; ++ii)
     {
-        ASSERT_EQ(_delay_model->delays[ii].x, _dhost_delays[ii].x);
-        ASSERT_EQ(_delay_model->delays[ii].y, _dhost_delays[ii].y);
+        ASSERT_EQ(_delay_model->delays[ii].x, host_delays[ii].x);
+        ASSERT_EQ(_delay_model->delays[ii].y, host_delays[ii].y);
     }
 }
 
@@ -136,7 +136,8 @@ TEST_F(DelayManagerTester, test_updates)
     compare_against_host(delay_vector);
     std::memset(static_cast<void*>(_delay_model->delays), 1, sizeof(_delay_model->delays));
     sem_post(_sem_id);
-    compare_against_host(delay_vector);
+    auto const& delay_vector_2 = delay_manager.delays();
+    compare_against_host(delay_vector_2);
 }
 
 } //namespace test
