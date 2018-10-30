@@ -234,4 +234,3 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
 } //namespace meerkat
 } //namespace psrdada_cpp
 
-#endif //PSRDADA_CPP_MEERKAT_FBFUSE_COHERENTBEAMFORMER_HPP
