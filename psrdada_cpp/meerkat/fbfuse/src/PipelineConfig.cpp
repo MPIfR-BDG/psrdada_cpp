@@ -81,6 +81,26 @@ void PipelineConfig::ib_dada_key(key_t key)
     _ib_dada_key = key;
 }
 
+float PipelineConfig::cb_power_scaling() const
+{
+    return _cb_power_scaling;
+}
+
+void PipelineConfig::cb_power_scaling(float scaling)
+{
+    _cb_power_scaling = scaling;
+}
+
+float PipelineConfig::cb_power_offset() const
+{
+    return _cb_power_offset;
+}
+
+void PipelineConfig::cb_power_offset(float offset)
+{
+    _cb_power_offset = offset;
+}
+
 float PipelineConfig::centre_frequency() const
 {
     return _cfreq;

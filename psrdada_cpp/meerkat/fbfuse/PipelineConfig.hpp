@@ -50,6 +50,13 @@ public:
     std::size_t cb_antenna_offset() const {return FBFUSE_CB_ANTENNA_OFFSET;}
     std::size_t cb_nbeams() const {return FBFUSE_CB_NBEAMS;}
     std::size_t cb_nsamples_per_block() const {return FBFUSE_CB_NSAMPLES_PER_BLOCK;}
+
+    float cb_power_scaling() const;
+    void cb_power_scaling(float scaling);
+
+    float cb_power_offset() const;
+    void cb_power_offset(float offset);
+
     std::size_t ib_tscrunch() const {return FBFUSE_IB_TSCRUNCH;}
     std::size_t ib_fscrunch() const {return FBFUSE_IB_FSCRUNCH;}
     std::size_t ib_nantennas() const {return FBFUSE_IB_NANTENNAS;}
@@ -74,6 +81,8 @@ private:
     float _bw;
     std::vector<float> _channel_frequencies;
     bool _channel_frequencies_stale;
+    float _cb_power_scaling;
+    float _cb_power_offset;
 
 
 };
