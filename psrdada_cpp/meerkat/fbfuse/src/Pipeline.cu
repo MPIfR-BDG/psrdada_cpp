@@ -32,9 +32,6 @@ Pipeline::Pipeline(PipelineConfig const& config,
     , _ib_writer(ib_writer)
     , _ib_header_stream(ib_writer.header_stream())
     , _ib_data_stream(ib_writer.data_stream())
-    , _delay_manager.reset(nullptr)
-    , _weights_manager.reset(nullptr);
-    . _split_transpose.reset(nullptr)
 {
     BOOST_LOG_TRIVIAL(debug) << "Verifying all DADA buffer capacities";
     // Here we should check the size of all the input and output
@@ -205,7 +202,7 @@ bool Pipeline::operator()(RawBytes& data)
     _unix_timestamp = (_sync_time + (_sample_clock_start +
         ((_call_count - 2) * _sample_clock_tick_per_block))
     / _sample_clock);
-    process(_taftp_db.b(), _tbftf_db.a_ptr(), _tftf_db.a());
+    process(_taftp_db.b(), _tbftf_db.a(), _tftf_db.a());
 
     // If we are on the second call we can exit here as there is not data
     // that has completed processing at this stage.

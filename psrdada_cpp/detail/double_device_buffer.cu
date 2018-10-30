@@ -35,25 +35,25 @@ void DoubleDeviceBuffer<T>::swap()
 }
 
 template <typename T>
-typename DoubleDeviceBuffer<T>::VectorType& T* DoubleDeviceBuffer<T>::a() const
+typename DoubleDeviceBuffer<T>::VectorType& DoubleDeviceBuffer<T>::a()
 {
     return _buf0;
 }
 
 template <typename T>
-typename DoubleDeviceBuffer<T>::VectorType& DoubleDeviceBuffer<T>::b() const
+typename DoubleDeviceBuffer<T>::VectorType& DoubleDeviceBuffer<T>::b()
 {
     return _buf1;
 }
 
 template <typename T>
-T* DoubleDeviceBuffer<T>::a_ptr() const
+T* DoubleDeviceBuffer<T>::a_ptr() 
 {
     return thrust::raw_pointer_cast(_buf0.data());;
 }
 
 template <typename T>
-T* DoubleDeviceBuffer<T>::b_ptr() const
+T* DoubleDeviceBuffer<T>::b_ptr()
 {
     return thrust::raw_pointer_cast(_buf1.data());
 }

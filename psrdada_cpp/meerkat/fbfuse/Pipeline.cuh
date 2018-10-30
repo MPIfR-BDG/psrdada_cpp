@@ -4,6 +4,7 @@
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/WeightsManager.cuh"
+#include "psrdada_cpp/meerkat/fbfuse/SplitTranspose.cuh"
 #include "psrdada_cpp/dada_write_client.hpp"
 #include "psrdada_cpp/double_device_buffer.cuh"
 #include "psrdada_cpp/raw_bytes.hpp"
@@ -18,7 +19,7 @@ class Pipeline
 {
 public:
     typedef thrust::device_vector<char2> VoltageVectorType;
-    typedef thrust::device_vector<char2> PowerVectorType;
+    typedef thrust::device_vector<char> PowerVectorType;
     typedef long double TimeType;
 
 public:
@@ -33,7 +34,7 @@ public:
     bool operator()(RawBytes& data);
 
 private:
-    void process(char2*, char*, char*);
+    void process(VoltageVectorType const&, PowerVectorType&, PowerVectorType&);
     void set_header(RawBytes& header);
 
 private:

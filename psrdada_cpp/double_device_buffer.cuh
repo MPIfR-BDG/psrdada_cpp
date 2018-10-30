@@ -18,10 +18,10 @@ public:
     void resize(std::size_t size, T fill_value);
     void swap();
 
-    VectorType& a() const;
-    VectorType& b() const;
-    T* a_ptr() const;
-    T* b_ptr() const;
+    VectorType& a();
+    VectorType& b();
+    T* a_ptr();
+    T* b_ptr();
 
 private:
     VectorType _buf0;
