@@ -16,7 +16,7 @@ namespace fbfuse {
 
 class Pipeline
 {
-private:
+public:
     typedef long double TimeType;
 
 public:
@@ -61,8 +61,8 @@ private:
 
     std::size_t _nheap_groups_per_block;
     std::size_t _nsamples_per_dada_block;
-    std::unique_ptr<DelayManager> delay_manager;
-    std::unique_ptr<WeightsManager> weights_manager;
+    std::unique_ptr<DelayManager> _delay_manager;
+    std::unique_ptr<WeightsManager> _weights_manager;
 
 };
 

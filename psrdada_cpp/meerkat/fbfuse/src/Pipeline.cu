@@ -96,8 +96,8 @@ Pipeline::Pipeline(PipelineConfig const& config,
     CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_copy_stream));
 
     BOOST_LOG_TRIVIAL(debug) << "Constructing delay and weights managers";
-    delay_manager.reset(new DelayManager(_config, _h2d_copy_stream));
-    weights_manager.reset(new WeightsManager(_config, _processing_stream));
+    _delay_manager.reset(new DelayManager(_config, _h2d_copy_stream));
+    _weights_manager.reset(new WeightsManager(_config, _processing_stream));
 }
 
 Pipeline::~Pipeline()
@@ -150,7 +150,13 @@ void Pipeline::init(RawBytes& header)
 void Pipeline::process(char2* taftp_ptr, char* tbftf_ptr, char* tftf_ptr)
 {
     BOOST_LOG_TRIVIAL(debug) << "Performing coherent beamforming";
+    BOOST_LOG_TRIVIAL(debug) << "Checking for delay updates";
+    auto const& delays = _delay_manager->delays();
     BOOST_LOG_TRIVIAL(debug) << "Calculating weights at unix time: " << _unix_timestamp;
+    auto const& weights = _weights_manager.weights(delays, _unix_timestamp);
+    BOOST_LOG_TRIVIAL(debug) << "Transposing input input data";
+
+
     BOOST_LOG_TRIVIAL(debug) << "Performing incoherent beamforming";
 
 

@@ -10,6 +10,7 @@ set(psrdada_cpp_meerkat_fbfuse_src
     src/Header.cpp
     src/DelayManager.cu
     src/WeightsManager.cu
+    src/SplitTranspose.cu
     src/Pipeline.cu
     )
 
