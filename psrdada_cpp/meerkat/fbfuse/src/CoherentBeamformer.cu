@@ -1,9 +1,10 @@
 #include "psrdada_cpp/meerkat/fbfuse/CoherentBeamformer.cuh"
+#include "psrdada_cpp/cuda_utils.hpp"
 #include <cassert>
 
 #define FBFUSE_CB_WARP_SIZE 32
 #define FBFUSE_CB_NTHREADS 1024
-#define FBFUSE_CB_NWARPS_PER_BLOCK = (FBFUSE_CB_NTHREADS / FBFUSE_CB_WARP_SIZE)
+#define FBFUSE_CB_NWARPS_PER_BLOCK (FBFUSE_CB_NTHREADS / FBFUSE_CB_WARP_SIZE)
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -117,7 +118,7 @@ void bf_aptf_general_k(
      * computes 32 beams. Each thread computes only 1 beam and access to all the antennas required for that
      * computation is achieved via a shared memory broadcasts.
      */
-    int sample_offset = FBFUSE_CB_TSCRUNCH * (blockIdx.x * NWARPS_PER_BLOCK + warp_idx);
+    int sample_offset = FBFUSE_CB_TSCRUNCH * (blockIdx.x * FBFUSE_CB_NWARPS_PER_BLOCK + warp_idx);
     for (int sample_idx = sample_offset; sample_idx < (sample_offset + FBFUSE_CB_TSCRUNCH); ++sample_idx)
     {
         int ftpa_voltages_partial_idx = FBFUSE_CB_NANTENNAS/4 * FBFUSE_NPOL * (nsamples * blockIdx.y + sample_idx);
@@ -184,7 +185,7 @@ void bf_aptf_general_k(
     // Wanted output in BTF order
     // But now need in TBTF order (TODO!!!!!!!)
 
-    int output_idx = gridDim.y * (((start_beam_idx+lane_idx) * NWARPS_PER_BLOCK * gridDim.x)
+    int output_idx = gridDim.y * (((start_beam_idx+lane_idx) * FBFUSE_CB_NWARPS_PER_BLOCK * gridDim.x)
           + (sample_offset / FBFUSE_CB_TSCRUNCH)) + blockIdx.y;
     tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);
 }
@@ -221,8 +222,8 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
     char2 const* fbpa_weights_ptr = thrust::raw_pointer_cast(weights.data());
     char* tbtf_powers_ptr = thrust::raw_pointer_cast(output.data());
     kernels::bf_aptf_general_k<<<grid, FBFUSE_CB_NTHREADS, 0, stream>>>(
-        static_cast<int2*>(ftpa_voltages_ptr),
-        static_cast<int2*>(fbpa_weights_ptr),
+        (int2 const*) ftpa_voltages_ptr,
+        (int2 const*) fbpa_weights_ptr,
         tbtf_powers_ptr,
         _config.cb_power_scaling(),
         _config.cb_power_offset(),
