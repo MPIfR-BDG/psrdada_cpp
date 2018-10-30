@@ -32,6 +32,9 @@ Pipeline::Pipeline(PipelineConfig const& config,
     , _ib_writer(ib_writer)
     , _ib_header_stream(ib_writer.header_stream())
     , _ib_data_stream(ib_writer.data_stream())
+    , _delay_manager.reset(nullptr)
+    , _weights_manager.reset(nullptr);
+    . _split_transpose.reset(nullptr)
 {
     BOOST_LOG_TRIVIAL(debug) << "Verifying all DADA buffer capacities";
     // Here we should check the size of all the input and output
@@ -98,6 +101,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
     BOOST_LOG_TRIVIAL(debug) << "Constructing delay and weights managers";
     _delay_manager.reset(new DelayManager(_config, _h2d_copy_stream));
     _weights_manager.reset(new WeightsManager(_config, _processing_stream));
+    _split_transpose.reset(new SplitTranspose(_config));
 }
 
 Pipeline::~Pipeline()
@@ -147,22 +151,20 @@ void Pipeline::init(RawBytes& header)
     _ib_header_stream.release();
 }
 
-void Pipeline::process(char2* taftp_ptr, char* tbftf_ptr, char* tftf_ptr)
+void Pipeline::process(VoltageVectorType const& taftp_vec,
+    PowerVectorType& tbftf_vec, PowerVectorType& tftf_vec)
 {
     BOOST_LOG_TRIVIAL(debug) << "Performing coherent beamforming";
     BOOST_LOG_TRIVIAL(debug) << "Checking for delay updates";
     auto const& delays = _delay_manager->delays();
     BOOST_LOG_TRIVIAL(debug) << "Calculating weights at unix time: " << _unix_timestamp;
     auto const& weights = _weights_manager->weights(delays, _unix_timestamp);
-    BOOST_LOG_TRIVIAL(debug) << "Transposing input input data";
-
-
+    BOOST_LOG_TRIVIAL(debug) << "Transposing input data from TAFTP to FTPA order";
+    _split_transpose->transpose(taftp_vec, _split_transpose_output, _processing_stream);
     BOOST_LOG_TRIVIAL(debug) << "Performing incoherent beamforming";
 
 
-    //auto const& weights_vector = weights_manager->weights(static_cast<double>(_unix_timestamp));
-    // split transpose
-    // weights gen
+
     // coherent beamformer
     // incoherent beamformer
 
@@ -182,7 +184,7 @@ bool Pipeline::operator()(RawBytes& data)
     // any previous copy.
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_copy_stream));
     _taftp_db.swap();
-    CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(_taftp_db.a()),
+    CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(_taftp_db.a_ptr()),
         static_cast<void*>(data.ptr()), data.used_bytes(),
         cudaMemcpyHostToDevice, _h2d_copy_stream));
 
@@ -203,7 +205,7 @@ bool Pipeline::operator()(RawBytes& data)
     _unix_timestamp = (_sync_time + (_sample_clock_start +
         ((_call_count - 2) * _sample_clock_tick_per_block))
     / _sample_clock);
-    process(_taftp_db.b(), _tbftf_db.a(), _tftf_db.a());
+    process(_taftp_db.b(), _tbftf_db.a_ptr(), _tftf_db.a());
 
     // If we are on the second call we can exit here as there is not data
     // that has completed processing at this stage.
@@ -226,10 +228,10 @@ bool Pipeline::operator()(RawBytes& data)
     auto& cb_block = _cb_data_stream.next();
     auto& ib_block = _ib_data_stream.next();
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(cb_block.ptr()),
-        static_cast<void*>(_tbftf_db.b()), cb_block.total_bytes(),
+        static_cast<void*>(_tbftf_db.b_ptr()), cb_block.total_bytes(),
         cudaMemcpyDeviceToHost, _d2h_copy_stream));
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(ib_block.ptr()),
-        static_cast<void*>(_tftf_db.b()), ib_block.total_bytes(),
+        static_cast<void*>(_tftf_db.b_ptr()), ib_block.total_bytes(),
         cudaMemcpyDeviceToHost, _d2h_copy_stream));
 
     return false;

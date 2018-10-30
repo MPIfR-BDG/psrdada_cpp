@@ -9,22 +9,23 @@ template <typename T>
 class DoubleDeviceBuffer
 {
 public:
+    typedef thrust::device_vector<T> VectorType;
+
+public:
     DoubleDeviceBuffer();
     ~DoubleDeviceBuffer();
     void resize(std::size_t size);
     void resize(std::size_t size, T fill_value);
     void swap();
-    T* a() const;
-    T* b() const;
+
+    VectorType& a() const;
+    VectorType& b() const;
+    T* a_ptr() const;
+    T* b_ptr() const;
 
 private:
-    void update_pointers();
-
-private:
-    thrust::device_vector<T> _buf0;
-    thrust::device_vector<T> _buf1;
-    T* _a_ptr;
-    T* _b_ptr;
+    VectorType _buf0;
+    VectorType _buf1;
 };
 
 } //namespace psrdada_cpp

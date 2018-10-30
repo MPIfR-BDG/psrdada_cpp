@@ -17,6 +17,8 @@ namespace fbfuse {
 class Pipeline
 {
 public:
+    typedef thrust::device_vector<char2> VoltageVectorType;
+    typedef thrust::device_vector<char2> PowerVectorType;
     typedef long double TimeType;
 
 public:
@@ -61,8 +63,13 @@ private:
 
     std::size_t _nheap_groups_per_block;
     std::size_t _nsamples_per_dada_block;
+
     std::unique_ptr<DelayManager> _delay_manager;
     std::unique_ptr<WeightsManager> _weights_manager;
+    std::unique_ptr<SplitTranspose> _split_transpose;
+
+    VoltageVectorType _split_transpose_output;
+
 
 };
 

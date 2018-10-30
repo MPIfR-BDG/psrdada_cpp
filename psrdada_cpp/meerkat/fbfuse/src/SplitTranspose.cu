@@ -77,14 +77,17 @@ SplitTranspose::SplitTranspose(PipelineConfig const& config)
     , _heap_group_size(0)
     , _output_size_per_heap_group(0)
 {
+    BOOST_LOG_TRIVIAL(debug) << "Constructing SplitTranspose instance";
     _heap_group_size = (_config.npol()
         * _config.nsamples_per_heap()
         * _config.nchans()
         * _config.total_nantennas());
+    BOOST_LOG_TRIVIAL(debug) << "Heap group size: " << _heap_group_size;
     _output_size_per_heap_group = (_config.npol()
         * _config.nsamples_per_heap()
         * _config.nchans()
         * _config.cb_nantennas());
+    BOOST_LOG_TRIVIAL(debug) << "Output size per heap group: " << _output_size_per_heap_group;
 }
 
 SplitTranspose::~SplitTranspose()
@@ -95,21 +98,31 @@ SplitTranspose::~SplitTranspose()
 void SplitTranspose::transpose(VoltageType const& taftp_voltages,
         VoltageType& ftpa_voltages, cudaStream_t stream)
 {
+    BOOST_LOG_TRIVIAL(debug) << "Performing split transpose";
+    BOOST_LOG_TRIVIAL(debug) << "Selecting and transposing "
+    << _config.cb_nantennas() << " of " << _config.total_nantennas()
+    << " antennas starting from antenna " << _config.cb_antenna_offset();
     // Check sizes
     assert(taftp_voltages.size()%_heap_group_size == 0);
     int nheap_groups = taftp_voltages.size() / _heap_group_size;
+    BOOST_LOG_TRIVIAL(debug) << "Number of heap groups: " << nheap_groups;
     // Resize output buffer
+    BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer from "
+    << ftpa_voltages.size() << " to "
+    << _output_size_per_heap_group * nheap_groups;
     ftpa_voltages.resize(_output_size_per_heap_group * nheap_groups);
     dim3 grid(nheap_groups, _config.nchans(), 1);
     dim3 block(512, 1, 1);
     char2 const* input_ptr = thrust::raw_pointer_cast(taftp_voltages.data());
     char2* output_ptr = thrust::raw_pointer_cast(ftpa_voltages.data());
+    BOOST_LOG_TRIVIAL(debug) << "Launching split transpose kernel";
     kernels::split_transpose_k<<< grid, block, 0, stream>>>(input_ptr, output_ptr,
         _config.total_nantennas(), _config.cb_nantennas(),
         _config.cb_antenna_offset(), _config.nchans(),
         nheap_groups);
     //Not sure if this should be here, will check later
     CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+    BOOST_LOG_TRIVIAL(debug) << "Split transpose complete";
 }
 
 
