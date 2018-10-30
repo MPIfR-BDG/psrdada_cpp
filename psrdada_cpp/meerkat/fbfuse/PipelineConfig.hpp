@@ -47,7 +47,7 @@ public:
     std::size_t cb_tscrunch() const {return FBFUSE_CB_TSCRUNCH;}
     std::size_t cb_fscrunch() const {return FBFUSE_CB_FSCRUNCH;}
     std::size_t cb_nantennas() const {return FBFUSE_CB_NANTENNAS;}
-    std::size_t cb_anntena_offset() const {return FBFUSE_CB_ANTENNA_OFFSET;}
+    std::size_t cb_antenna_offset() const {return FBFUSE_CB_ANTENNA_OFFSET;}
     std::size_t cb_nbeams() const {return FBFUSE_CB_NBEAMS;}
     std::size_t cb_nsamples_per_block() const {return FBFUSE_CB_NSAMPLES_PER_BLOCK;}
     std::size_t ib_tscrunch() const {return FBFUSE_IB_TSCRUNCH;}

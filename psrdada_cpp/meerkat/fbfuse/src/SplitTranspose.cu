@@ -1,4 +1,5 @@
 #include "psrdada_cpp/meerkat/fbfuse/SplitTranspose.cuh"
+#include "psrdada_cpp/cuda_utils.hpp"
 
 #define FBFUSE_ST_MAX_ANTENNAS 32
 
@@ -17,16 +18,16 @@ void split_transpose_k(
     int nchans,
     int ntimestamps)
 {
-    __shared__ char2 transpose_buffer[FBFUSE_ST_MAX_ANTENNAS][FBFUSE_NSAMPS_PER_TIMESTAMP][FBFUSE_NPOL];
+    __shared__ char2 transpose_buffer[FBFUSE_ST_MAX_ANTENNAS][FBFUSE_NSAMPLES_PER_HEAP][FBFUSE_NPOL];
 
     //TAFTP (input dimensions)
-    const int tp = FBFUSE_NSAMPS_PER_TIMESTAMP * FBFUSE_NPOL;
+    const int tp = FBFUSE_NSAMPLES_PER_HEAP * FBFUSE_NPOL;
     const int ftp = nchans * tp;
     const int aftp = total_nantennas * ftp;
 
     //FTPA
     const int pa = FBFUSE_NPOL * used_nantennas;
-    const int tpa = ntimestamps * FBFUSE_NSAMPS_PER_TIMESTAMP * pa;
+    const int tpa = ntimestamps * FBFUSE_NSAMPLES_PER_HEAP * pa;
     int nantennas_sets = ceilf(((float) used_nantennas) / FBFUSE_ST_MAX_ANTENNAS);
     for (int timestamp_idx = blockIdx.x; timestamp_idx < ntimestamps; timestamp_idx += gridDim.x)
     {
@@ -39,7 +40,7 @@ void split_transpose_k(
                 for (int antenna_idx = threadIdx.y; antenna_idx < remaining_antennas; antenna_idx += blockDim.y)
                 {
                     int input_antenna_idx = antenna_set_idx * FBFUSE_ST_MAX_ANTENNAS + antenna_idx + start_antenna;
-                    for (int samppol_idx = threadIdx.x; samppol_idx < (FBFUSE_NSAMPS_PER_TIMESTAMP * FBFUSE_NPOL); samppol_idx += blockDim.x)
+                    for (int samppol_idx = threadIdx.x; samppol_idx < (FBFUSE_NSAMPLES_PER_HEAP * FBFUSE_NPOL); samppol_idx += blockDim.x)
                     {
                         int pol_idx = samppol_idx%FBFUSE_NPOL;
                         int samp_idx = samppol_idx/FBFUSE_NPOL;
@@ -50,9 +51,9 @@ void split_transpose_k(
                 __syncthreads();
                 for (int pol_idx = 0; pol_idx < FBFUSE_NPOL; ++pol_idx)
                 {
-                    for (int samp_idx = threadIdx.y; samp_idx < FBFUSE_NSAMPS_PER_TIMESTAMP; samp_idx += blockDim.y)
+                    for (int samp_idx = threadIdx.y; samp_idx < FBFUSE_NSAMPLES_PER_HEAP; samp_idx += blockDim.y)
                     {
-                        int output_sample_idx = samp_idx + timestamp_idx * FBFUSE_NSAMPS_PER_TIMESTAMP;
+                        int output_sample_idx = samp_idx + timestamp_idx * FBFUSE_NSAMPLES_PER_HEAP;
                         for (int antenna_idx = threadIdx.x; antenna_idx < remaining_antennas; antenna_idx += blockDim.x)
                         {
                             int output_antenna_idx = antenna_set_idx * FBFUSE_ST_MAX_ANTENNAS + antenna_idx;
@@ -71,9 +72,10 @@ void split_transpose_k(
 } //namespace kernels
 
 
-SplitTranspose::SplitTranspose(PipelineConfig const& config,
-        std::size_t nheap_groups_per_block)
+SplitTranspose::SplitTranspose(PipelineConfig const& config)
     : _config(config)
+    , _heap_group_size(0)
+    , _output_size_per_heap_group(0)
 {
     _heap_group_size = (_config.npol()
         * _config.nsamples_per_heap()
@@ -98,7 +100,7 @@ void SplitTranspose::transpose(VoltageType const& taftp_voltages,
     int nheap_groups = taftp_voltages.size() / _heap_group_size;
     // Resize output buffer
     ftpa_voltages.resize(_output_size_per_heap_group * nheap_groups);
-    dim3 grid(ntimestamps, nchans, 1);
+    dim3 grid(nheap_groups, _config.nchans(), 1);
     dim3 block(512, 1, 1);
     char2 const* input_ptr = thrust::raw_pointer_cast(taftp_voltages.data());
     char2* output_ptr = thrust::raw_pointer_cast(ftpa_voltages.data());

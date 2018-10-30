@@ -2,7 +2,7 @@
 #define PSRDADA_CPP_MEERKAT_FBFUSE_SPLITTRANSPOSE_HPP
 
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
-#include "psradada_cpp/common.hpp"
+#include "psrdada_cpp/common.hpp"
 #include "thrust/device_vector.h"
 
 namespace psrdada_cpp {
@@ -36,6 +36,8 @@ public:
 
 private:
     PipelineConfig const& _config;
+    std::size_t _heap_group_size;
+    std::size_t _output_size_per_heap_group;
 
 };
 
