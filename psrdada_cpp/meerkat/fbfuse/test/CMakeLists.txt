@@ -6,6 +6,7 @@ set(
     gtest_fbfuse_src
     src/DelayManagerTester.cu
     src/WeightsManagerTester.cu
+    src/SplitTransposeTester.cu
     src/gtest_fbfuse.cu
 )
 cuda_add_executable(gtest_fbfuse ${gtest_fbfuse_src} )
