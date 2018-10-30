@@ -62,6 +62,7 @@ public:
         cudaStream_t stream);
 
 private:
+    PipelineConfig const& _config;
     std::size_t _size_per_sample;
     std::size_t _expected_weights_size;
 };
