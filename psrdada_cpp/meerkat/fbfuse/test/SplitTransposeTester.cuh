@@ -37,9 +37,9 @@ protected:
         int ntimestamps);
 
     void compare_against_host(
-        VoltageType const& gpu_input,
-        VoltageType const& gpu_output,
-        std::size_t ntimestamps)
+        DeviceVoltageType const& gpu_input,
+        DeviceVoltageType const& gpu_output,
+        std::size_t ntimestamps);
 
 protected:
     PipelineConfig _config;

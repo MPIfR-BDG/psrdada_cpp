@@ -100,10 +100,11 @@ TEST_F(SplitTransposeTester, cycling_prime_test)
     std::size_t input_size = (ntimestamps * _config.total_nantennas()
         * _config.nchans() * _config.nsamples_per_heap() * _config.npol());
 
-    DeviceVoltageType host_gpu_input(input_size);
+    HostVoltageType host_gpu_input(input_size);
     for (int ii = 0; ii < input_size; ++ii)
     {
-        host_gpu_input[ii] = ii % 113;
+        host_gpu_input[ii].x = (ii % 113);
+        host_gpu_input[ii].y = (ii % 107);
     }
     DeviceVoltageType gpu_input = host_gpu_input;
     DeviceVoltageType gpu_output;
