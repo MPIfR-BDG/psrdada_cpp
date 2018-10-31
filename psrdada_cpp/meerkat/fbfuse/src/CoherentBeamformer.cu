@@ -184,7 +184,6 @@ void bf_aptf_general_k(
 
     // Wanted output in BTF order
     // But now need in TBTF order (TODO!!!!!!!)
-
     int output_idx = gridDim.y * (((start_beam_idx+lane_idx) * FBFUSE_CB_NWARPS_PER_BLOCK * gridDim.x)
           + (sample_offset / FBFUSE_CB_TSCRUNCH)) + blockIdx.y;
     tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);

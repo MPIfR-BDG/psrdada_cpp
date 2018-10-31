@@ -5,6 +5,7 @@
 #include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/WeightsManager.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/SplitTranspose.cuh"
+#include "psrdada_cpp/meerkat/fbfuse/CoherentBeamformer.cuh"
 #include "psrdada_cpp/dada_write_client.hpp"
 #include "psrdada_cpp/double_device_buffer.cuh"
 #include "psrdada_cpp/raw_bytes.hpp"
@@ -68,6 +69,7 @@ private:
     std::unique_ptr<DelayManager> _delay_manager;
     std::unique_ptr<WeightsManager> _weights_manager;
     std::unique_ptr<SplitTranspose> _split_transpose;
+    std::unique_ptr<CoherentBeamformer> _coherent_beamformer;
 
     VoltageVectorType _split_transpose_output;
 
