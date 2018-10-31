@@ -218,7 +218,6 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
     BOOST_LOG_TRIVIAL(debug) << "Executing coherent beamforming";
     assert(input.size() % _size_per_sample == 0);
     std::size_t nsamples = input.size() / _size_per_sample;
-
     BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer from "
     << output.size() << " to " << (nsamples * _size_per_sample)
     << " elements";

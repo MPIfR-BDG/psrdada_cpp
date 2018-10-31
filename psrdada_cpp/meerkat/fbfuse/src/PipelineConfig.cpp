@@ -13,6 +13,8 @@ PipelineConfig::PipelineConfig()
     , _cb_dada_key(0xcaca)
     , _ib_dada_key(0xeaea)
     , _channel_frequencies_stale(true)
+    , _cb_power_scaling(127.0f)
+    , _cb_power_offset(0.0f)
 {
 }
 

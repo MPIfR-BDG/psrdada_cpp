@@ -123,6 +123,8 @@ void CoherentBeamformerTester::compare_against_host(
 
 TEST_F(CoherentBeamformerTester, cycling_prime_test)
 {
+    _config.cb_power_scaling(10.0f);
+    _config.cb_power_offset(0.0f);
     CoherentBeamformer coherent_beamformer(_config);
     std::size_t ntimestamps = 32;
     std::size_t input_size = (ntimestamps * _config.cb_nantennas()
