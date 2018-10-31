@@ -2,6 +2,7 @@
 #define PSRDADA_CPP_MEERKAT_FBFUSE_COHERENTBEAMFORMER_HPP
 
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
+#include "psrdada_cpp/common.hpp"
 #include "thrust/device_vector.h"
 #include "cuda.h"
 
