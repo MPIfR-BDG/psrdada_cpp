@@ -45,6 +45,8 @@ void CoherentBeamformerTester::beamformer_c_reference(
     float offset)
 {
     int xx,yy,xy,yx;
+    double power_sum = 0.0;
+    std::size_t count = 0;
     for (int channel_idx = 0; channel_idx < nchannels; ++channel_idx)
     {
         BOOST_LOG_TRIVIAL(debug) << "Beamformer C reference: "
@@ -88,10 +90,13 @@ void CoherentBeamformerTester::beamformer_c_reference(
                 int btf_powers_idx = beam_idx * nsamples/naccumulate * nchannels
                 + sample_idx/naccumulate * nchannels
                 + channel_idx;
+                power_sum += power;
+                ++count;
                 btf_powers[btf_powers_idx] = (int8_t) ((power - offset)/scale);
             }
         }
     }
+    BOOST_LOG_TRIVIAL(debug) << "Average power level: " << power_sum / count;
 }
 
 void CoherentBeamformerTester::compare_against_host(
