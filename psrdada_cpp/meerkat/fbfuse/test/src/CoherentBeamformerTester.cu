@@ -103,7 +103,7 @@ void CoherentBeamformerTester::compare_against_host(
     beamformer_c_reference(ftpa_voltages_host,
         fbpa_weights_host,
         btf_powers_host,
-        _config.nchans().
+        _config.nchans(),
         _config.cb_tscrunch(),
         nsamples,
         _config.cb_nbeams(),
@@ -124,14 +124,14 @@ TEST_F(CoherentBeamformerTester, cycling_prime_test)
     std::size_t input_size = (ntimestamps * _config.cb_nantennas()
         * _config.nchans() * _config.nsamples_per_heap() * _config.npol());
     int nsamples = _config.nsamples_per_heap() * ntimestamps;
-    std::size_t weights_size = _config.cb_nantennas() * _config.nchans() * _config.beams();
+    std::size_t weights_size = _config.cb_nantennas() * _config.nchans() * _config.cb_nbeams();
     HostVoltageVectorType ftpa_voltages_host(input_size);
     for (int ii = 0; ii < ftpa_voltages_host.size(); ++ii)
     {
         ftpa_voltages_host[ii].x = (ii % 113);
         ftpa_voltages_host[ii].y = (ii % 107);
     }
-    HostWeightsVectorType fbpa_weights_host(weights_size)
+    HostWeightsVectorType fbpa_weights_host(weights_size);
     for (int ii = 0; ii < fbpa_weights_host.size(); ++ii)
     {
         fbpa_weights_host[ii].x = (ii % 83);
