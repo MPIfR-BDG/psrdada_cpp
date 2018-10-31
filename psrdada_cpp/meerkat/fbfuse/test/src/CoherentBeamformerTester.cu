@@ -1,5 +1,6 @@
 #include "psrdada_cpp/meerkat/fbfuse/test/CoherentBeamformerTester.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
+#include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 
 namespace psrdada_cpp {
@@ -46,6 +47,9 @@ void CoherentBeamformerTester::beamformer_c_reference(
     int xx,yy,xy,yx;
     for (int channel_idx = 0; channel_idx < nchannels; ++channel_idx)
     {
+        BOOST_LOG_TRIVIAL(debug) << "Beamformer C reference: "
+        << static_cast<int>(100.0f * (channel_idx + 1.0f) / nchannels)
+        << "% complete";
         for (int sample_idx = 0; sample_idx < nsamples; sample_idx+=naccumulate)
         {
             for (int beam_idx = 0; beam_idx < nbeams; ++beam_idx)

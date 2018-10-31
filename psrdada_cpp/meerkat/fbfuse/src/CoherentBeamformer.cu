@@ -184,6 +184,7 @@ void bf_aptf_general_k(
 
     // Wanted output in BTF order
     // But now need in TBTF order (TODO!!!!!!!)
+
     int output_idx = gridDim.y * (((start_beam_idx+lane_idx) * FBFUSE_CB_NWARPS_PER_BLOCK * gridDim.x)
           + (sample_offset / FBFUSE_CB_TSCRUNCH)) + blockIdx.y;
     tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);
@@ -196,8 +197,11 @@ CoherentBeamformer::CoherentBeamformer(PipelineConfig const& config)
     : _config(config)
     , _size_per_sample(0)
 {
+    BOOST_LOG_TRIVIAL(debug) << "Constructing CoherentBeamformer instance";
     _size_per_sample = _config.npol() * _config.cb_nantennas() * _config.nchans();
     _expected_weights_size = _config.cb_nbeams() * _config.cb_nantennas() * _config.nchans();
+    BOOST_LOG_TRIVIAL(debug) << "Size per sample: " << _size_per_sample;
+    BOOST_LOG_TRIVIAL(debug) << "Expected weights size: " << _expected_weights_size;
 }
 
 CoherentBeamformer::~CoherentBeamformer()
@@ -211,8 +215,13 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
     cudaStream_t stream)
 {
     // First work out nsamples and resize output if not done already
+    BOOST_LOG_TRIVIAL(debug) << "Executing coherent beamforming";
     assert(input.size() % _size_per_sample == 0);
     std::size_t nsamples = input.size() / _size_per_sample;
+
+    BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer from "
+    << output.size() << " to " << (nsamples * _size_per_sample)
+    << " elements";
     output.resize(nsamples * _size_per_sample);
     assert(weights.size() == _expected_weights_size);
     dim3 grid(nsamples / (FBFUSE_CB_NWARPS_PER_BLOCK * _config.cb_tscrunch()),
@@ -220,6 +229,7 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
     char2 const* ftpa_voltages_ptr = thrust::raw_pointer_cast(input.data());
     char2 const* fbpa_weights_ptr = thrust::raw_pointer_cast(weights.data());
     char* tbtf_powers_ptr = thrust::raw_pointer_cast(output.data());
+    BOOST_LOG_TRIVIAL(debug) << "Executing beamforming kernel";
     kernels::bf_aptf_general_k<<<grid, FBFUSE_CB_NTHREADS, 0, stream>>>(
         (int2 const*) ftpa_voltages_ptr,
         (int2 const*) fbpa_weights_ptr,
@@ -228,6 +238,7 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
         _config.cb_power_offset(),
         static_cast<int>(nsamples));
     CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
+    BOOST_LOG_TRIVIAL(debug) << "Beamforming kernel complete";
 }
 
 } //namespace fbfuse
