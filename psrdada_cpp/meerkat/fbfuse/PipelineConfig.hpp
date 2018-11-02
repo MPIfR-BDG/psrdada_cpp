@@ -82,7 +82,6 @@ public:
      * Note: We do not assume different scaling per channel, if there are significantly different power
      * levels in each channel the scaling should always be set to accommodate the worst cast scenario.
      */
-
     void output_level(float level);
     float output_level() const;
     void input_level(float level);

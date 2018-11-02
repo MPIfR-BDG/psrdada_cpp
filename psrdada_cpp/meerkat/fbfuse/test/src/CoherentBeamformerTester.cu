@@ -36,7 +36,7 @@ void CoherentBeamformerTester::TearDown()
 void CoherentBeamformerTester::beamformer_c_reference(
     HostVoltageVectorType const& ftpa_voltages,
     HostWeightsVectorType const& fbpa_weights,
-    HostPowerVectorType& btf_powers,
+    HostPowerVectorType& tbtf_powers,
     int nchannels,
     int naccumulate,
     int nsamples,
@@ -90,13 +90,21 @@ void CoherentBeamformerTester::beamformer_c_reference(
                         power += (float)(r*r + i*i);
                     }
                 }
-                int btf_powers_idx = beam_idx * nsamples/naccumulate * nchannels
-                + sample_idx/naccumulate * nchannels
-                + channel_idx;
+                int tf_size = nsamples_per_heap * nchannels
+                int btf_size = nbeams * tf_size;
+                int output_sample_idx = sample_idx / naccumulate;
+                int tbtf_powers_idx = (output_sample_idx / nsamples_per_heap * btf_size
+                    + beam_idx * tf_size
+                    + (output_sample_idx % nsamples_per_heap) * nchannels
+                    + channel_idx);
+                //int btf_powers_idx = beam_idx * nsamples/naccumulate * nchannels
+                //+ sample_idx/naccumulate * nchannels
+                //+ channel_idx;
                 power_sum += power;
                 power_sq_sum += power * power;
                 ++count;
-                btf_powers[btf_powers_idx] = (int8_t) ((power - offset)/scale);
+                //btf_powers[btf_powers_idx] = (int8_t) ((power - offset)/scale);
+                tbtf_powers[tbtf_powers_idx] = (int8_t) ((power - offset)/scale);
             }
         }
     }

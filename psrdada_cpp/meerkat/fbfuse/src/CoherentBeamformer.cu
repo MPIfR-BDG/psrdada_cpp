@@ -63,7 +63,6 @@ void bf_aptf_general_k(
      */
     static_assert(FBFUSE_CB_NBEAMS%FBFUSE_CB_WARP_SIZE==0,
         "Kernel can only process a multiple of 32 beams.");
-
     // This can no longer be a static assert as the NSAMPLES is no longer fixed
     // static_assert(NSAMPLES%FBFUSE_CB_NSAMPLES_PER_BLOCK==0,
     //    "Kernel can only process a multiple of (NWARPS_PER_BLOCK * FBFUSE_CB_TSCRUNCH) samples.");
@@ -73,7 +72,6 @@ void bf_aptf_general_k(
         "Number of antennas must be a multiple of 4.");
     static_assert(FBFUSE_CB_NANTENNAS<=128,
         "Number of antennas must be less than or equal to 128.");
-
     /**
      * Allocated shared memory to store beamforming weights and temporary space for antenna data.
      */
@@ -104,8 +102,8 @@ void bf_aptf_general_k(
      *
      * The global load is coalesced 8-byte (vectorised int2).
      */
-    int const fbpa_weights_offset = FBFUSE_CB_NANTENNAS/4 * (FBFUSE_CB_NBEAMS * blockIdx.y + (FBFUSE_CB_WARP_SIZE * blockIdx.z + warp_idx));
-    for (antenna_group_idx = lane_idx; antenna_group_idx < FBFUSE_CB_NANTENNAS/4; antenna_group_idx+=FBFUSE_CB_WARP_SIZE)
+    int const fbpa_weights_offset = FBFUSE_CB_NANTENNAS/4 * (FBFUSE_CB_NBEAMS * blockIdx.y + (start_beam_idx + warp_idx));
+    for (antenna_group_idx = lane_idx; antenna_group_idx < FBFUSE_CB_NANTENNAS/4; antenna_group_idx += FBFUSE_CB_WARP_SIZE)
     {
       shared_apb_weights[antenna_group_idx][warp_idx] = int2_transpose(fbpa_weights[fbpa_weights_offset + antenna_group_idx]);
     }
@@ -130,24 +128,16 @@ void bf_aptf_general_k(
             xy = 0;
             yx = 0;
 
-        /**
-         * Load all antennas antennas required for this sample into shared memory.
-         * Without an outer loop to allow for more antennas (which would also require more shared memory),
-         * this kernel is limited to a max of 32 * 4 = 128 antennas in a sub-array.
-         */
+           /**
+            * Load all antennas antennas required for this sample into shared memory.
+            * Without an outer loop to allow for more antennas (which would also require more shared memory),
+            * this kernel is limited to a max of 32 * 4 = 128 antennas in a sub-array.
+            */
             if (lane_idx < FBFUSE_CB_NANTENNAS/4)
             {
                 shared_antennas[warp_idx][lane_idx] = int2_transpose(ftpa_voltages[ftpa_voltages_partial_idx + lane_idx + FBFUSE_CB_NANTENNAS/4 * pol_idx]);
             }
-
-        // I don't understand why this __threadfence_block is needed, but it is.
-        // Everything in the kernel should be warp synchronous but for some reason removing
-        // this threadfence causes tests to fail. I assume this has something to do with the
-        // branching above. I was under the impression that __threadfence_block basically didn't
-        // do anything, but it is needed for correctness here and results in a minor performance loss.
-        // Substituting in a syncthreads causes significant performance loss.
-        __threadfence_block();
-
+            __threadfence_block();
             for (antenna_group_idx=0; antenna_group_idx < FBFUSE_CB_NANTENNAS/4; ++antenna_group_idx)
             {
                 //broadcast load 4 antennas
@@ -163,7 +153,7 @@ void bf_aptf_general_k(
             int r = xx - yy;
             int i = xy + yx;
             //be careful of overflow
-        power += (float)(r*r + i*i);
+            power += (float)(r*r + i*i);
         }
     }
 
@@ -184,9 +174,18 @@ void bf_aptf_general_k(
 
     // Wanted output in BTF order
     // But now need in TBTF order (TODO!!!!!!!)
-
-    int output_idx = gridDim.y * (((start_beam_idx+lane_idx) * FBFUSE_CB_NWARPS_PER_BLOCK * gridDim.x)
+    /* Original implementation
+    int const output_idx = gridDim.y * (((start_beam_idx+lane_idx) * FBFUSE_CB_NWARPS_PER_BLOCK * gridDim.x)
           + (sample_offset / FBFUSE_CB_TSCRUNCH)) + blockIdx.y;
+    tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);
+    */
+    int const output_sample_idx = sample_offset / FBFUSE_CB_TSCRUNCH;
+    int const tf_size = FBFUSE_CB_NSAMPLES_PER_HEAP * gridDim.y;
+    int const btf_size = gridDim.z * FBFUSE_CB_WARP_SIZE * tf_size;
+    int const output_idx = (output_sample_idx / FBFUSE_CB_NSAMPLES_PER_HEAP * btf_size
+        + (start_beam_idx + lane_idx) * tf_size
+        + (output_sample_idx % FBFUSE_CB_NSAMPLES_PER_HEAP) * gridDim.y
+        + blockIdx.y);
     tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);
 }
 
@@ -218,10 +217,12 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
     BOOST_LOG_TRIVIAL(debug) << "Executing coherent beamforming";
     assert(input.size() % _size_per_sample == 0);
     std::size_t nsamples = input.size() / _size_per_sample;
-    std::size_t output_size = (input.size() / _config.cb_nantennas() 
+    std::size_t output_size = (input.size() / _config.cb_nantennas()
 	/ _config.npol() / _config.cb_tscrunch() / _config.cb_fscrunch()
-	* _config.cb_nbeams());	
-
+	* _config.cb_nbeams());
+    assert(nsamples % FBFUSE_CB_NSAMPLES_PER_BLOCK == 0);
+    std::size_t nsamples_out = nsamples / _config.cb_tscrunch();
+    assert(nsamples_out % FBFUSE_CB_NSAMPLES_PER_HEAP == 0);
     BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer from "
     << output.size() << " to " << output_size
     << " elements";
