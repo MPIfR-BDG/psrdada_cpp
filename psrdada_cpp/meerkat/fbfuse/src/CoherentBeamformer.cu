@@ -150,10 +150,10 @@ void bf_aptf_general_k(
                 dp4a(xy,weights.x,antennas.y);
                 dp4a(yx,weights.y,antennas.x);
             }
-            int r = xx - yy;
-            int i = xy + yx;
-            //be careful of overflow
-            power += (float)(r*r + i*i);
+            // This was previously int and was going into overflow
+            float r = (float)xx - (float)yy;
+            float i = (float)xy + (float)yx;
+            power += r*r + i*i;
         }
     }
 

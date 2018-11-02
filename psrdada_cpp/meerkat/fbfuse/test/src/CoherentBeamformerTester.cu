@@ -46,7 +46,7 @@ void CoherentBeamformerTester::beamformer_c_reference(
     float scale,
     float offset)
 {
-    int xx,yy,xy,yx;
+    float xx,yy,xy,yx;
     double power_sum = 0.0;
     double power_sq_sum = 0.0;
     std::size_t count = 0;
@@ -64,7 +64,7 @@ void CoherentBeamformerTester::beamformer_c_reference(
                 {
                     for (int pol_idx = 0; pol_idx < npol; ++pol_idx)
                     {
-                        int2 accumulator = {0,0};
+                        float2 accumulator = {0,0};
                         for (int antenna_idx = 0; antenna_idx < nantennas; ++antenna_idx)
                         {
                             int ftpa_voltages_idx = nantennas * npol * nsamples * channel_idx
@@ -85,9 +85,9 @@ void CoherentBeamformerTester::beamformer_c_reference(
                             accumulator.x += xx - yy;
                             accumulator.y += xy + yx;
                         }
-                        int r = accumulator.x;
-                        int i = accumulator.y;
-                        power += (float)(r*r + i*i);
+                        float r = accumulator.x;
+                        float i = accumulator.y;
+                        power += r*r + i*i;
                     }
                 }
                 int tf_size = FBFUSE_CB_NSAMPLES_PER_HEAP * nchannels;
@@ -136,10 +136,12 @@ void CoherentBeamformerTester::compare_against_host(
         _config.cb_power_offset());
     for (int ii = 0; ii < btf_powers_host.size(); ++ii)
     {
-	std::cout << (int) btf_powers_host[ii] << ";";
-        ASSERT_EQ(btf_powers_host[ii], btf_powers_cuda[ii]);
+        //std::cout << (int) btf_powers_cuda[ii] << ", ";
+	//std::cout << (int) btf_powers_host[ii] << ", " << (int) btf_powers_cuda[ii] 
+	//<< ", (" << (int)btf_powers_host[ii] - (int)btf_powers_cuda[ii] << ");";
+        ASSERT_TRUE(std::abs(static_cast<int>(btf_powers_host[ii]) - btf_powers_cuda[ii]) <= 1);
     }
-    std::cout << "\n";
+    //std::cout << "\n";
 }
 
 TEST_F(CoherentBeamformerTester, representative_noise_test)
