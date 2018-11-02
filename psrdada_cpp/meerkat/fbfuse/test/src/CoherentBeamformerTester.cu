@@ -90,12 +90,12 @@ void CoherentBeamformerTester::beamformer_c_reference(
                         power += (float)(r*r + i*i);
                     }
                 }
-                int tf_size = nsamples_per_heap * nchannels
+                int tf_size = FBFUSE_CB_NSAMPLES_PER_HEAP * nchannels;
                 int btf_size = nbeams * tf_size;
                 int output_sample_idx = sample_idx / naccumulate;
-                int tbtf_powers_idx = (output_sample_idx / nsamples_per_heap * btf_size
+                int tbtf_powers_idx = (output_sample_idx / FBFUSE_CB_NSAMPLES_PER_HEAP * btf_size
                     + beam_idx * tf_size
-                    + (output_sample_idx % nsamples_per_heap) * nchannels
+                    + (output_sample_idx % FBFUSE_CB_NSAMPLES_PER_HEAP) * nchannels
                     + channel_idx);
                 //int btf_powers_idx = beam_idx * nsamples/naccumulate * nchannels
                 //+ sample_idx/naccumulate * nchannels
@@ -136,18 +136,21 @@ void CoherentBeamformerTester::compare_against_host(
         _config.cb_power_offset());
     for (int ii = 0; ii < btf_powers_host.size(); ++ii)
     {
+	std::cout << (int) btf_powers_host[ii] << ";";
         ASSERT_EQ(btf_powers_host[ii], btf_powers_cuda[ii]);
     }
+    std::cout << "\n";
 }
 
 TEST_F(CoherentBeamformerTester, representative_noise_test)
 {
+    const float input_level = 64.0f;
     const double pi = std::acos(-1);
-    _config.input_level(32.0);
-    _config.output_level(16.0);
+    _config.input_level(input_level);
+    _config.output_level(32.0f);
     std::default_random_engine generator;
-    std::normal_distribution<float> normal_dist(0.0,32.0);
-    std::uniform_real_distribution<float> uniform_dist(0.0,pi);
+    std::normal_distribution<float> normal_dist(0.0,input_level);
+    std::uniform_real_distribution<float> uniform_dist(0.0,2*pi);
 
     CoherentBeamformer coherent_beamformer(_config);
     std::size_t ntimestamps = 32;
