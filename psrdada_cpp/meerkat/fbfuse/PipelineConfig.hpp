@@ -84,6 +84,7 @@ public:
      */
 
     void output_level(float level);
+    float output_level() const;
     void input_level(float level);
     float cb_power_scaling() const;
     float cb_power_offset() const;

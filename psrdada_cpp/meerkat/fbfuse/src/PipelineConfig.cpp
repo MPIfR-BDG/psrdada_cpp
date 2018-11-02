@@ -86,9 +86,14 @@ void PipelineConfig::ib_dada_key(key_t key)
     _ib_dada_key = key;
 }
 
-void output_level(float level)
+void PipelineConfig::output_level(float level)
 {
     _output_level = level;
+}
+
+float PipelineConfig::output_level() const
+{
+    return _output_level;
 }
 
 void PipelineConfig::input_level(float level)
