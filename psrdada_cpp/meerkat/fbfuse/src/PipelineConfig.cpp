@@ -13,9 +13,12 @@ PipelineConfig::PipelineConfig()
     , _cb_dada_key(0xcaca)
     , _ib_dada_key(0xeaea)
     , _channel_frequencies_stale(true)
-    , _cb_power_scaling(127.0f)
+    , _input_level(64.0f)
+    , _output_level(32.0f)
     , _cb_power_offset(0.0f)
+    , _cb_power_scaling(0.0f)
 {
+    input_level(_input_level);
 }
 
 PipelineConfig::~PipelineConfig()
@@ -83,24 +86,31 @@ void PipelineConfig::ib_dada_key(key_t key)
     _ib_dada_key = key;
 }
 
+void output_level(float level)
+{
+    _output_level = level;
+}
+
+void PipelineConfig::input_level(float level)
+{
+    _input_level = level;
+    // See header file for description of this calculation
+    _cb_power_offset = (2 * cb_tscrunch() * cb_fscrunch()
+        * std::pow(_input_level * 127
+            * std::sqrt(cb_nantennas() * npol())
+            , 2));
+    _cb_power_scaling = _cb_power_offset / (std::sqrt(cb_tscrunch()
+        * cb_fscrunch() * npol()) * output_level());
+}
+
 float PipelineConfig::cb_power_scaling() const
 {
     return _cb_power_scaling;
 }
 
-void PipelineConfig::cb_power_scaling(float scaling)
-{
-    _cb_power_scaling = scaling;
-}
-
 float PipelineConfig::cb_power_offset() const
 {
     return _cb_power_offset;
-}
-
-void PipelineConfig::cb_power_offset(float offset)
-{
-    _cb_power_offset = offset;
 }
 
 float PipelineConfig::centre_frequency() const

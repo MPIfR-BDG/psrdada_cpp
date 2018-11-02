@@ -51,11 +51,42 @@ public:
     std::size_t cb_nbeams() const {return FBFUSE_CB_NBEAMS;}
     std::size_t cb_nsamples_per_block() const {return FBFUSE_CB_NSAMPLES_PER_BLOCK;}
 
-    float cb_power_scaling() const;
-    void cb_power_scaling(float scaling);
+    /**
+     * Below are methods to get and set the power scaling and offset in the beamformer
+     * these are tricky parameters that need to be set correctly for the beamformer to
+     * function as expected. The values are used when downcasting from floating point
+     * to 8-bit integer at the end stage of beamforming. The scaling is the last step
+     * in the code and as such the factors can be quite large.
+     *
+     * The scaling and offset are applied such that:
+     *
+     *    int8_t scaled_power = static_cast<int8_t>((power - offset) / scaling);
+     *
+     * In the case above, the variable power is the power after summing all antennas,
+     * timesamples and frequency channels requested (tscrunch and fscrunch, respectively).
+     * The offset and scaling can be estimated if the power per input F-engine stream is known.
+     *
+     *    offset = fscrunch * tscrunch * 2 *(input.real.std() * 127 * sqrt(nantennas * npol))**2
+     *
+     * (the factor 127 comes from the amplitude of the weights which we scale to 127 to allow for
+     *  greatest range of possible phase angles from an 16-bit complex number).
+     *
+     * As the data is chi2 distributed after power generation we can estimate the standard deviation
+     * with:
+     *
+     *    scaling = offset / sqrt(tscrunch * fscrunch * npol)
+     *
+     * This information would probably be best be encoded with only the standard deviation on the real
+     * and imaginary components of the input voltates (on a per channel basis).
+     *
+     * Note: We do not assume different scaling per channel, if there are significantly different power
+     * levels in each channel the scaling should always be set to accommodate the worst cast scenario.
+     */
 
+    void output_level(float level);
+    void input_level(float level);
+    float cb_power_scaling() const;
     float cb_power_offset() const;
-    void cb_power_offset(float offset);
 
     std::size_t ib_tscrunch() const {return FBFUSE_IB_TSCRUNCH;}
     std::size_t ib_fscrunch() const {return FBFUSE_IB_FSCRUNCH;}
@@ -81,10 +112,10 @@ private:
     float _bw;
     std::vector<float> _channel_frequencies;
     bool _channel_frequencies_stale;
+    float _input_level;
+    float _output_level;
     float _cb_power_scaling;
     float _cb_power_offset;
-
-
 };
 
 } //namespace fbfuse

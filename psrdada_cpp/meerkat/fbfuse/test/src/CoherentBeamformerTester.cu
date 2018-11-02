@@ -2,6 +2,7 @@
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
+#include <random>
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -132,8 +133,13 @@ void CoherentBeamformerTester::compare_against_host(
 
 TEST_F(CoherentBeamformerTester, cycling_prime_test)
 {
-    _config.cb_power_scaling(10.0f);
-    _config.cb_power_offset(0.0f);
+    const double pi = std::acos(-1);
+    _config.input_level(32.0);
+    _config.output_level(16.0);
+    std::default_random_engine generator;
+    std::normal_distribution<float> normal_dist(0.0,32.0);
+    std::uniform_real_distribution<float> uniform_dist(0.0,pi);
+
     CoherentBeamformer coherent_beamformer(_config);
     std::size_t ntimestamps = 32;
     std::size_t input_size = (ntimestamps * _config.cb_nantennas()
@@ -143,14 +149,15 @@ TEST_F(CoherentBeamformerTester, cycling_prime_test)
     HostVoltageVectorType ftpa_voltages_host(input_size);
     for (int ii = 0; ii < ftpa_voltages_host.size(); ++ii)
     {
-        ftpa_voltages_host[ii].x = (ii % 113);
-        ftpa_voltages_host[ii].y = (ii % 107);
+        ftpa_voltages_host[ii].x = (char) normal_dist(generator);
+        ftpa_voltages_host[ii].y = (char) normal_dist(generator);
     }
     HostWeightsVectorType fbpa_weights_host(weights_size);
     for (int ii = 0; ii < fbpa_weights_host.size(); ++ii)
     {
-        fbpa_weights_host[ii].x = (ii % 83);
-        fbpa_weights_host[ii].y = (ii % 47);
+        std::complex<double> val = 127.0f * std::exp(std::complex<float>(0.0f, uniform_dist(generator)));
+        fbpa_weights_host[ii].x = (char) val.real();
+        fbpa_weights_host[ii].y = (char) val.imag();
     }
     DeviceVoltageVectorType ftpa_voltages_gpu = ftpa_voltages_host;
     DeviceWeightsVectorType fbpa_weights_gpu = fbpa_weights_host;

@@ -150,16 +150,18 @@ void Pipeline::init(RawBytes& header)
 }
 
 void Pipeline::process(VoltageVectorType const& taftp_vec,
-    PowerVectorType& tbftf_vec, PowerVectorType& tftf_vec)
+    PowerVectorType& tbtf_vec, PowerVectorType& tf_vec)
 {
-    BOOST_LOG_TRIVIAL(debug) << "Performing coherent beamforming";
+    BOOST_LOG_TRIVIAL(debug) << "Executing coherent beamforming pipeline";
     BOOST_LOG_TRIVIAL(debug) << "Checking for delay updates";
     auto const& delays = _delay_manager->delays();
     BOOST_LOG_TRIVIAL(debug) << "Calculating weights at unix time: " << _unix_timestamp;
     auto const& weights = _weights_manager->weights(delays, _unix_timestamp);
     BOOST_LOG_TRIVIAL(debug) << "Transposing input data from TAFTP to FTPA order";
     _split_transpose->transpose(taftp_vec, _split_transpose_output, _processing_stream);
-    BOOST_LOG_TRIVIAL(debug) << "Performing incoherent beamforming";
+    BOOST_LOG_TRIVIAL(debug) << "Forming coherent beams";
+    _coherent_beamformer->beamform(_split_transpose_output, weights, tbtf_vec, _processing_stream);
+    BOOST_LOG_TRIVIAL(debug) << "Executing incoherent beamforming pipeline";
 
 
 
