@@ -132,7 +132,7 @@ void CoherentBeamformerTester::compare_against_host(
     }
 }
 
-TEST_F(CoherentBeamformerTester, cycling_prime_test)
+TEST_F(CoherentBeamformerTester, representative_noise_test)
 {
     const double pi = std::acos(-1);
     _config.input_level(32.0);
@@ -156,6 +156,7 @@ TEST_F(CoherentBeamformerTester, cycling_prime_test)
     HostWeightsVectorType fbpa_weights_host(weights_size);
     for (int ii = 0; ii < fbpa_weights_host.size(); ++ii)
     {
+        // Build complex weight as C * exp(i * theta).
         std::complex<double> val = 127.0f * std::exp(std::complex<float>(0.0f, uniform_dist(generator)));
         fbpa_weights_host[ii].x = (char) val.real();
         fbpa_weights_host[ii].y = (char) val.imag();
