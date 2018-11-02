@@ -3,6 +3,7 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <random>
+#include <complex>
 
 namespace psrdada_cpp {
 namespace meerkat {

@@ -218,10 +218,14 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
     BOOST_LOG_TRIVIAL(debug) << "Executing coherent beamforming";
     assert(input.size() % _size_per_sample == 0);
     std::size_t nsamples = input.size() / _size_per_sample;
+    std::size_t output_size = (input.size() / _config.cb_nantennas() 
+	/ _config.npol() / _config.cb_tscrunch() / _config.cb_fscrunch()
+	* _config.cb_nbeams());	
+
     BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer from "
-    << output.size() << " to " << (nsamples * _size_per_sample)
+    << output.size() << " to " << output_size
     << " elements";
-    output.resize(nsamples * _size_per_sample);
+    output.resize(output_size);
     assert(weights.size() == _expected_weights_size);
     dim3 grid(nsamples / (FBFUSE_CB_NWARPS_PER_BLOCK * _config.cb_tscrunch()),
         _config.nchans(), _config.cb_nbeams()/FBFUSE_CB_WARP_SIZE);
