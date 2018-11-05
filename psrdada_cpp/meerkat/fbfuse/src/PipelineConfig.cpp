@@ -104,7 +104,7 @@ void PipelineConfig::input_level(float level)
     // scalings for coherent beamformer
     float weights_amp = 127.0f;
     float cb_scale = std::pow(weights_amp * _input_level
-        * std::sqrt(static_cast<float>(cb_nantennas()), 2));
+        * std::sqrt(static_cast<float>(cb_nantennas())), 2);
     float cb_dof = 2 * cb_tscrunch() * cb_fscrunch() * npol();
     _cb_power_offset = cb_scale * cb_dof;
     _cb_power_scaling = cb_scale * std::sqrt(2 * cb_dof) * _output_level;
