@@ -87,6 +87,8 @@ public:
     void input_level(float level);
     float cb_power_scaling() const;
     float cb_power_offset() const;
+    float ib_power_scaling() const;
+    float ib_power_offset() const;
 
     std::size_t ib_tscrunch() const {return FBFUSE_IB_TSCRUNCH;}
     std::size_t ib_fscrunch() const {return FBFUSE_IB_FSCRUNCH;}
