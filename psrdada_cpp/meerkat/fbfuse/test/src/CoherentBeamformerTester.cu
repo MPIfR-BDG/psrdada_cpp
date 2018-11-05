@@ -3,6 +3,7 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <random>
+#include <cmath>
 #include <complex>
 
 namespace psrdada_cpp {
@@ -136,9 +137,9 @@ void CoherentBeamformerTester::compare_against_host(
         _config.cb_power_offset());
     for (int ii = 0; ii < btf_powers_host.size(); ++ii)
     {
-        //std::cout << (int) btf_powers_cuda[ii] << ", ";
-	//std::cout << (int) btf_powers_host[ii] << ", " << (int) btf_powers_cuda[ii] 
-	//<< ", (" << (int)btf_powers_host[ii] - (int)btf_powers_cuda[ii] << ");";
+        std::cout << (int) btf_powers_cuda[ii] << ", ";
+	    //std::cout << (int) btf_powers_host[ii] << ", " << (int) btf_powers_cuda[ii]
+	    //<< ", (" << (int)btf_powers_host[ii] - (int)btf_powers_cuda[ii] << ");";
         ASSERT_TRUE(std::abs(static_cast<int>(btf_powers_host[ii]) - btf_powers_cuda[ii]) <= 1);
     }
     //std::cout << "\n";
@@ -146,7 +147,7 @@ void CoherentBeamformerTester::compare_against_host(
 
 TEST_F(CoherentBeamformerTester, representative_noise_test)
 {
-    const float input_level = 64.0f;
+    const float input_level = 32.0f;
     const double pi = std::acos(-1);
     _config.input_level(input_level);
     _config.output_level(32.0f);
@@ -163,16 +164,16 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
     HostVoltageVectorType ftpa_voltages_host(input_size);
     for (int ii = 0; ii < ftpa_voltages_host.size(); ++ii)
     {
-        ftpa_voltages_host[ii].x = (char) normal_dist(generator);
-        ftpa_voltages_host[ii].y = (char) normal_dist(generator);
+        ftpa_voltages_host[ii].x = static_cast<char>(std::lround(normal_dist(generator)));
+        ftpa_voltages_host[ii].y = static_cast<char>(std::lround(normal_dist(generator)));
     }
     HostWeightsVectorType fbpa_weights_host(weights_size);
     for (int ii = 0; ii < fbpa_weights_host.size(); ++ii)
     {
         // Build complex weight as C * exp(i * theta).
         std::complex<double> val = 127.0f * std::exp(std::complex<float>(0.0f, uniform_dist(generator)));
-        fbpa_weights_host[ii].x = (char) val.real();
-        fbpa_weights_host[ii].y = (char) val.imag();
+        fbpa_weights_host[ii].x = static_cast<char>(std::lround(val.real()));
+        fbpa_weights_host[ii].y = static_cast<char>(std::lround(val.imag()));
     }
     DeviceVoltageVectorType ftpa_voltages_gpu = ftpa_voltages_host;
     DeviceWeightsVectorType fbpa_weights_gpu = fbpa_weights_host;

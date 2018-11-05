@@ -116,6 +116,8 @@ private:
     float _output_level;
     float _cb_power_scaling;
     float _cb_power_offset;
+    float _ib_power_scaling;
+    float _ib_power_offset;
 };
 
 } //namespace fbfuse
