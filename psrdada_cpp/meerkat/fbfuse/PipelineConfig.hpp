@@ -104,6 +104,9 @@ public:
     void calculate_channel_frequencies();
 
 private:
+    void update_power_offsets_and_scalings();
+
+private:
     std::string _delay_buffer_shm;
     std::string _delay_buffer_mutex;
     std::string _delay_buffer_sem;

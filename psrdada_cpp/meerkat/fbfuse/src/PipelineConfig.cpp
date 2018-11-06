@@ -91,6 +91,7 @@ void PipelineConfig::ib_dada_key(key_t key)
 void PipelineConfig::output_level(float level)
 {
     _output_level = level;
+    update_power_offsets_and_scalings();
 }
 
 float PipelineConfig::output_level() const
@@ -101,8 +102,13 @@ float PipelineConfig::output_level() const
 void PipelineConfig::input_level(float level)
 {
     _input_level = level;
+    update_power_offsets_and_scalings();
+}
+
+void PipelineConfig::update_power_offsets_and_scalings()
+{
     // scalings for coherent beamformer
-    float weights_amp = 127.0f;
+    const float weights_amp = 127.0f;
     float cb_scale = std::pow(weights_amp * _input_level
         * std::sqrt(static_cast<float>(cb_nantennas())), 2);
     float cb_dof = 2 * cb_tscrunch() * cb_fscrunch() * npol();
