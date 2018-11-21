@@ -152,8 +152,8 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
     _config.input_level(input_level);
     _config.output_level(32.0f);
     std::default_random_engine generator;
-    std::normal_distribution<float> normal_dist(0.0,input_level);
-    std::uniform_real_distribution<float> uniform_dist(0.0,2*pi);
+    std::normal_distribution<float> normal_dist(0.0, input_level);
+    std::uniform_real_distribution<float> uniform_dist(0.0, 2*pi);
 
     CoherentBeamformer coherent_beamformer(_config);
     std::size_t ntimestamps = 32;

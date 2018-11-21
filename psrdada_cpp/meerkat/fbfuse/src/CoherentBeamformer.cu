@@ -173,7 +173,7 @@ void bf_aptf_general_k(
     */
 
     // Wanted output in BTF order
-    // But now need in TBTF order (TODO!!!!!!!)
+    // But now need in TBTF order
     /* Original implementation
     int const output_idx = gridDim.y * (((start_beam_idx+lane_idx) * FBFUSE_CB_NWARPS_PER_BLOCK * gridDim.x)
           + (sample_offset / FBFUSE_CB_TSCRUNCH)) + blockIdx.y;
