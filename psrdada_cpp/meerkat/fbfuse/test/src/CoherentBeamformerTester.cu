@@ -156,16 +156,16 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
     HostVoltageVectorType ftpa_voltages_host(input_size);
     for (int ii = 0; ii < ftpa_voltages_host.size(); ++ii)
     {
-        ftpa_voltages_host[ii].x = static_cast<char>(std::lround(normal_dist(generator)));
-        ftpa_voltages_host[ii].y = static_cast<char>(std::lround(normal_dist(generator)));
+        ftpa_voltages_host[ii].x = static_cast<int8_t>(std::lround(normal_dist(generator)));
+        ftpa_voltages_host[ii].y = static_cast<int8_t>(std::lround(normal_dist(generator)));
     }
     HostWeightsVectorType fbpa_weights_host(weights_size);
     for (int ii = 0; ii < fbpa_weights_host.size(); ++ii)
     {
         // Build complex weight as C * exp(i * theta).
         std::complex<double> val = 127.0f * std::exp(std::complex<float>(0.0f, uniform_dist(generator)));
-        fbpa_weights_host[ii].x = static_cast<char>(std::lround(val.real()));
-        fbpa_weights_host[ii].y = static_cast<char>(std::lround(val.imag()));
+        fbpa_weights_host[ii].x = static_cast<int8_t>(std::lround(val.real()));
+        fbpa_weights_host[ii].y = static_cast<int8_t>(std::lround(val.imag()));
     }
     DeviceVoltageVectorType ftpa_voltages_gpu = ftpa_voltages_host;
     DeviceWeightsVectorType fbpa_weights_gpu = fbpa_weights_host;

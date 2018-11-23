@@ -49,7 +49,7 @@ public:
     // FTPA order
     typedef thrust::device_vector<char2> VoltageVectorType;
     // TBTF order
-    typedef thrust::device_vector<char> PowerVectorType;
+    typedef thrust::device_vector<int8_t> PowerVectorType;
     // FBA order (assuming equal weight per polarisation)
     typedef thrust::device_vector<char2> WeightsVectorType;
 

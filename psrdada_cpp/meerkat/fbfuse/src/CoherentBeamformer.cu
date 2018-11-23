@@ -53,7 +53,7 @@ __global__
 void bf_aptf_general_k(
     int2 const* __restrict__ ftpa_voltages,
     int2 const* __restrict__ fbpa_weights,
-    char* __restrict__ tbtf_powers,
+    int8_t* __restrict__ tbtf_powers,
     float output_scale,
     float output_offset,
     int nsamples)
@@ -232,7 +232,7 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
         _config.nchans(), _config.cb_nbeams()/FBFUSE_CB_WARP_SIZE);
     char2 const* ftpa_voltages_ptr = thrust::raw_pointer_cast(input.data());
     char2 const* fbpa_weights_ptr = thrust::raw_pointer_cast(weights.data());
-    char* tbtf_powers_ptr = thrust::raw_pointer_cast(output.data());
+    int8_t* tbtf_powers_ptr = thrust::raw_pointer_cast(output.data());
     BOOST_LOG_TRIVIAL(debug) << "Executing beamforming kernel";
     kernels::bf_aptf_general_k<<<grid, FBFUSE_CB_NTHREADS, 0, stream>>>(
         (int2 const*) ftpa_voltages_ptr,

@@ -61,7 +61,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
     // Output buffer checks:
     //
     std::size_t expected_cb_size = (_config.cb_nbeams() * _nsamples_per_dada_block
-        / _config.cb_tscrunch() * _config.nchans() / _config.cb_fscrunch()) * sizeof(char);
+        / _config.cb_tscrunch() * _config.nchans() / _config.cb_fscrunch()) * sizeof(int8_t);
     if (_cb_writer.data_buffer_size() != expected_cb_size)
     {
         throw std::runtime_error(
@@ -74,7 +74,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
     _tbtf_db.resize(expected_cb_size, 0);
 
     std::size_t expected_ib_size = (_config.ib_nbeams() * _nsamples_per_dada_block
-        / _config.ib_tscrunch() * _config.nchans() / _config.ib_fscrunch()) * sizeof(char);
+        / _config.ib_tscrunch() * _config.nchans() / _config.ib_fscrunch()) * sizeof(int8_t);
     if (_ib_writer.data_buffer_size() != expected_ib_size)
     {
         throw std::runtime_error(

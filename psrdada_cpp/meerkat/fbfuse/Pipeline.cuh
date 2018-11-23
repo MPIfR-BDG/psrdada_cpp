@@ -21,7 +21,7 @@ class Pipeline
 {
 public:
     typedef thrust::device_vector<char2> VoltageVectorType;
-    typedef thrust::device_vector<char> PowerVectorType;
+    typedef thrust::device_vector<int8_t> PowerVectorType;
     typedef long double TimeType;
 
 public:
@@ -50,8 +50,8 @@ private:
     std::size_t _call_count;
 
     DoubleDeviceBuffer<char2> _taftp_db; // Input from F-engine
-    DoubleDeviceBuffer<char> _tbtf_db; // Output of coherent beamformer
-    DoubleDeviceBuffer<char> _tf_db; // Output of incoherent beamformer
+    DoubleDeviceBuffer<int8_t> _tbtf_db; // Output of coherent beamformer
+    DoubleDeviceBuffer<int8_t> _tf_db; // Output of incoherent beamformer
 
     DadaWriteClient& _cb_writer;
     DadaWriteClient::HeaderStream& _cb_header_stream;
