@@ -29,7 +29,6 @@ void icbf_taftp_general_k(
     static_assert(FBFUSE_NCHANS % FBFUSE_IB_FSCRUNCH == 0,
         "Fscrunch must divide nchannels");
 
-    const int output_size = FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH * FBFUSE_NCHANS/FBFUSE_IB_FSCRUNCH;
     volatile __shared__ float accumulation_buffer[FBFUSE_NCHANS/FBFUSE_IB_FSCRUNCH][FBFUSE_NSAMPLES_PER_HEAP];
     volatile __shared__ int8_t output_staging[FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH][FBFUSE_NCHANS/FBFUSE_IB_FSCRUNCH];
 
@@ -74,9 +73,9 @@ void icbf_taftp_general_k(
             output_staging[threadIdx.x][threadIdx.y] = (int8_t)((val - output_offset)/output_scale);
         }
         __threadfence_block();
-        for (int idx = threadIdx.x; idx < output_size; idx += gridDim.x)
+        for (int idx = threadIdx.x; idx < FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH; idx += blockDim.x)
         {
-            tf_powers[idx * gridDim.y + threadIdx.y] = output_staging[idx][threadIdx.y];
+            tf_powers[idx * blockDim.y + threadIdx.y] = output_staging[idx][threadIdx.y];
         }
     }
 }

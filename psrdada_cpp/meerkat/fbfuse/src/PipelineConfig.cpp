@@ -15,10 +15,10 @@ PipelineConfig::PipelineConfig()
     , _channel_frequencies_stale(true)
     , _input_level(32.0f)
     , _output_level(24.0f)
+    , _cb_power_scaling(0.0f)	
     , _cb_power_offset(0.0f)
-    , _cb_power_scaling(0.0f)
-    , _ib_power_offset(0.0f)
     , _ib_power_scaling(0.0f)
+    , _ib_power_offset(0.0f)
 {
     input_level(_input_level);
 }
