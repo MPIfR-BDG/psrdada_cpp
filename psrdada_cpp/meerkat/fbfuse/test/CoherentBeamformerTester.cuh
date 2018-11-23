@@ -47,7 +47,7 @@ protected:
         DeviceVoltageVectorType const& ftpa_voltages_gpu,
         DeviceWeightsVectorType const& fbpa_weights_gpu,
         DevicePowerVectorType& btf_powers_gpu,
-	int nsamples);
+        int nsamples);
 
 protected:
     PipelineConfig _config;

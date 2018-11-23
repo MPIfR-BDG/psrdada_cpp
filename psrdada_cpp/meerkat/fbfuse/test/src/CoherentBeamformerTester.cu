@@ -156,8 +156,8 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
 	<< "\nCB offset: " << _config.cb_power_offset() << std::endl;	
 
     std::default_random_engine generator;
-    std::normal_distribution<float> normal_dist(0.0,input_level);
-    std::uniform_real_distribution<float> uniform_dist(0.0,2*pi);
+    std::normal_distribution<float> normal_dist(0.0, input_level);
+    std::uniform_real_distribution<float> uniform_dist(0.0, 2*pi);
 
     CoherentBeamformer coherent_beamformer(_config);
     std::size_t ntimestamps = 32;
