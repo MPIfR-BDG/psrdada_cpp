@@ -84,7 +84,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
             + std::to_string(_ib_writer.data_buffer_size())
             + " bytes");
     }
-    _tftf_db.resize(expected_ib_size, 0);
+    _tf_db.resize(expected_ib_size, 0);
 
     // Calculate the timestamp step per block
     _sample_clock_tick_per_block = 2 * _config.total_nchans() * _nsamples_per_dada_block;
@@ -195,13 +195,13 @@ bool Pipeline::operator()(RawBytes& data)
     // the processing buffers
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_processing_stream));
     _tbtf_db.swap();
-    _tftf_db.swap();
+    _tf_db.swap();
     // Calculate the unix timestamp for the block that is about to be processed
     // (which is the block passed the last time that operator() was called)
     _unix_timestamp = (_sync_time + (_sample_clock_start +
         ((_call_count - 2) * _sample_clock_tick_per_block))
     / _sample_clock);
-    process(_taftp_db.b(), _tbtf_db.a(), _tftf_db.a());
+    process(_taftp_db.b(), _tbtf_db.a(), _tf_db.a());
 
     // If we are on the second call we can exit here as there is not data
     // that has completed processing at this stage.
@@ -227,7 +227,7 @@ bool Pipeline::operator()(RawBytes& data)
         static_cast<void*>(_tbtf_db.b_ptr()), cb_block.total_bytes(),
         cudaMemcpyDeviceToHost, _d2h_copy_stream));
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(ib_block.ptr()),
-        static_cast<void*>(_tftf_db.b_ptr()), ib_block.total_bytes(),
+        static_cast<void*>(_tf_db.b_ptr()), ib_block.total_bytes(),
         cudaMemcpyDeviceToHost, _d2h_copy_stream));
 
     return false;
