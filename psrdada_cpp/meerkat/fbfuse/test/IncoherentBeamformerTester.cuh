@@ -32,10 +32,12 @@ protected:
         HostVoltageVectorType const& taftp_voltages,
         HostPowerVectorType& tf_powers,
         int nchannels,
-        int naccumulate,
+        int tscrunch,
+        int fscrunch,
         int ntimestamps,
         int nantennas,
         int npol,
+        int nsamples_per_timestamp,
         float scale,
         float offset);
 

@@ -50,7 +50,7 @@ public:
     typedef thrust::device_vector<char2> VoltageVectorType;
     // TBTF order
     typedef thrust::device_vector<char> PowerVectorType;
-    // order??
+    // FBA order (assuming equal weight per polarisation)
     typedef thrust::device_vector<char2> WeightsVectorType;
 
 public:
