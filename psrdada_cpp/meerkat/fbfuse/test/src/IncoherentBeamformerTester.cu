@@ -69,7 +69,7 @@ void IncoherentBeamformerTester::beamformer_c_reference(
                         {
                             for (int sample_idx = subint_start; sample_idx < subint_start + tscrunch; ++sample_idx)
                             {
-                                for (int pol_idx = 0; pol_idx < npol; ++pol_idxs)
+                                for (int pol_idx = 0; pol_idx < npol; ++pol_idx)
                                 {
                                     int input_index = timestamp_idx * aftp + antenna_idx * ftp + channel_idx * tp + sample_idx * npol + pol_idx;
                                     char2 ant = taftp_voltages[input_index];
@@ -85,7 +85,8 @@ void IncoherentBeamformerTester::beamformer_c_reference(
                     power_sum += power;
                     power_sq_sum += power * power;
                     ++count;
-                    tf_powers[output_idx] = (int8_t)(power - offset) / scale;
+		    int8_t scaled_power = (int8_t)((power - offset) / scale);
+                    tf_powers[output_idx] = scaled_power;
                 }
             }
         }
@@ -116,12 +117,8 @@ void IncoherentBeamformerTester::compare_against_host(
         _config.ib_power_offset());
     for (int ii = 0; ii < tf_powers_host.size(); ++ii)
     {
-        std::cout << (int) tf_powers_cuda[ii] << ", ";
-	std::cout << (int) tf_powers_host[ii] << ", " << (int) tf_powers_cuda[ii]
-	    << ", (" << (int)tf_powers_host[ii] - (int)tf_powers_cuda[ii] << ");" << std::endl ;
         ASSERT_TRUE(std::abs(static_cast<int>(tf_powers_host[ii]) - tf_powers_cuda[ii]) <= 1);
     }
-    //std::cout << "\n";
 }
 
 TEST_F(IncoherentBeamformerTester, ib_representative_noise_test)
@@ -132,7 +129,7 @@ TEST_F(IncoherentBeamformerTester, ib_representative_noise_test)
     std::default_random_engine generator;
     std::normal_distribution<float> normal_dist(0.0, input_level);
     IncoherentBeamformer incoherent_beamformer(_config);
-    std::size_t ntimestamps = 1;
+    std::size_t ntimestamps = 32;
     std::size_t input_size = (ntimestamps * _config.ib_nantennas()
         * _config.nchans() * _config.nsamples_per_heap() * _config.npol());
     HostVoltageVectorType taftp_voltages_host(input_size);

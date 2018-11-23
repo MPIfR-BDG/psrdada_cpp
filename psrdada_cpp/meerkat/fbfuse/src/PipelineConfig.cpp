@@ -113,13 +113,13 @@ void PipelineConfig::update_power_offsets_and_scalings()
         * std::sqrt(static_cast<float>(cb_nantennas())), 2);
     float cb_dof = 2 * cb_tscrunch() * cb_fscrunch() * npol();
     _cb_power_offset = cb_scale * cb_dof;
-    _cb_power_scaling = cb_scale * std::sqrt(2 * cb_dof) * _output_level;
+    _cb_power_scaling = cb_scale * std::sqrt(2 * cb_dof) / _output_level;
 
     // scaling for incoherent beamformer
     float ib_scale = std::pow(_input_level, 2);
     float ib_dof = 2 * ib_tscrunch() * ib_fscrunch() * ib_nantennas() * npol();
     _ib_power_offset  = ib_scale * ib_dof;
-    _ib_power_scaling = ib_scale * std::sqrt(2 * ib_dof) * _output_level;
+    _ib_power_scaling = ib_scale * std::sqrt(2 * ib_dof) / _output_level;
 }
 
 float PipelineConfig::cb_power_scaling() const

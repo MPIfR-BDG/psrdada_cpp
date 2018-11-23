@@ -48,9 +48,8 @@ void icbf_taftp_general_k(
 
             // Must start with the right number of threads in the y dimension
             // blockDim.y = nchans / fscrunch
-            for (int channel_idx = FBFUSE_IB_FSCRUNCH * threadIdx.y + channel_offset;
-                channel_idx < min(channel_idx + FBFUSE_IB_FSCRUNCH + channel_offset, FBFUSE_NCHANS);
-                ++channel_idx)
+	    const int start_chan = FBFUSE_IB_FSCRUNCH * threadIdx.y + channel_offset;
+            for (int channel_idx = start_chan; channel_idx < start_chan + FBFUSE_IB_FSCRUNCH; ++channel_idx)
             {
                 for (int antenna_idx = 0; antenna_idx < FBFUSE_IB_NANTENNAS; ++antenna_idx)
                 {
@@ -65,7 +64,6 @@ void icbf_taftp_general_k(
             accumulation_buffer[threadIdx.y][sample_idx] = (xx + yy + zz + ww);
         }
         __threadfence_block();
-
         for (int output_sample_idx = threadIdx.x; output_sample_idx < nsamps_output; output_sample_idx += blockDim.x)
         {
             float val = 0.0f;
@@ -75,13 +73,14 @@ void icbf_taftp_general_k(
             }
             output_staging[output_sample_idx][threadIdx.y] = (int8_t)((val - output_offset)/output_scale);
         }
-        __threadfence_block();
+        __syncthreads(); 
+	const int output_offset = timestamp_idx * nsamps_output * nchans_output;
         for (int idx = threadIdx.y; idx < nsamps_output; idx += blockDim.y)
         {
             for (int output_chan_idx = threadIdx.x; output_chan_idx < nchans_output; output_chan_idx += blockDim.x)
             {
-                tf_powers[idx * nchans_output + output_chan_idx] = output_staging[idx][output_chan_idx];
-            }
+                tf_powers[output_offset + idx * nchans_output + output_chan_idx] = output_staging[idx][output_chan_idx];
+	    }	
         }
     }
 }
