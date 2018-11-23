@@ -66,7 +66,7 @@ void icbf_taftp_general_k(
         }
         __threadfence_block();
 
-        for (int output_sample_idx = threadIdx.x; output_sample_idx < nsamps_output; ++blockDim.x)
+        for (int output_sample_idx = threadIdx.x; output_sample_idx < nsamps_output; output_sample_idx += blockDim.x)
         {
             float val = 0.0f;
             for (int sample_idx = output_sample_idx * FBFUSE_IB_TSCRUNCH; sample_idx < (output_sample_idx + 1) * FBFUSE_IB_TSCRUNCH; ++sample_idx)
