@@ -56,25 +56,27 @@ void IncoherentBeamformerTester::beamformer_c_reference(
 
     for (int timestamp_idx = 0; timestamp_idx < ntimestamps; ++timestamp_idx)
     {
-        for (int antenna_idx = 0; antenna_idx < nantennas; ++antenna_idx)
+        for (int subint_idx = 0; subint_idx < nsamples_per_timestamp/tscrunch; ++subint_idx)
         {
+            int subint_start = subint_idx * tscrunch;
             for (int subband_idx = 0; subband_idx < nchannels/fscrunch; ++subband_idx)
             {
                 int subband_start = subband_idx * fscrunch;
-                for (int subint_idx = 0; subint_idx < nsamples_per_timestamp/tscrunch; ++subint_idx)
                 {
-                    int subint_start = subint_idx * tscrunch;
                     float xx = 0.0f, yy = 0.0f;
-                    for (int channel_idx = subband_start; channel_idx < subband_start + fscrunch;  ++channel_idx)
+                    for (int antenna_idx = 0; antenna_idx < nantennas; ++antenna_idx)
                     {
-                        for (int sample_idx = subint_start; sample_idx < subint_start + tscrunch; ++sample_idx)
+                        for (int channel_idx = subband_start; channel_idx < subband_start + fscrunch;  ++channel_idx)
                         {
-                            for (int pol_idx = 0; pol_idx < npol; ++npol)
+                            for (int sample_idx = subint_start; sample_idx < subint_start + tscrunch; ++sample_idx)
                             {
-                                int input_index = timestamp_idx * aftp + antenna_idx * ftp + channel_idx * tp + sample_idx * npol + pol_idx;
-                                char2 ant = taftp_voltages[input_index];
-                                xx += ((float) ant.x) * ant.x;
-                                yy += ((float) ant.y) * ant.y;
+                                for (int pol_idx = 0; pol_idx < npol; ++pol_idxs)
+                                {
+                                    int input_index = timestamp_idx * aftp + antenna_idx * ftp + channel_idx * tp + sample_idx * npol + pol_idx;
+                                    char2 ant = taftp_voltages[input_index];
+                                    xx += ((float) ant.x) * ant.x;
+                                    yy += ((float) ant.y) * ant.y;
+                                }
                             }
                         }
                     }
