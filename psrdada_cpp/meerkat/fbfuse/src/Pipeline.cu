@@ -100,7 +100,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
     _weights_manager.reset(new WeightsManager(_config, _processing_stream));
     _split_transpose.reset(new SplitTranspose(_config));
     _coherent_beamformer.reset(new CoherentBeamformer(_config));
-    _incoherent_beamformer.reset(new CoherentBeamformer(_config));
+    _incoherent_beamformer.reset(new IncoherentBeamformer(_config));
 }
 
 Pipeline::~Pipeline()
