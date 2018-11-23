@@ -27,7 +27,7 @@ public:
     // TAFTP order
     typedef thrust::device_vector<char2> VoltageVectorType;
     // TF order
-    typedef thrust::device_vector<int8_t> PowerVectorType;
+    typedef thrust::device_vector<char> PowerVectorType;
 
 public:
     IncoherentBeamformer(PipelineConfig const&);
