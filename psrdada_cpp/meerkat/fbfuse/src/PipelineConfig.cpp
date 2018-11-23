@@ -15,7 +15,7 @@ PipelineConfig::PipelineConfig()
     , _channel_frequencies_stale(true)
     , _input_level(32.0f)
     , _output_level(24.0f)
-    , _cb_power_scaling(0.0f)	
+    , _cb_power_scaling(0.0f)
     , _cb_power_offset(0.0f)
     , _ib_power_scaling(0.0f)
     , _ib_power_offset(0.0f)
@@ -114,12 +114,15 @@ void PipelineConfig::update_power_offsets_and_scalings()
     float cb_dof = 2 * cb_tscrunch() * cb_fscrunch() * npol();
     _cb_power_offset = cb_scale * cb_dof;
     _cb_power_scaling = cb_scale * std::sqrt(2 * cb_dof) / _output_level;
-
+    BOOST_LOG_TRIVIAL(debug) << "Coherent beam power offset: " << _cb_power_offset;
+    BOOST_LOG_TRIVIAL(debug) << "Coherent beam power scaling: " << _cb_power_scaling;
     // scaling for incoherent beamformer
     float ib_scale = std::pow(_input_level, 2);
     float ib_dof = 2 * ib_tscrunch() * ib_fscrunch() * ib_nantennas() * npol();
     _ib_power_offset  = ib_scale * ib_dof;
     _ib_power_scaling = ib_scale * std::sqrt(2 * ib_dof) / _output_level;
+    BOOST_LOG_TRIVIAL(debug) << "Incoherent beam power offset: " << _ib_power_offset;
+    BOOST_LOG_TRIVIAL(debug) << "Incoherent beam power scaling: " << _ib_power_scaling;
 }
 
 float PipelineConfig::cb_power_scaling() const

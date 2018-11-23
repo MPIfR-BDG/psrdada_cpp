@@ -6,6 +6,7 @@
 #include "psrdada_cpp/meerkat/fbfuse/WeightsManager.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/SplitTranspose.cuh"
 #include "psrdada_cpp/meerkat/fbfuse/CoherentBeamformer.cuh"
+#include "psrdada_cpp/meerkat/fbfuse/IncoherentBeamformer.cuh"
 #include "psrdada_cpp/dada_write_client.hpp"
 #include "psrdada_cpp/double_device_buffer.cuh"
 #include "psrdada_cpp/raw_bytes.hpp"
@@ -20,7 +21,7 @@ class Pipeline
 {
 public:
     typedef thrust::device_vector<char2> VoltageVectorType;
-    typedef thrust::device_vector<char> PowerVectorType;
+    typedef thrust::device_vector<int8_t> PowerVectorType;
     typedef long double TimeType;
 
 public:
@@ -49,8 +50,8 @@ private:
     std::size_t _call_count;
 
     DoubleDeviceBuffer<char2> _taftp_db; // Input from F-engine
-    DoubleDeviceBuffer<char> _tbftf_db; // Output of coherent beamformer
-    DoubleDeviceBuffer<char> _tftf_db; // Output of incoherent beamformer
+    DoubleDeviceBuffer<int8_t> _tbtf_db; // Output of coherent beamformer
+    DoubleDeviceBuffer<int8_t> _tf_db; // Output of incoherent beamformer
 
     DadaWriteClient& _cb_writer;
     DadaWriteClient::HeaderStream& _cb_header_stream;
@@ -70,6 +71,7 @@ private:
     std::unique_ptr<WeightsManager> _weights_manager;
     std::unique_ptr<SplitTranspose> _split_transpose;
     std::unique_ptr<CoherentBeamformer> _coherent_beamformer;
+    std::unique_ptr<IncoherentBeamformer> _incoherent_beamformer;
 
     VoltageVectorType _split_transpose_output;
 

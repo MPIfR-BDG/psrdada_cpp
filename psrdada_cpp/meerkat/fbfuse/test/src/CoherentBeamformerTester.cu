@@ -98,13 +98,9 @@ void CoherentBeamformerTester::beamformer_c_reference(
                     + beam_idx * tf_size
                     + (output_sample_idx % FBFUSE_CB_NSAMPLES_PER_HEAP) * nchannels
                     + channel_idx);
-                //int btf_powers_idx = beam_idx * nsamples/naccumulate * nchannels
-                //+ sample_idx/naccumulate * nchannels
-                //+ channel_idx;
                 power_sum += power;
                 power_sq_sum += power * power;
                 ++count;
-                //btf_powers[btf_powers_idx] = (int8_t) ((power - offset)/scale);
                 tbtf_powers[tbtf_powers_idx] = (int8_t) ((power - offset)/scale);
             }
         }
@@ -137,12 +133,8 @@ void CoherentBeamformerTester::compare_against_host(
         _config.cb_power_offset());
     for (int ii = 0; ii < btf_powers_host.size(); ++ii)
     {
-        //std::cout << (int) btf_powers_cuda[ii] << ", ";
-	    //std::cout << (int) btf_powers_host[ii] << ", " << (int) btf_powers_cuda[ii]
-	    //<< ", (" << (int)btf_powers_host[ii] - (int)btf_powers_cuda[ii] << ");";
         ASSERT_TRUE(std::abs(static_cast<int>(btf_powers_host[ii]) - btf_powers_cuda[ii]) <= 1);
     }
-    //std::cout << "\n";
 }
 
 TEST_F(CoherentBeamformerTester, representative_noise_test)
@@ -151,10 +143,6 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
     const double pi = std::acos(-1);
     _config.input_level(input_level);
     _config.output_level(32.0f);
-    
-    std::cout << "CB scaling: " << _config.cb_power_scaling() 
-	<< "\nCB offset: " << _config.cb_power_offset() << std::endl;	
-
     std::default_random_engine generator;
     std::normal_distribution<float> normal_dist(0.0, input_level);
     std::uniform_real_distribution<float> uniform_dist(0.0, 2*pi);
@@ -170,7 +158,6 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
     {
         ftpa_voltages_host[ii].x = static_cast<char>(std::lround(normal_dist(generator)));
         ftpa_voltages_host[ii].y = static_cast<char>(std::lround(normal_dist(generator)));
-	//std::cout << (int) ftpa_voltages_host[ii].x << ", " << (int) ftpa_voltages_host[ii].y << std::endl;
     }
     HostWeightsVectorType fbpa_weights_host(weights_size);
     for (int ii = 0; ii < fbpa_weights_host.size(); ++ii)
@@ -179,7 +166,6 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
         std::complex<double> val = 127.0f * std::exp(std::complex<float>(0.0f, uniform_dist(generator)));
         fbpa_weights_host[ii].x = static_cast<char>(std::lround(val.real()));
         fbpa_weights_host[ii].y = static_cast<char>(std::lround(val.imag()));
-	std::cout << "(" << (int) fbpa_weights_host[ii].x << ", " << (int) fbpa_weights_host[ii].y << ")" << std::endl;
     }
     DeviceVoltageVectorType ftpa_voltages_gpu = ftpa_voltages_host;
     DeviceWeightsVectorType fbpa_weights_gpu = fbpa_weights_host;

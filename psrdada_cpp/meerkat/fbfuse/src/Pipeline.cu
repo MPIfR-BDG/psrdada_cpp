@@ -71,7 +71,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
             + std::to_string(_cb_writer.data_buffer_size())
             + " bytes");
     }
-    _tbftf_db.resize(expected_cb_size, 0);
+    _tbtf_db.resize(expected_cb_size, 0);
 
     std::size_t expected_ib_size = (_config.ib_nbeams() * _nsamples_per_dada_block
         / _config.ib_tscrunch() * _config.nchans() / _config.ib_fscrunch()) * sizeof(char);
@@ -100,6 +100,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
     _weights_manager.reset(new WeightsManager(_config, _processing_stream));
     _split_transpose.reset(new SplitTranspose(_config));
     _coherent_beamformer.reset(new CoherentBeamformer(_config));
+    _incoherent_beamformer.reset(new CoherentBeamformer(_config));
 }
 
 Pipeline::~Pipeline()
@@ -161,10 +162,8 @@ void Pipeline::process(VoltageVectorType const& taftp_vec,
     _split_transpose->transpose(taftp_vec, _split_transpose_output, _processing_stream);
     BOOST_LOG_TRIVIAL(debug) << "Forming coherent beams";
     _coherent_beamformer->beamform(_split_transpose_output, weights, tbtf_vec, _processing_stream);
-    BOOST_LOG_TRIVIAL(debug) << "Executing incoherent beamforming pipeline";
-
-    // incoherent beamformer
-
+    BOOST_LOG_TRIVIAL(debug) << "Forming incoherent beam";
+    _incoherent_beamformer->beamform(taftp_vec, tf_vec, _processing_stream);
     // At the end this should update the unix timestamp
 }
 
@@ -195,14 +194,14 @@ bool Pipeline::operator()(RawBytes& data)
     // Here we block on the processing stream before swapping
     // the processing buffers
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_processing_stream));
-    _tbftf_db.swap();
+    _tbtf_db.swap();
     _tftf_db.swap();
     // Calculate the unix timestamp for the block that is about to be processed
     // (which is the block passed the last time that operator() was called)
     _unix_timestamp = (_sync_time + (_sample_clock_start +
         ((_call_count - 2) * _sample_clock_tick_per_block))
     / _sample_clock);
-    process(_taftp_db.b(), _tbftf_db.a(), _tftf_db.a());
+    process(_taftp_db.b(), _tbtf_db.a(), _tftf_db.a());
 
     // If we are on the second call we can exit here as there is not data
     // that has completed processing at this stage.
@@ -225,7 +224,7 @@ bool Pipeline::operator()(RawBytes& data)
     auto& cb_block = _cb_data_stream.next();
     auto& ib_block = _ib_data_stream.next();
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(cb_block.ptr()),
-        static_cast<void*>(_tbftf_db.b_ptr()), cb_block.total_bytes(),
+        static_cast<void*>(_tbtf_db.b_ptr()), cb_block.total_bytes(),
         cudaMemcpyDeviceToHost, _d2h_copy_stream));
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(ib_block.ptr()),
         static_cast<void*>(_tftf_db.b_ptr()), ib_block.total_bytes(),
