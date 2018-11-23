@@ -29,8 +29,10 @@ void icbf_taftp_general_k(
     static_assert(FBFUSE_NCHANS % FBFUSE_IB_FSCRUNCH == 0,
         "Fscrunch must divide nchannels");
 
-    volatile __shared__ float accumulation_buffer[FBFUSE_NCHANS/FBFUSE_IB_FSCRUNCH][FBFUSE_NSAMPLES_PER_HEAP];
-    volatile __shared__ int8_t output_staging[FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH][FBFUSE_NCHANS/FBFUSE_IB_FSCRUNCH];
+    const int nchans_output = FBFUSE_NCHANS/FBFUSE_IB_FSCRUNCH;
+    const int nsamps_output = FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH;
+    volatile __shared__ float accumulation_buffer[nchans_output][FBFUSE_NSAMPLES_PER_HEAP];
+    volatile __shared__ int8_t output_staging[nsamps_output][nchans_output];
 
     //TAFTP
     const int tp = FBFUSE_NSAMPLES_PER_HEAP;
@@ -63,19 +65,23 @@ void icbf_taftp_general_k(
             accumulation_buffer[threadIdx.y][sample_idx] = (xx + yy + zz + ww);
         }
         __threadfence_block();
-        if (threadIdx.x < FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH)
+
+        for (int output_sample_idx = threadIdx.x; output_sample_idx < nsamps_output; ++blockDim.x)
         {
             float val = 0.0f;
-            for (int sample_idx = threadIdx.x * FBFUSE_IB_TSCRUNCH; sample_idx < (threadIdx.x + 1) * FBFUSE_IB_TSCRUNCH; ++sample_idx)
+            for (int sample_idx = output_sample_idx * FBFUSE_IB_TSCRUNCH; sample_idx < (output_sample_idx + 1) * FBFUSE_IB_TSCRUNCH; ++sample_idx)
             {
                 val += accumulation_buffer[threadIdx.y][sample_idx];
             }
-            output_staging[threadIdx.x][threadIdx.y] = (int8_t)((val - output_offset)/output_scale);
+            output_staging[output_sample_idx][threadIdx.y] = (int8_t)((val - output_offset)/output_scale);
         }
         __threadfence_block();
-        for (int idx = threadIdx.x; idx < FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH; idx += blockDim.x)
+        for (int idx = threadIdx.y; idx < nsamps_output; idx += blockDim.y)
         {
-            tf_powers[idx * blockDim.y + threadIdx.y] = output_staging[idx][threadIdx.y];
+            for (int output_chan_idx = threadIdx.x; output_chan_idx < nchans_output; output_chan_idx += blockDim.x)
+            {
+                tf_powers[idx * nchans_output + output_chan_idx] = output_staging[idx][output_chan_idx];
+            }
         }
     }
 }
