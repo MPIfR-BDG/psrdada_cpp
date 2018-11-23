@@ -9,6 +9,7 @@ set(psrdada_cpp_meerkat_fbfuse_src
     src/PipelineConfig.cpp
     src/Header.cpp
     src/DelayManager.cu
+    src/IncoherentBeamformer.cu	
     src/CoherentBeamformer.cu
     src/WeightsManager.cu
     src/SplitTranspose.cu

@@ -64,7 +64,7 @@ void IncoherentBeamformerTester::beamformer_c_reference(
                 for (int subint_idx = 0; subint_idx < nsamples_per_timestamp/tscrunch; ++subint_idx)
                 {
                     int subint_start = subint_idx * tscrunch;
-                    float xx = 0.0f, yy = 0.0f
+                    float xx = 0.0f, yy = 0.0f;
                     for (int channel_idx = subband_start; channel_idx < subband_start + fscrunch;  ++channel_idx)
                     {
                         for (int sample_idx = subint_start; sample_idx < subint_start + tscrunch; ++sample_idx)
@@ -96,14 +96,13 @@ void IncoherentBeamformerTester::beamformer_c_reference(
 
 void IncoherentBeamformerTester::compare_against_host(
     DeviceVoltageVectorType const& taftp_voltages_gpu,
-    DeviceWeightsVectorType const& fbpa_weights_gpu,
     DevicePowerVectorType& tf_powers_gpu,
     int ntimestamps)
 {
     HostVoltageVectorType taftp_voltages_host = taftp_voltages_gpu;
     HostPowerVectorType tf_powers_cuda = tf_powers_gpu;
     HostPowerVectorType tf_powers_host(tf_powers_gpu.size());
-    beamformer_c_reference(taftp_voltages_host,,
+    beamformer_c_reference(taftp_voltages_host,
         tf_powers_host,
         _config.nchans(),
         _config.ib_tscrunch(),
@@ -111,7 +110,7 @@ void IncoherentBeamformerTester::compare_against_host(
         ntimestamps,
         _config.ib_nantennas(),
         _config.npol(),
-        _config.nsamples_per_heap()
+        _config.nsamples_per_heap(),
         _config.ib_power_scaling(),
         _config.ib_power_offset());
     for (int ii = 0; ii < tf_powers_host.size(); ++ii)
@@ -124,7 +123,7 @@ void IncoherentBeamformerTester::compare_against_host(
     //std::cout << "\n";
 }
 
-TEST_F(IncoherentBeamformerTester, representative_noise_test)
+TEST_F(IncoherentBeamformerTester, ib_representative_noise_test)
 {
     const float input_level = 32.0f;
     _config.input_level(input_level);
@@ -140,14 +139,6 @@ TEST_F(IncoherentBeamformerTester, representative_noise_test)
     {
         taftp_voltages_host[ii].x = static_cast<int8_t>(std::lround(normal_dist(generator)));
         taftp_voltages_host[ii].y = static_cast<int8_t>(std::lround(normal_dist(generator)));
-    }
-    HostWeightsVectorType fbpa_weights_host(weights_size);
-    for (int ii = 0; ii < fbpa_weights_host.size(); ++ii)
-    {
-        // Build complex weight as C * exp(i * theta).
-        std::complex<double> val = 127.0f * std::exp(std::complex<float>(0.0f, uniform_dist(generator)));
-        fbpa_weights_host[ii].x = static_cast<int8_t>(std::lround(val.real()));
-        fbpa_weights_host[ii].y = static_cast<int8_t>(std::lround(val.imag()));
     }
     DeviceVoltageVectorType taftp_voltages_gpu = taftp_voltages_host;
     DevicePowerVectorType tf_powers_gpu;

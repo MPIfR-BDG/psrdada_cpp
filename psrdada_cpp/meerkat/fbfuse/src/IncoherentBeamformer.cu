@@ -48,10 +48,10 @@ void icbf_taftp_general_k(
             // Must start with the right number of threads in the y dimension
             // blockDim.y = nchans / fscrunch
             for (int channel_idx = FBFUSE_IB_FSCRUNCH * threadIdx.y + channel_offset;
-                channel_idx < min(channel_idx + FBFUSE_IB_FSCRUNCH + channel_offset, NCHANNELS);
+                channel_idx < min(channel_idx + FBFUSE_IB_FSCRUNCH + channel_offset, FBFUSE_NCHANS);
                 ++channel_idx)
             {
-                for (int antenna_idx = 0; antenna_idx < NANTENNAS; ++antenna_idx)
+                for (int antenna_idx = 0; antenna_idx < FBFUSE_IB_NANTENNAS; ++antenna_idx)
                 {
                     int input_index = timestamp_idx * aftp + antenna_idx * ftp + channel_idx * tp + sample_idx;
                     char4 ant = taftp_voltages[input_index];
@@ -120,7 +120,7 @@ void IncoherentBeamformer::beamform(VoltageVectorType const& input,
     int8_t* tf_powers_ptr = thrust::raw_pointer_cast(output.data());
     BOOST_LOG_TRIVIAL(debug) << "Executing incoherent beamforming kernel";
     kernels::icbf_taftp_general_k<<<grid, block, 0, stream>>>(
-        (char4 const*) ftpa_voltages_ptr,
+        (char4 const*) taftp_voltages_ptr,
         tf_powers_ptr,
         _config.ib_power_scaling(),
         _config.ib_power_offset(),
