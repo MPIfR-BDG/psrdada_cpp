@@ -8,8 +8,9 @@ set(PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES
 set(psrdada_cpp_meerkat_fbfuse_src
     src/PipelineConfig.cpp
     src/Header.cpp
+    src/DelayEngineSimulator.cpp
     src/DelayManager.cu
-    src/IncoherentBeamformer.cu	
+    src/IncoherentBeamformer.cu
     src/CoherentBeamformer.cu
     src/WeightsManager.cu
     src/SplitTranspose.cu

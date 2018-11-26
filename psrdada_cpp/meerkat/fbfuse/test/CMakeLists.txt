@@ -5,7 +5,6 @@ link_directories(${GTEST_LIBRARY_DIR})
 set(
     gtest_fbfuse_src
     src/CoherentBeamformerTester.cu
-    src/DelayEngineSimulator.cpp
     src/DelayManagerTester.cu
     src/IncoherentBeamformerTester.cu
     src/SplitTransposeTester.cu
