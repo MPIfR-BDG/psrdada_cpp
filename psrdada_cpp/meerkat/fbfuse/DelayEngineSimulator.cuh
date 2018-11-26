@@ -23,6 +23,7 @@ public:
     DelayEngineSimulator(DelayEngineSimulator const&) = delete;
 
     void update_delays();
+    DelayModel* delay_model();
 
 private:
     PipelineConfig const& _config;
