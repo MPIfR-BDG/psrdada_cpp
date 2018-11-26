@@ -7,6 +7,7 @@ set(
     src/CoherentBeamformerTester.cu
     src/DelayManagerTester.cu
     src/IncoherentBeamformerTester.cu
+    src/PipelineTester.cu
     src/SplitTransposeTester.cu
     src/WeightsManagerTester.cu
     src/gtest_fbfuse.cu
