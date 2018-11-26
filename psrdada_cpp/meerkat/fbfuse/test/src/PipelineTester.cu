@@ -73,7 +73,7 @@ TEST_F(PipelineTester, simple_run_test)
     MultiLog log("PipelineTester");
     DadaWriteClient cb_write_client(_config.cb_dada_key(), log);
     DadaWriteClient ib_write_client(_config.ib_dada_key(), log);
-    Pipeline pipeline(_config, cb_write_client, ib_write_client, taftp_block_size);
+    Pipeline pipeline(_config, cb_write_client, ib_write_client, taftp_block_bytes);
 
     //Set up null sinks on all buffers
     NullSink null_sink;

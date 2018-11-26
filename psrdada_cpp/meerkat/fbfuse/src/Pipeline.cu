@@ -41,6 +41,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
     //
     std::size_t heap_group_size = (_config.total_nantennas() * _config.nchans()
         * _config.nsamples_per_heap() * _config.npol()) * sizeof(char2);
+
     if (input_data_buffer_size % heap_group_size != 0)
     {
         throw std::runtime_error("Input DADA buffer is not a multiple "
@@ -124,8 +125,8 @@ void Pipeline::set_header(RawBytes& header)
 {
     Header parser(header);
     parser.purge();
-    // There is a bug in DADA that results in keys made of subkeys not being writen if 
-    // the superkey is writen first. To get around this the order of key writes needs to 
+    // There is a bug in DADA that results in keys made of subkeys not being writen if
+    // the superkey is writen first. To get around this the order of key writes needs to
     // be carefully considered.
     parser.set<long double>(FBFUSE_SAMPLE_CLOCK_KEY, _sample_clock);
     parser.set<long double>(FBFUSE_SYNC_TIME_KEY, _sync_time);
@@ -183,17 +184,18 @@ bool Pipeline::operator()(RawBytes& data)
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_copy_stream));
     _taftp_db.swap();
 
-    // printf("dev: %p, host: %p, used: %d\n",static_cast<void*>(_taftp_db.a_ptr()), static_cast<void*>(data.ptr()), (int)data.used_bytes());
-    //thrust::device_vector<char2> tmp_vec(data.used_bytes()/sizeof(char2), {0,0});
-    //void* tmp = static_cast<void*>(thrust::raw_pointer_cast(tmp_vec.data()));
-    //_taftp_db.resize(data.used_bytes()/sizeof(char2), {0,0});
-    
-    std::cout << "Size required: " << data.used_bytes()/sizeof(char2) << ", actual size: " << _taftp_db.a().size() << "\n"; 
+    if (data.used_bytes() != _taftp_db.a().size()*sizeof(char2))
+    {
 
+        throw std::runtime_error(std::string("Unexpected DADA buffer size, expected ")
+            + _taftp_db.a().size()*sizeof(char2)
+            + " but got "
+            + data.used_bytes());
+    }
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(_taftp_db.a_ptr()),
         static_cast<void*>(data.ptr()), data.used_bytes(),
         cudaMemcpyHostToDevice, _h2d_copy_stream));
-   
+
 
     // If we are on the first call we can exit here as there is no
     // data on the GPU yet to process.
