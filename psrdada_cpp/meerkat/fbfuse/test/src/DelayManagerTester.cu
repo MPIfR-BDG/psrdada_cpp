@@ -54,7 +54,7 @@ TEST_F(DelayManagerTester, test_updates)
     std::memset(static_cast<void*>(simulator.delay_model()->delays), 1, sizeof(simulator.delay_model()->delays));
     simulator.update_delays();
     auto const& delay_vector_2 = delay_manager.delays();
-    compare_against_host(delay_vector_2);
+    compare_against_host(delay_vector_2, simulator.delay_model());
 }
 
 TEST_F(DelayManagerTester, test_bad_keys)
