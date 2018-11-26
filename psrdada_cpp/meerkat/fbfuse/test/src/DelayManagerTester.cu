@@ -32,15 +32,15 @@ void DelayManagerTester::TearDown()
     CUDA_ERROR_CHECK(cudaStreamDestroy(_stream));
 }
 
-void DelayManagerTester::compare_against_host(DelayManager::DelayVectorType const& delays)
+void DelayManagerTester::compare_against_host(DelayManager::DelayVectorType const& delays, DelayModel* expected_delays)
 {
     // Implicit sync copy back to host
     thrust::host_vector<DelayManager::DelayType> host_delays = delays;
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     for (int ii=0; ii < FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS; ++ii)
     {
-        ASSERT_EQ(_delay_model->delays[ii].x, host_delays[ii].x);
-        ASSERT_EQ(_delay_model->delays[ii].y, host_delays[ii].y);
+        ASSERT_EQ(expected_delays->delays[ii].x, host_delays[ii].x);
+        ASSERT_EQ(expected_delays->delays[ii].y, host_delays[ii].y);
     }
 }
 
@@ -50,8 +50,8 @@ TEST_F(DelayManagerTester, test_updates)
     DelayManager delay_manager(_config, _stream);
     simulator.update_delays();
     auto const& delay_vector = delay_manager.delays();
-    compare_against_host(delay_vector);
-    std::memset(static_cast<void*>(_delay_model->delays), 1, sizeof(_delay_model->delays));
+    compare_against_host(delay_vector, simulator.delay_model());
+    std::memset(static_cast<void*>(simulator.delay_model()->delays), 1, sizeof(simulator.delay_model()->delays));
     simulator.update_delays();
     auto const& delay_vector_2 = delay_manager.delays();
     compare_against_host(delay_vector_2);

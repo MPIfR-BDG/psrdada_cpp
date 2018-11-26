@@ -21,11 +21,10 @@ public:
     ~DelayManagerTester();
 
 protected:
-    void compare_against_host(DelayManager::DelayVectorType const& delays);
+    void compare_against_host(DelayManager::DelayVectorType const&, DelayModel*);
 
 protected:
     PipelineConfig _config;
-    DelayModel* _delay_model;
     cudaStream_t _stream;
 };
 

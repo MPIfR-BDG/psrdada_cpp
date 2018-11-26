@@ -117,6 +117,12 @@ void DelayEngineSimulator::update_delays()
     sem_post(_sem_id);
 }
 
+DelayModel* DelayEngineSimulator::delay_model()
+{
+    return _delay_model;
+}
+
+
 } //namespace fbfuse
 } //namespace meerkat
 } //namespace psrdada_cpp
