@@ -49,7 +49,7 @@ typename DoubleDeviceBuffer<T>::VectorType& DoubleDeviceBuffer<T>::b()
 template <typename T>
 T* DoubleDeviceBuffer<T>::a_ptr() 
 {
-    return thrust::raw_pointer_cast(_buf0.data());;
+    return thrust::raw_pointer_cast(_buf0.data());
 }
 
 template <typename T>

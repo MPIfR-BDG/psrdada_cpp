@@ -55,7 +55,7 @@ Pipeline::Pipeline(PipelineConfig const& config,
         throw std::runtime_error("Input DADA buffer does not contain an integer "
             "multiple of the required number of samples per device block");
     }
-    _taftp_db.resize(heap_group_size / sizeof(char2), {0,0});
+    _taftp_db.resize(input_data_buffer_size / sizeof(char2), {0,0});
 
     //
     // Output buffer checks:
@@ -182,10 +182,18 @@ bool Pipeline::operator()(RawBytes& data)
     // any previous copy.
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_copy_stream));
     _taftp_db.swap();
+
+    // printf("dev: %p, host: %p, used: %d\n",static_cast<void*>(_taftp_db.a_ptr()), static_cast<void*>(data.ptr()), (int)data.used_bytes());
+    //thrust::device_vector<char2> tmp_vec(data.used_bytes()/sizeof(char2), {0,0});
+    //void* tmp = static_cast<void*>(thrust::raw_pointer_cast(tmp_vec.data()));
+    //_taftp_db.resize(data.used_bytes()/sizeof(char2), {0,0});
+    
+    std::cout << "Size required: " << data.used_bytes()/sizeof(char2) << ", actual size: " << _taftp_db.a().size() << "\n"; 
+
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(_taftp_db.a_ptr()),
         static_cast<void*>(data.ptr()), data.used_bytes(),
         cudaMemcpyHostToDevice, _h2d_copy_stream));
-
+   
 
     // If we are on the first call we can exit here as there is no
     // data on the GPU yet to process.
