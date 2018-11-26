@@ -11,7 +11,7 @@ namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {
 
-explicit DelayEngineSimulator::DelayEngineSimulator(PipelineConfig const& config)
+DelayEngineSimulator::DelayEngineSimulator(PipelineConfig const& config)
     : _config(config)
 {
     _shm_fd = shm_open(_config.delay_buffer_shm().c_str(), O_CREAT | O_RDWR, 0666);

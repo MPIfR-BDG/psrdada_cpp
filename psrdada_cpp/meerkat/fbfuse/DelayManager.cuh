@@ -2,7 +2,7 @@
 #define PSRDADA_CPP_MEERKAT_FBFUSE_DELAYMANAGER_HPP
 
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
-#include "psrdada_cpp/meerkat/fbfuse/DelayModel.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayModel.cuh"
 #include <thrust/device_vector.h>
 #include <semaphore.h>
 

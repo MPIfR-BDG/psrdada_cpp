@@ -2,7 +2,8 @@
 #define PSRDADA_CPP_MEERKAT_FBFUSE_DELAYENGINESIMULATOR_HPP
 
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
-#include "psrdada_cpp/meerkat/fbfuse/DelayModel.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayModel.cuh"
+#include <semaphore.h>
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -30,7 +31,6 @@ private:
     sem_t* _sem_id;
     sem_t* _mutex_id;
     DelayModel* _delay_model;
-    cudaStream_t _stream;
 };
 
 } //namespace fbfuse
