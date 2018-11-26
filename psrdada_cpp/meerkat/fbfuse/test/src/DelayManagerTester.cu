@@ -63,7 +63,7 @@ TEST_F(DelayManagerTester, test_bad_keys)
     _config.delay_buffer_shm("bad_test_delay_buffer_shm");
     _config.delay_buffer_sem("bda_test_delay_buffer_sem");
     _config.delay_buffer_mutex("bad_test_delay_buffer_mutex");
-    ASSERT_ANY_THROW(DelayManager(config, _stream));
+    ASSERT_ANY_THROW(DelayManager(_config, _stream));
 }
 
 } //namespace test
