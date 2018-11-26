@@ -102,11 +102,6 @@ TEST_F(PipelineTester, simple_run_test)
     header.set<long double>("SAMPLE_CLOCK", 856000000.0);
     header.set<long double>("SYNC_TIME", 0.0);
     header.set<std::size_t>("SAMPLE_CLOCK_START", 4096);
-    for (int jj=0;jj<4096;++jj)
-	{	
-	printf("%c",(input_header_rb.ptr())[jj]);
-	}
-    printf("\n");
 
     //Create and input data buffer
     std::vector<char> input_data_buffer(taftp_block_bytes);

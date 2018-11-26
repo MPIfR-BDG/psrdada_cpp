@@ -93,7 +93,7 @@ namespace psrdada_cpp {
         {
             throw std::runtime_error("No header block to be released");
         }
-        BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Writing header content:\n " << _current_block->ptr();
+        BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Writing header content:\n" << _current_block->ptr();
         BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Header bytes used " << _current_block->used_bytes();
         BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Releasing header block";
         if (ipcbuf_mark_filled(_parent._hdu->header_block, _current_block->used_bytes()) < 0)
