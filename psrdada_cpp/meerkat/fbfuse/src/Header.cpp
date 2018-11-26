@@ -1,5 +1,6 @@
 #include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
 #include "ascii_header.h"
+#include "inttypes.h"
 #include <cstring>
 
 namespace psrdada_cpp {
@@ -58,13 +59,13 @@ std::size_t Header::get<std::size_t>(char const* key)
 template <>
 void Header::set<long double>(char const* key, long double value)
 {
-    ascii_header_set(this->_header.ptr(), key, "%ld", value);
+    ascii_header_set(this->_header.ptr(), key, "%Lf", value);
 }
 
 template <>
 void Header::set<std::size_t>(char const* key, std::size_t value)
 {
-    ascii_header_set(this->_header.ptr(), key, "%ul", value);
+    ascii_header_set(this->_header.ptr(), key, "%" PRId64, value);
 }
 
 } //namespace fbfuse

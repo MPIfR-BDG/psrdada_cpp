@@ -79,6 +79,7 @@ TEST_F(PipelineTester, simple_run_test)
     NullSink null_sink;
     DadaInputStream<NullSink> cb_consumer(_config.cb_dada_key(), log, null_sink);
     DadaInputStream<NullSink> ib_consumer(_config.cb_dada_key(), log, null_sink);
+    /*
     std::thread cb_consumer_thread( [&](){
         try {
             cb_consumer.start();
@@ -93,13 +94,19 @@ TEST_F(PipelineTester, simple_run_test)
             BOOST_LOG_TRIVIAL(error) << e.what();
         }
 	});
+    */
     //Create and input header buffer
     std::vector<char> input_header_buffer(4096, 0);
     RawBytes input_header_rb(input_header_buffer.data(), 4096, 4096);
     Header header(input_header_rb);
-    header.set<std::size_t>("SAMPLE_CLOCK_START", 0L);
     header.set<long double>("SAMPLE_CLOCK", 856000000.0);
     header.set<long double>("SYNC_TIME", 0.0);
+    header.set<std::size_t>("SAMPLE_CLOCK_START", 4096);
+    for (int jj=0;jj<4096;++jj)
+	{	
+	printf("%c",(input_header_rb.ptr())[jj]);
+	}
+    printf("\n");
 
     //Create and input data buffer
     std::vector<char> input_data_buffer(taftp_block_bytes);
@@ -115,8 +122,8 @@ TEST_F(PipelineTester, simple_run_test)
     cb_consumer.stop();
     ib_consumer.stop();
     pipeline(input_data_rb);
-    cb_consumer_thread.join();
-    ib_consumer_thread.join();
+    //cb_consumer_thread.join();
+    //ib_consumer_thread.join();
 }
 
 } //namespace test

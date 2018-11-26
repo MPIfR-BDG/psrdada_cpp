@@ -124,9 +124,12 @@ void Pipeline::set_header(RawBytes& header)
 {
     Header parser(header);
     parser.purge();
-    parser.set<std::size_t>(FBFUSE_SAMPLE_CLOCK_START_KEY, _sample_clock_start);
+    // There is a bug in DADA that results in keys made of subkeys not being writen if 
+    // the superkey is writen first. To get around this the order of key writes needs to 
+    // be carefully considered.
     parser.set<long double>(FBFUSE_SAMPLE_CLOCK_KEY, _sample_clock);
     parser.set<long double>(FBFUSE_SYNC_TIME_KEY, _sync_time);
+    parser.set<std::size_t>(FBFUSE_SAMPLE_CLOCK_START_KEY, _sample_clock_start);
     header.used_bytes(header.total_bytes());
 }
 
