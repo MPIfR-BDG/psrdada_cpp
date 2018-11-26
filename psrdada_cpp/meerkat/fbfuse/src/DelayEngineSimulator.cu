@@ -1,4 +1,4 @@
-#include "psrdada_cpp/meerkat/fbfuse/DelayEngineSimulator.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayEngineSimulator.cuh"
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
