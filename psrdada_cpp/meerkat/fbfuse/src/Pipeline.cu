@@ -164,7 +164,6 @@ void Pipeline::process(VoltageVectorType const& taftp_vec,
     _coherent_beamformer->beamform(_split_transpose_output, weights, tbtf_vec, _processing_stream);
     BOOST_LOG_TRIVIAL(debug) << "Forming incoherent beam";
     _incoherent_beamformer->beamform(taftp_vec, tf_vec, _processing_stream);
-    // At the end this should update the unix timestamp
 }
 
 bool Pipeline::operator()(RawBytes& data)

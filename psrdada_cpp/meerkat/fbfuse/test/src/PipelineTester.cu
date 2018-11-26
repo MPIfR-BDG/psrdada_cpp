@@ -13,6 +13,7 @@
 #include <complex>
 #include <thread>
 #include <vector>
+#include <exception>
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -79,10 +80,18 @@ TEST_F(PipelineTester, simple_run_test)
     DadaInputStream<NullSink> cb_consumer(_config.cb_dada_key(), log, null_sink);
     DadaInputStream<NullSink> ib_consumer(_config.cb_dada_key(), log, null_sink);
     std::thread cb_consumer_thread( [&](){
-	cb_consumer.start();
+        try {
+            cb_consumer.start();
+        } catch (std::exception& e) {
+            BOOST_LOG_TRIVIAL(error) << e.what();
+        }
 	});
     std::thread ib_consumer_thread( [&](){
-	ib_consumer.start();
+	    try {
+            ib_consumer.start();
+        } catch (std::exception& e) {
+            BOOST_LOG_TRIVIAL(error) << e.what();
+        }
 	});
     //Create and input header buffer
     std::vector<char> input_header_buffer(4096, 0);
