@@ -2,7 +2,7 @@
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/DelayEngineSimulator.cuh"
-#include "psrdada_cpp/meerkat/fbfuse/Header.cpp"
+#include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
 #include "psrdada_cpp/dada_null_sink.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_db.hpp"
@@ -59,7 +59,6 @@ TEST_F(PipelineTester, simple_run_test)
     DadaDB cb_buffer(8, cb_block_size, 4, 4096);
     cb_buffer.create();
     _config.cb_dada_key(cb_buffer.key());
-    DadaWriteClient
 
     //Create output buffer for incoherent beams
     int const ib_output_nsamps = _config.nsamples_per_heap() * ntimestamps_per_block / _config.ib_tscrunch();
@@ -73,15 +72,18 @@ TEST_F(PipelineTester, simple_run_test)
     MultiLog log("PipelineTester");
     DadaWriteClient cb_write_client(_config.cb_dada_key(), log);
     DadaWriteClient ib_write_client(_config.ib_dada_key(), log);
-    Pipeline pipeline(_config, cb_write_client, ib_write_client, taftp_block_bytes);
+    Pipeline pipeline(_config, cb_write_client, ib_write_client, taftp_block_size);
 
     //Set up null sinks on all buffers
     NullSink null_sink;
     DadaInputStream<NullSink> cb_consumer(_config.cb_dada_key(), log, null_sink);
     DadaInputStream<NullSink> ib_consumer(_config.cb_dada_key(), log, null_sink);
-    std::thread cb_consumer_thread(cb_consumer.start);
-    std::thread ib_consumer_thread(ib_consumer.start);
-
+    std::thread cb_consumer_thread( [&](){
+	cb_consumer.start();
+	});
+    std::thread ib_consumer_thread( [&](){
+	ib_consumer.start();
+	});
     //Create and input header buffer
     std::vector<char> input_header_buffer(4096, 0);
     RawBytes input_header_rb(input_header_buffer.data(), 4096, 4096);
@@ -91,7 +93,7 @@ TEST_F(PipelineTester, simple_run_test)
     header.set<long double>("SYNC_TIME", 0.0);
 
     //Create and input data buffer
-    std::vector<int8_t> input_data_buffer(taftp_block_bytes);
+    std::vector<char> input_data_buffer(taftp_block_bytes);
     RawBytes input_data_rb(input_data_buffer.data(), taftp_block_bytes, taftp_block_bytes);
 
     //Run the init
@@ -99,11 +101,11 @@ TEST_F(PipelineTester, simple_run_test)
     //Loop over N data blocks and push them through the system
     for (int ii = 0; ii < 10; ++ii)
     {
-        pipeline.process(input_data_rb);
+        pipeline(input_data_rb);
     }
     cb_consumer.stop();
     ib_consumer.stop();
-    pipeline.process(input_data_rb);
+    pipeline(input_data_rb);
     cb_consumer_thread.join();
     ib_consumer_thread.join();
 }
