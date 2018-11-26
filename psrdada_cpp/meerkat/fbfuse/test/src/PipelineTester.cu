@@ -12,6 +12,7 @@
 #include <cmath>
 #include <complex>
 #include <thread>
+#include <chrono>
 #include <vector>
 #include <exception>
 
@@ -50,7 +51,7 @@ TEST_F(PipelineTester, simple_run_test)
 
     int const ntimestamps_per_block = 64;
     int const taftp_block_size = (ntimestamps_per_block * _config.total_nantennas()
-        * _config.nchans() * _config.nsamples_per_heap() * _config.npol() * 2);
+        * _config.nchans() * _config.nsamples_per_heap() * _config.npol());
     int const taftp_block_bytes = taftp_block_size * sizeof(char2);
 
     //Create output buffer for coherent beams
@@ -78,8 +79,8 @@ TEST_F(PipelineTester, simple_run_test)
     //Set up null sinks on all buffers
     NullSink null_sink;
     DadaInputStream<NullSink> cb_consumer(_config.cb_dada_key(), log, null_sink);
-    DadaInputStream<NullSink> ib_consumer(_config.cb_dada_key(), log, null_sink);
-    /*
+    DadaInputStream<NullSink> ib_consumer(_config.ib_dada_key(), log, null_sink);
+    
     std::thread cb_consumer_thread( [&](){
         try {
             cb_consumer.start();
@@ -94,7 +95,7 @@ TEST_F(PipelineTester, simple_run_test)
             BOOST_LOG_TRIVIAL(error) << e.what();
         }
 	});
-    */
+    
     //Create and input header buffer
     std::vector<char> input_header_buffer(4096, 0);
     RawBytes input_header_rb(input_header_buffer.data(), 4096, 4096);
@@ -110,15 +111,16 @@ TEST_F(PipelineTester, simple_run_test)
     //Run the init
     pipeline.init(input_header_rb);
     //Loop over N data blocks and push them through the system
-    for (int ii = 0; ii < 10; ++ii)
+    for (int ii = 0; ii < 20; ++ii)
     {
         pipeline(input_data_rb);
     }
     cb_consumer.stop();
     ib_consumer.stop();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     pipeline(input_data_rb);
-    //cb_consumer_thread.join();
-    //ib_consumer_thread.join();
+    cb_consumer_thread.join();
+    ib_consumer_thread.join();
 }
 
 } //namespace test

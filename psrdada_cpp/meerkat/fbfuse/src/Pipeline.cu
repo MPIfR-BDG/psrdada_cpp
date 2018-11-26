@@ -188,9 +188,9 @@ bool Pipeline::operator()(RawBytes& data)
     {
 
         throw std::runtime_error(std::string("Unexpected DADA buffer size, expected ")
-            + _taftp_db.a().size()*sizeof(char2)
+            + std::to_string(_taftp_db.a().size()*sizeof(char2))
             + " but got "
-            + data.used_bytes());
+            + std::to_string(data.used_bytes()));
     }
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(_taftp_db.a_ptr()),
         static_cast<void*>(data.ptr()), data.used_bytes(),
@@ -241,7 +241,8 @@ bool Pipeline::operator()(RawBytes& data)
     CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void*>(ib_block.ptr()),
         static_cast<void*>(_tf_db.b_ptr()), ib_block.total_bytes(),
         cudaMemcpyDeviceToHost, _d2h_copy_stream));
-
+    cb_block.used_bytes(cb_block.total_bytes());
+    ib_block.used_bytes(ib_block.total_bytes());
     return false;
 }
 
