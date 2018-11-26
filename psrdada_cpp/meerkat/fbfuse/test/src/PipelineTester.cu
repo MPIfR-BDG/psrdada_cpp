@@ -2,12 +2,17 @@
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/DelayEngineSimulator.cuh"
+#include "psrdada_cpp/meerkat/fbfuse/Header.cpp"
+#include "psrdada_cpp/dada_null_sink.hpp"
+#include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_db.hpp"
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <random>
 #include <cmath>
 #include <complex>
+#include <thread>
+#include <vector>
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -51,7 +56,7 @@ TEST_F(PipelineTester, simple_run_test)
     int const cb_output_nsamps = _config.nsamples_per_heap() * ntimestamps_per_block / _config.cb_tscrunch();
     int const cb_output_nchans = _config.nchans() / _config.cb_fscrunch();
     int const cb_block_size = _config.cb_nbeams() * cb_output_nsamps * cb_output_nchans;
-    DadaDb cb_buffer(8, cb_block_size, 4, 4096);
+    DadaDB cb_buffer(8, cb_block_size, 4, 4096);
     cb_buffer.create();
     _config.cb_dada_key(cb_buffer.key());
     DadaWriteClient
@@ -60,14 +65,14 @@ TEST_F(PipelineTester, simple_run_test)
     int const ib_output_nsamps = _config.nsamples_per_heap() * ntimestamps_per_block / _config.ib_tscrunch();
     int const ib_output_nchans = _config.nchans() / _config.ib_fscrunch();
     int const ib_block_size = _config.ib_nbeams() * ib_output_nsamps * ib_output_nchans;
-    DadaDb ib_buffer(8, ib_block_size, 4, 4096);
+    DadaDB ib_buffer(8, ib_block_size, 4, 4096);
     ib_buffer.create();
     _config.ib_dada_key(ib_buffer.key());
 
     //Setup write clients
-    MultiLog log("PipelineTester")
-    DadaWriteClient cb_write_client(_config.cb_dada_key());
-    DadaWriteClient ib_write_client(_config.ib_dada_key());
+    MultiLog log("PipelineTester");
+    DadaWriteClient cb_write_client(_config.cb_dada_key(), log);
+    DadaWriteClient ib_write_client(_config.ib_dada_key(), log);
     Pipeline pipeline(_config, cb_write_client, ib_write_client, taftp_block_bytes);
 
     //Set up null sinks on all buffers
