@@ -4,7 +4,6 @@
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include <gtest/gtest.h>
-#include <semaphore.h>
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -26,10 +25,6 @@ protected:
 
 protected:
     PipelineConfig _config;
-    int _shm_fd;
-    void* _shm_ptr;
-    sem_t* _sem_id;
-    sem_t* _mutex_id;
     DelayModel* _delay_model;
     cudaStream_t _stream;
 };

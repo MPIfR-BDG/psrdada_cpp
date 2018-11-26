@@ -2,21 +2,13 @@
 #define PSRDADA_CPP_MEERKAT_FBFUSE_DELAYMANAGER_HPP
 
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
+#include "psrdada_cpp/meerkat/fbfuse/DelayModel.hpp"
 #include <thrust/device_vector.h>
 #include <semaphore.h>
 
 namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {
-
-// POD struct containing the layout of the shared memory
-// buffer as written by the Python client
-struct DelayModel
-{
-    double epoch;
-    double duration;
-    float2 delays[FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS]; // Compile time constants
-};
 
 /**
  * @brief      Class for managing the POSIX shared memory buffers
