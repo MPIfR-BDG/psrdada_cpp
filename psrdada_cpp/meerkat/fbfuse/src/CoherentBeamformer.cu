@@ -2,10 +2,6 @@
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <cassert>
 
-#define FBFUSE_CB_WARP_SIZE 32
-#define FBFUSE_CB_NTHREADS 1024
-#define FBFUSE_CB_NWARPS_PER_BLOCK (FBFUSE_CB_NTHREADS / FBFUSE_CB_WARP_SIZE)
-
 namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {

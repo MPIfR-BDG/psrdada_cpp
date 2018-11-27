@@ -89,7 +89,7 @@ TEST_F(PipelineTester, simple_run_test)
         }
 	});
     std::thread ib_consumer_thread( [&](){
-	    try {
+        try {
             ib_consumer.start();
         } catch (std::exception& e) {
             BOOST_LOG_TRIVIAL(error) << e.what();
@@ -102,16 +102,17 @@ TEST_F(PipelineTester, simple_run_test)
     Header header(input_header_rb);
     header.set<long double>("SAMPLE_CLOCK", 856000000.0);
     header.set<long double>("SYNC_TIME", 0.0);
-    header.set<std::size_t>("SAMPLE_CLOCK_START", 4096);
+    header.set<std::size_t>("SAMPLE_CLOCK_START", 0);
 
     //Create and input data buffer
-    std::vector<char> input_data_buffer(taftp_block_bytes);
-    RawBytes input_data_rb(input_data_buffer.data(), taftp_block_bytes, taftp_block_bytes);
+    char* input_data_buffer;
+    CUDA_ERROR_CHECK(cudaMallocHost((void**)&input_data_buffer, taftp_block_bytes));
+    RawBytes input_data_rb(input_data_buffer, taftp_block_bytes, taftp_block_bytes);
 
     //Run the init
     pipeline.init(input_header_rb);
     //Loop over N data blocks and push them through the system
-    for (int ii = 0; ii < 20; ++ii)
+    for (int ii = 0; ii < 200; ++ii)
     {
         pipeline(input_data_rb);
     }
@@ -121,6 +122,7 @@ TEST_F(PipelineTester, simple_run_test)
     pipeline(input_data_rb);
     cb_consumer_thread.join();
     ib_consumer_thread.join();
+    CUDA_ERROR_CHECK(cudaFreeHost((void*)input_data_buffer));
 }
 
 } //namespace test
