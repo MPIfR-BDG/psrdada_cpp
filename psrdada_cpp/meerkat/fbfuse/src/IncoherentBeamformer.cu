@@ -31,10 +31,11 @@ void icbf_taftp_general_k(
     static_assert(FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK % FBFUSE_IB_FSCRUNCH == 0,
         "Fscrunch must divide nchannels");
 
-    const int nchans_output = FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK/FBFUSE_IB_FSCRUNCH;
+    const int nchans_output_total = FBFUSE_NCHANS / FBFUSE_IB_FSCRUNCH;
+    const int nchans_output_block = FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK/FBFUSE_IB_FSCRUNCH;
     const int nsamps_output = FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH;
-    volatile __shared__ float accumulation_buffer[nchans_output][FBFUSE_NSAMPLES_PER_HEAP];
-    volatile __shared__ int8_t output_staging[nsamps_output][nchans_output];
+    volatile __shared__ float accumulation_buffer[nchans_output_block][FBFUSE_NSAMPLES_PER_HEAP];
+    volatile __shared__ int8_t output_staging[nsamps_output][nchans_output_block];
 
     //TAFTP
     const int tp = FBFUSE_NSAMPLES_PER_HEAP;
@@ -76,12 +77,12 @@ void icbf_taftp_general_k(
             output_staging[output_sample_idx][threadIdx.y] = (int8_t)((val - output_offset)/output_scale);
         }
         __syncthreads();
-	const int output_offset = timestamp_idx * nsamps_output * nchans_output;
+	const int output_offset = timestamp_idx * nsamps_output * nchans_output_total;
         for (int idx = threadIdx.y; idx < nsamps_output; idx += blockDim.y)
         {
             for (int output_chan_idx = threadIdx.x; output_chan_idx < nchans_output; output_chan_idx += blockDim.x)
             {
-                tf_powers[output_offset + idx * nchans_output + output_chan_idx + channel_offset] = output_staging[idx][output_chan_idx];
+                tf_powers[output_offset + idx * nchans_output_total + output_chan_idx + channel_offset] = output_staging[idx][output_chan_idx];
 	    }
         }
     }
@@ -129,6 +130,7 @@ void IncoherentBeamformer::beamform(VoltageVectorType const& input,
         // Assumes that nchans is always a power of two.
         nchans_groups = nchans_out_total / FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK;
     }
+    BOOST_LOG_TRIVIAL(debug) << "IB kernel using " << nchans_groups << " channel groups";
     int nthreads_y = nchans_out_total / nchans_groups;
     int nthreads_x = 1024 / nthreads_y;
     dim3 block(nthreads_x, nthreads_y);
