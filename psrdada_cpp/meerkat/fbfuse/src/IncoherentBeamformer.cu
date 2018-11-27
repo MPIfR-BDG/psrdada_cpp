@@ -2,7 +2,7 @@
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <cassert>
 
-#define FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK 32
+#define FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK 16
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -118,17 +118,20 @@ void IncoherentBeamformer::beamform(VoltageVectorType const& input,
     << output.size() << " to " << output_size
     << " elements";
     output.resize(output_size);
-    int nthreads_y = _config.nchans() / _config.ib_fscrunch();
-    int nthreads_x = 1024 / nthreads_y;
-    dim3 block(nthreads_x, nthreads_y);
+    assert(FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK % _config.ib_fscrunch() == 0 /* IB fscrunch must divide the number of output channels per block*/);
+
     // The incoherent beamforming kernel can only handle 32 output channels per
     // block. As such we use the gridDim.y to handle blocks of 32 channels.
+    int nchans_out_total = _config.nchans() / _config.ib_fscrunch();
     int nchans_groups = 1;
-    if ((nchans / fscrunch) > FBFUSE_IB_MAX_NCHANS_PER_BLOCK)
+    if (nchans_out_total > FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK)
     {
         // Assumes that nchans is always a power of two.
-        int nchans_groups = (nchans / fscrunch) / FBFUSE_IB_MAX_NCHANS_PER_BLOCK;
+        nchans_groups = nchans_out_total / FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK;
     }
+    int nthreads_y = nchans_out_total / nchans_groups;
+    int nthreads_x = 1024 / nthreads_y;
+    dim3 block(nthreads_x, nthreads_y);
     dim3 grid(ntimestamps, nchans_groups);
     char2 const* taftp_voltages_ptr = thrust::raw_pointer_cast(input.data());
     int8_t* tf_powers_ptr = thrust::raw_pointer_cast(output.data());
