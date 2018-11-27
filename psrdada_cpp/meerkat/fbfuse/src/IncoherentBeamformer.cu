@@ -99,7 +99,6 @@ void IncoherentBeamformer::beamform(VoltageVectorType const& input,
     << output.size() << " to " << output_size
     << " elements";
     output.resize(output_size);
-    assert(FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK % _config.ib_fscrunch() == 0 /* IB fscrunch must divide the number of output channels per block*/);
     int nthreads_x = FBFUSE_NSAMPLES_PER_HEAP;
     dim3 block(nthreads_x);
     dim3 grid(ntimestamps);
