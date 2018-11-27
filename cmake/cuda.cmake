@@ -16,10 +16,13 @@ if(ENABLE_CUDA)
   # Pass options to NVCC ( -ccbin /path  --compiler-options -lfftw3f --compiler-options -lm --verbose)
   list(APPEND CUDA_NVCC_FLAGS -DENABLE_CUDA --std c++11)
   list(APPEND CUDA_NVCC_FLAGS_DEBUG --debug; --device-debug; --generate-line-info -Xcompiler "-Werror")
-#  list(APPEND CUDA_NVCC_FLAGS -arch compute_35) # minumum compute level (Sps restriction)
+  #list(APPEND CUDA_NVCC_FLAGS -arch compute_35) # minumum compute level (Sps restriction)
+  list(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_61,code=sm_61) # GTX1080Ti
   #list(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_52,code=sm_52) # TitanX
   #list(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_50,code=sm_50) # Maxwell
   #list(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_37,code=sm_37) # K80
+   	
+  list(APPEND CUDA_NVCC_FLAGS -O3 -use_fast_math -restrict)
 
   set(CMAKE_CXX_FLAGS "-DENABLE_CUDA ${CMAKE_CXX_FLAGS}")
 
