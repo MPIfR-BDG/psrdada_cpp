@@ -2,6 +2,8 @@
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <cassert>
 
+#define FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK 32
+
 namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {
@@ -21,15 +23,15 @@ void icbf_taftp_general_k(
     // blockDim.y == nchans / fscrunch
     // blockDim.z unused
     // gridDim.x == up to number of timestamps
-    // gridDim.y is unused
+    // gridDim.y // Could use this for channel groups to keep shared memory size down
     // gridDim.z is unused
 
     static_assert(FBFUSE_NSAMPLES_PER_HEAP % FBFUSE_IB_TSCRUNCH == 0,
         "tscrunch must divide 256");
-    static_assert(FBFUSE_NCHANS % FBFUSE_IB_FSCRUNCH == 0,
+    static_assert(FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK % FBFUSE_IB_FSCRUNCH == 0,
         "Fscrunch must divide nchannels");
 
-    const int nchans_output = FBFUSE_NCHANS/FBFUSE_IB_FSCRUNCH;
+    const int nchans_output = FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK/FBFUSE_IB_FSCRUNCH;
     const int nsamps_output = FBFUSE_NSAMPLES_PER_HEAP/FBFUSE_IB_TSCRUNCH;
     volatile __shared__ float accumulation_buffer[nchans_output][FBFUSE_NSAMPLES_PER_HEAP];
     volatile __shared__ int8_t output_staging[nsamps_output][nchans_output];
@@ -38,7 +40,7 @@ void icbf_taftp_general_k(
     const int tp = FBFUSE_NSAMPLES_PER_HEAP;
     const int ftp = FBFUSE_NCHANS * tp;
     const int aftp = FBFUSE_IB_NANTENNAS * ftp;
-    const int channel_offset = blockIdx.y * FBFUSE_NCHANS;
+    const int channel_offset = blockIdx.y * FBFUSE_IB_MAX_NCHANS_OUT_PER_BLOCK;
 
     for (int timestamp_idx = blockIdx.x; timestamp_idx < ntimestamps; timestamp_idx += gridDim.x)
     {
@@ -73,14 +75,14 @@ void icbf_taftp_general_k(
             }
             output_staging[output_sample_idx][threadIdx.y] = (int8_t)((val - output_offset)/output_scale);
         }
-        __syncthreads(); 
+        __syncthreads();
 	const int output_offset = timestamp_idx * nsamps_output * nchans_output;
         for (int idx = threadIdx.y; idx < nsamps_output; idx += blockDim.y)
         {
             for (int output_chan_idx = threadIdx.x; output_chan_idx < nchans_output; output_chan_idx += blockDim.x)
             {
-                tf_powers[output_offset + idx * nchans_output + output_chan_idx] = output_staging[idx][output_chan_idx];
-	    }	
+                tf_powers[output_offset + idx * nchans_output + output_chan_idx + channel_offset] = output_staging[idx][output_chan_idx];
+	    }
         }
     }
 }
@@ -119,7 +121,15 @@ void IncoherentBeamformer::beamform(VoltageVectorType const& input,
     int nthreads_y = _config.nchans() / _config.ib_fscrunch();
     int nthreads_x = 1024 / nthreads_y;
     dim3 block(nthreads_x, nthreads_y);
-    dim3 grid(ntimestamps);
+    // The incoherent beamforming kernel can only handle 32 output channels per
+    // block. As such we use the gridDim.y to handle blocks of 32 channels.
+    int nchans_groups = 1;
+    if ((nchans / fscrunch) > FBFUSE_IB_MAX_NCHANS_PER_BLOCK)
+    {
+        // Assumes that nchans is always a power of two.
+        int nchans_groups = (nchans / fscrunch) / FBFUSE_IB_MAX_NCHANS_PER_BLOCK;
+    }
+    dim3 grid(ntimestamps, nchans_groups);
     char2 const* taftp_voltages_ptr = thrust::raw_pointer_cast(input.data());
     int8_t* tf_powers_ptr = thrust::raw_pointer_cast(output.data());
     BOOST_LOG_TRIVIAL(debug) << "Executing incoherent beamforming kernel";
