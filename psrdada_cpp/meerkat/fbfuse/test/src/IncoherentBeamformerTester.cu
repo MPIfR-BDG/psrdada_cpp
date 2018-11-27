@@ -118,7 +118,7 @@ void IncoherentBeamformerTester::compare_against_host(
     for (int ii = 0; ii < tf_powers_host.size(); ++ii)
     {
         ASSERT_TRUE(std::abs(static_cast<int>(tf_powers_host[ii]) - tf_powers_cuda[ii]) <= 1);
-    }
+    } 
 }
 
 TEST_F(IncoherentBeamformerTester, ib_representative_noise_test)
