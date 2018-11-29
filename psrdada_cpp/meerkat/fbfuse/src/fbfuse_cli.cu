@@ -73,7 +73,6 @@ int main(int argc, char** argv)
                     config.bandwidth(value);
                 }),
            "The bandwidth (Hz) of the subband this instance will process")
-
         ("cfreq", po::value<float>()
             ->required()
             ->notifier([&config](float value)
@@ -81,6 +80,18 @@ int main(int argc, char** argv)
                     config.centre_frequency(value);
                 }),
            "The centre frequency (Hz) of the subband this instance will process")
+        ("input_level", po::value<float>()
+            ->notifier([&config](float value)
+                {
+                    config.input_level(value);
+                }),
+           "The standard deviation of the input data (used for calculating scaling factors)")
+        ("output_level", po::value<float>()
+            ->notifier([&config](float value)
+                {
+                    config.output_level(value);
+                }),
+           "The desired standard deviation of the output data (used for calculating scaling factors)")
         ("log_level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)
