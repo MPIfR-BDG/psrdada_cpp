@@ -141,10 +141,10 @@ void bf_aptf_general_k(
                 //load corresponding 4 weights
                 weights = shared_apb_weights[antenna_group_idx][lane_idx];
                 //dp4a multiply add
-                dp4a(xx,weights.x,antennas.x);
-                dp4a(yy,weights.y,antennas.y);
-                dp4a(xy,weights.x,antennas.y);
-                dp4a(yx,weights.y,antennas.x);
+                dp4a(xx, weights.x, antennas.x);
+                dp4a(yy, weights.y, antennas.y);
+                dp4a(xy, weights.x, antennas.y);
+                dp4a(yx, weights.y, antennas.x);
             }
             // This was previously int and was going into overflow
             float r = (float)xx - (float)yy;
@@ -152,29 +152,6 @@ void bf_aptf_general_k(
             power += r*r + i*i;
         }
     }
-
-    /**
-     * As we have looped over both polarisation and sample in the above loop we are now free to simply
-     * write back to global memory. Here we write back uncoalesced to get the data in time beam order.
-     * The performance penalty here is very small compared to the compute time in the rest of the kernel
-     * as the total volume of data being written out is a factor of FBFUSE_CB_TSCRUNCH * FBFUSE_CB_NANTENNAS / FBFUSE_CB_WARP_SIZE
-     * smaller than the input (e.g. for 64 antennas and 16 integrated samples this is a factor of 32).
-     */
-
-    /** ORIGINAL
-    int output_idx = (NWARPS_PER_BLOCK * gridDim.x) * (FBFUSE_CB_NBEAMS * blockIdx.y
-        + (start_beam_idx+lane_idx))
-    + sample_offset / FBFUSE_CB_TSCRUNCH;
-    tbtf_powers[output_idx] = power;
-    */
-
-    // Wanted output in BTF order
-    // But now need in TBTF order
-    /* Original implementation
-    int const output_idx = gridDim.y * (((start_beam_idx+lane_idx) * FBFUSE_CB_NWARPS_PER_BLOCK * gridDim.x)
-          + (sample_offset / FBFUSE_CB_TSCRUNCH)) + blockIdx.y;
-    tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);
-    */
     int const output_sample_idx = sample_offset / FBFUSE_CB_TSCRUNCH;
     int const tf_size = FBFUSE_CB_NSAMPLES_PER_HEAP * gridDim.y;
     int const btf_size = gridDim.z * FBFUSE_CB_WARP_SIZE * tf_size;
