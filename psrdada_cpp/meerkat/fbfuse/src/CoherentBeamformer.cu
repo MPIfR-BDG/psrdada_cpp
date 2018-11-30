@@ -208,7 +208,7 @@ void CoherentBeamformer::beamform(VoltageVectorType const& input,
     output.resize(output_size);
     assert(weights.size() == _expected_weights_size);
     dim3 grid(nsamples / (FBFUSE_CB_NWARPS_PER_BLOCK * _config.cb_tscrunch()),
-        _config.nchans(), _config.cb_nbeams()/FBFUSE_CB_WARP_SIZE);
+        _config.nchans() / _config.cb_fscrunch(), _config.cb_nbeams()/FBFUSE_CB_WARP_SIZE);
     char2 const* ftpa_voltages_ptr = thrust::raw_pointer_cast(input.data());
     char2 const* fbpa_weights_ptr = thrust::raw_pointer_cast(weights.data());
     int8_t* tbtf_powers_ptr = thrust::raw_pointer_cast(output.data());
