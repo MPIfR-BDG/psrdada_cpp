@@ -22,7 +22,7 @@ RUN echo 'deb http://us.archive.ubuntu.com/ubuntu trusty main multiverse' >> /et
     apt-get -y update && \
     apt-get install -y apt-utils apt-transport-https software-properties-common python-software-properties && \
     apt-get -y update --fix-missing && \
-    apt-get -y upgrade 
+    apt-get -y upgrade
 
 # Install dependencies
 RUN apt-get --no-install-recommends -y install \
@@ -67,7 +67,7 @@ RUN mkdir build/ && \
     ./configure --prefix=$PSRDADA_HOME/build && \
     make && \
     make install && \
-    make clean 
+    make clean
 ENV PATH $PATH:$PSRDADA_HOME/build/bin
 ENV PSRDADA_BUILD $PSRDADA_HOME/build/
 ENV PACKAGES $PSRDADA_BUILD
@@ -75,11 +75,13 @@ ENV PACKAGES $PSRDADA_BUILD
 WORKDIR $PSRHOME
 RUN git clone https://github.com/ewanbarr/psrdada_cpp.git && \
     cd psrdada_cpp/ &&\
-    git checkout meerkat &&\
+    git checkout fbfuse &&\
+    git submodule init &&\
+    git submodule update &&\
     mkdir build/ &&\
     cd build/ &&\
     cmake -DENABLE_CUDA=true ../ &&\
-    make -j 4 &&\
+    make -j 8 &&\
     make install
 
 RUN env | awk '{print "export ",$0}' > $HOME/.profile && \
