@@ -39,7 +39,8 @@ void CoherentBeamformerTester::beamformer_c_reference(
     HostWeightsVectorType const& fbpa_weights,
     HostPowerVectorType& tbtf_powers,
     int nchannels,
-    int naccumulate,
+    int tscrunch,
+    int fscrunch,
     int nsamples,
     int nbeams,
     int nantennas,
@@ -51,53 +52,59 @@ void CoherentBeamformerTester::beamformer_c_reference(
     double power_sum = 0.0;
     double power_sq_sum = 0.0;
     std::size_t count = 0;
-    for (int channel_idx = 0; channel_idx < nchannels; ++channel_idx)
+    for (int channel_idx = 0; channel_idx < nchannels; channel_idx += fscrunch)
     {
         BOOST_LOG_TRIVIAL(debug) << "Beamformer C reference: "
         << static_cast<int>(100.0f * (channel_idx + 1.0f) / nchannels)
         << "% complete";
-        for (int sample_idx = 0; sample_idx < nsamples; sample_idx+=naccumulate)
+        for (int sample_idx = 0; sample_idx < nsamples; sample_idx+=tscrunch)
         {
             for (int beam_idx = 0; beam_idx < nbeams; ++beam_idx)
             {
                 float power = 0.0f;
-                for (int sample_offset = 0; sample_offset < naccumulate; ++sample_offset)
+
+                for (int sub_channel_idx = channel_idx;
+                   sub_channel_idx < channel_idx + fscrunch;
+                   ++sub_channel_idx)
                 {
-                    for (int pol_idx = 0; pol_idx < npol; ++pol_idx)
+                    for (int sample_offset = 0; sample_offset < tscrunch; ++sample_offset)
                     {
-                        float2 accumulator = {0,0};
-                        for (int antenna_idx = 0; antenna_idx < nantennas; ++antenna_idx)
+                        for (int pol_idx = 0; pol_idx < npol; ++pol_idx)
                         {
-                            int ftpa_voltages_idx = nantennas * npol * nsamples * channel_idx
-                            + nantennas * npol * (sample_idx + sample_offset)
-                            + nantennas * pol_idx
-                            + antenna_idx;
-                            char2 datum = ftpa_voltages[ftpa_voltages_idx];
+                            float2 accumulator = {0,0};
+                            for (int antenna_idx = 0; antenna_idx < nantennas; ++antenna_idx)
+                            {
+                                int ftpa_voltages_idx = nantennas * npol * nsamples * sub_channel_idx
+                                + nantennas * npol * (sample_idx + sample_offset)
+                                + nantennas * pol_idx
+                                + antenna_idx;
+                                char2 datum = ftpa_voltages[ftpa_voltages_idx];
 
-                            int fbpa_weights_idx = nantennas * nbeams * channel_idx
-                            + nantennas * beam_idx
-                            + antenna_idx;
-                            char2 weight = fbpa_weights[fbpa_weights_idx];
+                                int fbpa_weights_idx = nantennas * nbeams * sub_channel_idx
+                                + nantennas * beam_idx
+                                + antenna_idx;
+                                char2 weight = fbpa_weights[fbpa_weights_idx];
 
-                            xx = datum.x * weight.x;
-                            yy = datum.y * weight.y;
-                            xy = datum.x * weight.y;
-                            yx = datum.y * weight.x;
-                            accumulator.x += xx - yy;
-                            accumulator.y += xy + yx;
+                                xx = datum.x * weight.x;
+                                yy = datum.y * weight.y;
+                                xy = datum.x * weight.y;
+                                yx = datum.y * weight.x;
+                                accumulator.x += xx - yy;
+                                accumulator.y += xy + yx;
+                            }
+                            float r = accumulator.x;
+                            float i = accumulator.y;
+                            power += r*r + i*i;
                         }
-                        float r = accumulator.x;
-                        float i = accumulator.y;
-                        power += r*r + i*i;
                     }
                 }
-                int tf_size = FBFUSE_CB_NSAMPLES_PER_HEAP * nchannels;
+                int tf_size = FBFUSE_CB_NSAMPLES_PER_HEAP * nchannels/fscrunch;
                 int btf_size = nbeams * tf_size;
-                int output_sample_idx = sample_idx / naccumulate;
+                int output_sample_idx = sample_idx / tscrunch;
                 int tbtf_powers_idx = (output_sample_idx / FBFUSE_CB_NSAMPLES_PER_HEAP * btf_size
                     + beam_idx * tf_size
-                    + (output_sample_idx % FBFUSE_CB_NSAMPLES_PER_HEAP) * nchannels
-                    + channel_idx);
+                    + (output_sample_idx % FBFUSE_CB_NSAMPLES_PER_HEAP) * nchannels/fscrunch
+                    + channel_idx/fscrunch);
                 power_sum += power;
                 power_sq_sum += power * power;
                 ++count;
@@ -125,6 +132,7 @@ void CoherentBeamformerTester::compare_against_host(
         btf_powers_host,
         _config.nchans(),
         _config.cb_tscrunch(),
+        _config.cb_fscrunch(),
         nsamples,
         _config.cb_nbeams(),
         _config.cb_nantennas(),
