@@ -32,7 +32,6 @@ set(psrdada_cpp_inc
   common.hpp
   dada_write_client.hpp
   raw_bytes.hpp
-  transpose_to_dada.hpp
   cuda_utils.hpp
   simple_file_writer.hpp
   sigprocheader.hpp
