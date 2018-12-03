@@ -156,7 +156,9 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
     std::uniform_real_distribution<float> uniform_dist(0.0, 2*pi);
 
     CoherentBeamformer coherent_beamformer(_config);
-    std::size_t ntimestamps = 2;
+    std::size_t ntimestamps = max(1L, FBFUSE_CB_PACKET_SIZE/(_config.nchans()/_config.cb_fscrunch())/(_config.nsamples_per_heap()/_config.cb_tscrunch()));
+    ntimestamps = max(ntimestamps, FBFUSE_CB_NSAMPLES_PER_BLOCK / _config.nsamples_per_heap());	
+    printf("Using %ld timestamps\n",ntimestamps);
     std::size_t input_size = (ntimestamps * _config.cb_nantennas()
         * _config.nchans() * _config.nsamples_per_heap() * _config.npol());
     int nsamples = _config.nsamples_per_heap() * ntimestamps;
