@@ -26,7 +26,9 @@ public:
     DelayModel* delay_model();
 
 private:
-    PipelineConfig const& _config;
+    std::string const _delay_buffer_shm;
+    std::string const _delay_buffer_sem;
+    std::string const _delay_buffer_mutex;
     int _shm_fd;
     void* _shm_ptr;
     sem_t* _sem_id;

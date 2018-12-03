@@ -12,14 +12,16 @@ namespace meerkat {
 namespace fbfuse {
 
 DelayEngineSimulator::DelayEngineSimulator(PipelineConfig const& config)
-    : _config(config)
+    : _delay_buffer_shm(config.delay_buffer_shm())
+    , _delay_buffer_sem(config.delay_buffer_sem())
+    , _delay_buffer_mutex(config.delay_buffer_mutex())
 {
-    _shm_fd = shm_open(_config.delay_buffer_shm().c_str(), O_CREAT | O_RDWR, 0666);
+    _shm_fd = shm_open(_delay_buffer_shm.c_str(), O_CREAT | O_RDWR, 0666);
     if (_shm_fd == -1)
     {
         std::stringstream msg;
         msg << "Failed to open shared memory named "
-        << _config.delay_buffer_shm() << " with error: "
+        << _delay_buffer_shm << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -27,7 +29,7 @@ DelayEngineSimulator::DelayEngineSimulator(PipelineConfig const& config)
     {
         std::stringstream msg;
         msg << "Failed to ftruncate shared memory named "
-        << _config.delay_buffer_shm() << " with error: "
+        << _delay_buffer_shm << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -36,26 +38,26 @@ DelayEngineSimulator::DelayEngineSimulator(PipelineConfig const& config)
     {
         std::stringstream msg;
         msg << "Failed to mmap shared memory named "
-        << _config.delay_buffer_shm() << " with error: "
+        << _delay_buffer_shm << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
     _delay_model = static_cast<DelayModel*>(_shm_ptr);
-    _sem_id = sem_open(_config.delay_buffer_sem().c_str(), O_CREAT, 0666, 0);
+    _sem_id = sem_open(_delay_buffer_sem.c_str(), O_CREAT, 0666, 0);
     if (_sem_id == SEM_FAILED)
     {
         std::stringstream msg;
         msg << "Failed to open delay buffer semaphore "
-        << _config.delay_buffer_sem() << " with error: "
+        << _delay_buffer_sem << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
-    _mutex_id = sem_open(_config.delay_buffer_mutex().c_str(), O_CREAT, 0666, 0);
+    _mutex_id = sem_open(_delay_buffer_mutex.c_str(), O_CREAT, 0666, 0);
     if (_mutex_id == SEM_FAILED)
     {
         std::stringstream msg;
         msg << "Failed to open delay buffer mutex "
-        << _config.delay_buffer_mutex() << " with error: "
+        << _delay_buffer_mutex << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -70,7 +72,7 @@ DelayEngineSimulator::~DelayEngineSimulator()
     {
         std::stringstream msg;
         msg << "Failed to unmap shared memory "
-        << _config.delay_buffer_shm() << " with error: "
+        << _delay_buffer_shm << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -84,11 +86,11 @@ DelayEngineSimulator::~DelayEngineSimulator()
         throw std::runtime_error(msg.str());
     }
 
-    if (shm_unlink(_config.delay_buffer_shm().c_str()) == -1)
+    if (shm_unlink(_delay_buffer_shm.c_str()) == -1)
     {
         std::stringstream msg;
         msg << "Failed to unlink shared memory "
-        << _config.delay_buffer_shm() << " with error: "
+        << _delay_buffer_shm << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -97,7 +99,7 @@ DelayEngineSimulator::~DelayEngineSimulator()
     {
         std::stringstream msg;
         msg << "Failed to close semaphore "
-        << _config.delay_buffer_sem() << " with error: "
+        << _delay_buffer_sem << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -106,7 +108,7 @@ DelayEngineSimulator::~DelayEngineSimulator()
     {
         std::stringstream msg;
         msg << "Failed to close mutex "
-        << _config.delay_buffer_mutex() << " with error: "
+        << _delay_buffer_mutex << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
