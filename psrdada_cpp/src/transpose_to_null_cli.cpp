@@ -41,7 +41,6 @@ int main(int argc, char** argv)
         key_t input_key;
         std::uint32_t nchans;
         std::uint32_t nsamples;
-        std::uint32_t ntime;
         std::uint32_t nfreq;
         std::uint32_t nbeams;
 	std::uint32_t ngroups;
@@ -67,8 +66,6 @@ int main(int argc, char** argv)
             "The number of frequency channels per packet in the stream")
          ("nsamples,s", po::value<std::uint32_t>(&nsamples)->required(),
             "The number of time samples per heap in the stream")
-         ("ntime,t", po::value<std::uint32_t>(&ntime)->required(),
-            "The number of time samples per packet in the stream")
          ("nfreq,f", po::value<std::uint32_t>(&nfreq)->required(),
             "The number of frequency blocks in the stream");
 
@@ -111,7 +108,6 @@ int main(int argc, char** argv)
 	TransposeToDada<NullSink> transpose(nbeams,std::move(nullsinks));
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
-        transpose.set_ntime(ntime);
         transpose.set_nfreq(nfreq);
 	transpose.set_ngroups(ngroups);
 	transpose.set_nbeams(nbeams);

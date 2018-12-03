@@ -11,7 +11,6 @@ set(psrdada_cpp_src
     src/dada_null_sink.cpp
     src/dada_output_stream.cpp
     src/dada_read_client.cpp
-    src/transpose_client.cpp
     src/dada_write_client.cpp
     src/multilog.cpp
     src/raw_bytes.cpp
@@ -36,7 +35,6 @@ set(psrdada_cpp_inc
   common.hpp
   dada_write_client.hpp
   raw_bytes.hpp
-  transpose_client.hpp
   transpose_to_dada.hpp
   cuda_utils.hpp
   simple_file_writer.hpp

@@ -30,7 +30,6 @@ int main(int argc, char** argv)
         key_t input_key;
         std::uint32_t nchans;
         std::uint32_t nsamples;
-        std::uint32_t ntime;
         std::uint32_t nfreq;
         std::uint32_t nbeams;
 	std::uint32_t ngroups;
@@ -57,16 +56,14 @@ int main(int argc, char** argv)
             "The number of beams in the stream")
 
          ("key_file,o", po::value<std::string> (&filename)->required(),
-          "File containing the keys for each dada buffer corresponding to each beam")
+          "File containing the keys for each ouput dada buffer corresponding to each beam")
 
          ("nchannels,c", po::value<std::uint32_t>(&nchans)->required(),
-            "The number of frequency channels per packet in the stream")
+            "The number of frequency channels per heap in the stream")
          ("nsamples,s", po::value<std::uint32_t>(&nsamples)->required(),
             "The number of time samples per heap in the stream")
-         ("ntime,t", po::value<std::uint32_t>(&ntime)->required(),
-            "The number of time samples per packet in the stream")
          ("nfreq,f", po::value<std::uint32_t>(&nfreq)->required(),
-            "The number of frequency blocks in the stream");
+            "The number of frequency subbands in the stream");
 
 /* Catch Error and program description */
          po::variables_map vm;
@@ -115,7 +112,6 @@ int main(int argc, char** argv)
 	TransposeToDada<DadaOutputStream> transpose(nbeams,std::move(outstreams));
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
-        transpose.set_ntime(ntime);
         transpose.set_nfreq(nfreq);
 	transpose.set_ngroups(ngroups);
 	transpose.set_nbeams(nbeams);
