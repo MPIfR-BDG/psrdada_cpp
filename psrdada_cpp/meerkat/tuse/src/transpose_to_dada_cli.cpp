@@ -101,7 +101,7 @@ int main(int argc, char** argv)
             outstreams.emplace_back(std::make_shared<DadaOutputStream>(output_keys[ii],log));
         }
 
-        TransposeToDada<DadaOutputStream> transpose(nbeams,std::move(outstreams));
+        meerkat::tuse::TransposeToDada<DadaOutputStream> transpose(nbeams,std::move(outstreams));
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
         transpose.set_nfreq(nfreq);
