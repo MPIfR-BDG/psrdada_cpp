@@ -15,10 +15,6 @@ set(psrdada_cpp_src
     src/dada_write_client.cpp
     src/multilog.cpp
     src/raw_bytes.cpp
-    src/transpose_to_dada.cpp
-    src/transpose_to_dada_cli.cpp
-    src/transpose_to_file_cli.cpp
-    src/transpose_to_null_cli.cpp
     src/simple_file_writer.cpp
     src/sigprocheader.cpp
     src/psrdadaheader.cpp
@@ -59,22 +55,10 @@ target_link_libraries (syncdb ${PSRDADA_CPP_LIBRARIES})
 add_executable(fbfuse_output_db examples/fbfuse_output_db.cpp)
 target_link_libraries (fbfuse_output_db ${PSRDADA_CPP_LIBRARIES})
 
-#transpose_to_dada_cli
-add_executable(transpose_to_dada_cli src/transpose_to_dada_cli.cpp)
-target_link_libraries (transpose_to_dada_cli ${PSRDADA_CPP_LIBRARIES})
-
-#transpose_to_files_cli
-add_executable(transpose_to_file_cli src/transpose_to_file_cli.cpp)
-target_link_libraries (transpose_to_file_cli ${PSRDADA_CPP_LIBRARIES})
-
-#transpose_to_null_cli
-add_executable(transpose_to_null_cli src/transpose_to_null_cli.cpp)
-target_link_libraries (transpose_to_null_cli ${PSRDADA_CPP_LIBRARIES})
-
 #dbnull
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
-install (TARGETS junkdb dbnull syncdb fbfuse_output_db transpose_to_dada_cli DESTINATION bin)
+install (TARGETS junkdb dbnull syncdb fbfuse_output_db DESTINATION bin)
 install (TARGETS ${CMAKE_PROJECT_NAME}
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
