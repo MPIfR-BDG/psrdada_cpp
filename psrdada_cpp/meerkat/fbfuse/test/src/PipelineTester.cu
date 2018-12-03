@@ -34,7 +34,6 @@ void PipelineTester::SetUp()
 {
     _config.centre_frequency(1.4e9);
     _config.bandwidth(56.0e6);
-    _config.calculate_channel_frequencies();
     _config.delay_buffer_shm("test_delay_buffer_shm");
     _config.delay_buffer_sem("test_delay_buffer_sem");
     _config.delay_buffer_mutex("test_delay_buffer_mutex");
@@ -80,7 +79,7 @@ TEST_F(PipelineTester, simple_run_test)
     NullSink null_sink;
     DadaInputStream<NullSink> cb_consumer(_config.cb_dada_key(), log, null_sink);
     DadaInputStream<NullSink> ib_consumer(_config.ib_dada_key(), log, null_sink);
-    
+
     std::thread cb_consumer_thread( [&](){
         try {
             cb_consumer.start();
@@ -95,7 +94,7 @@ TEST_F(PipelineTester, simple_run_test)
             BOOST_LOG_TRIVIAL(error) << e.what();
         }
 	});
-    
+
     //Create and input header buffer
     std::vector<char> input_header_buffer(4096, 0);
     RawBytes input_header_rb(input_header_buffer.data(), 4096, 4096);

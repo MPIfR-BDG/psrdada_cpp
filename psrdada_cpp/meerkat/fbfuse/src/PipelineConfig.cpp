@@ -171,8 +171,7 @@ std::vector<float> const& PipelineConfig::channel_frequencies() const
 {
     if (_channel_frequencies_stale)
     {
-        throw std::runtime_error("Channel frequencies are stale, "
-            "calculate_channel_frequencies() must be called.");
+        calculate_channel_frequencies();
     }
     return _channel_frequencies;
 }

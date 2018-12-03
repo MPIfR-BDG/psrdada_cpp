@@ -111,7 +111,6 @@ int main(int argc, char** argv)
                 return SUCCESS;
             }
             po::notify(vm);
-            config.calculate_channel_frequencies();
         }
         catch(po::error& e)
         {

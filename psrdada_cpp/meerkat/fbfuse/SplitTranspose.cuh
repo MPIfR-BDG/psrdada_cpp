@@ -22,15 +22,42 @@ void split_transpose_k(
 
 } //namespace kernel
 
+/**
+ * @brief      Class for split transposing voltate data
+ *
+ * @detail     This class wraps a split transpose method that
+ *             is used to convert from the TAFTP order data
+ *             received by FBFUSE into FTPA order data that
+ *             can be most efficiently beamformed. The reason
+ *             we call this a "split" transpose is that not all
+ *             antennas are kept in the output (i.e. the two
+ *             "A" dimensions are not the same in input and
+ *             output). The primiary limitation here is that
+ *             subset of antennas extracted in the split
+ *             transpose MUST BE CONTIGUOUS.
+ */
 class SplitTranspose
 {
 public:
     typedef thrust::device_vector<char2> VoltageType;
 
 public:
-    explicit SplitTranspose(PipelineConfig const&);
+    /**
+     * @brief      Create a new split transposer
+     *
+     * @param      config  The pipeline configuration
+     */
+    explicit SplitTranspose(PipelineConfig const& config);
     ~SplitTranspose();
     SplitTranspose(SplitTranspose const&) = delete;
+
+    /**
+     * @brief      Perform a split transpose on the data
+     *
+     * @param      taftp_voltages  The input TAFTP voltages
+     * @param      ftpa_voltages   The output FTPA voltages
+     * @param[in]  stream          The cuda stream to use
+     */
     void transpose(VoltageType const& taftp_voltages,
         VoltageType& ftpa_voltages, cudaStream_t stream);
 
