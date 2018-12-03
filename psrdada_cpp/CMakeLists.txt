@@ -7,6 +7,7 @@ include_directories(${PROJECT_BINARY_DIR})
 set(psrdada_cpp_src
     src/cli_utils.cpp
     src/dada_client_base.cpp
+    src/dada_db.cpp
     src/dada_write_client.cpp
     src/dada_null_sink.cpp
     src/dada_output_stream.cpp
@@ -74,13 +75,9 @@ target_link_libraries (transpose_to_null_cli ${PSRDADA_CPP_LIBRARIES})
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 install (TARGETS junkdb dbnull syncdb fbfuse_output_db transpose_to_dada_cli DESTINATION bin)
-
-
-#install (FILES MathFunctions.h DESTINATION include)
 install (TARGETS ${CMAKE_PROJECT_NAME}
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 install(FILES ${psrdada_cpp_inc} DESTINATION include/psrdada_cpp)
-
 add_subdirectory(meerkat)
