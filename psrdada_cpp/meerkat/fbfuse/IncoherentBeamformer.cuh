@@ -18,9 +18,12 @@ void icbf_taftp_general_k(
     float output_scale,
     float output_offset,
     int nsamples);
+
 } //namespace kernels
 
-
+/**
+ * @brief      Class for incoherent beamforming.
+ */
 class IncoherentBeamformer
 {
 public:
@@ -30,10 +33,22 @@ public:
     typedef thrust::device_vector<int8_t> PowerVectorType;
 
 public:
-    IncoherentBeamformer(PipelineConfig const&);
+    /**
+     * @brief      Constructs an instance of the IncoherentBeamformer class
+     *
+     * @param      config  The pipeline config
+     */
+    IncoherentBeamformer(PipelineConfig const& config);
     ~IncoherentBeamformer();
     IncoherentBeamformer(IncoherentBeamformer const&) = delete;
 
+    /**
+     * @brief      Form incoherent beams
+     *
+     * @param      input   Input array of 8-bit voltages in TAFTP order
+     * @param      output  Output array of 8-bit powers in TF order
+     * @param[in]  stream  The CUDA stream to use for processing
+     */
     void beamform(VoltageVectorType const& input,
         PowerVectorType& output,
         cudaStream_t stream);

@@ -22,7 +22,14 @@ public:
     ~DelayEngineSimulator();
     DelayEngineSimulator(DelayEngineSimulator const&) = delete;
 
+    /**
+     * @brief      Simulate an update to the delay model by the control system
+     */
     void update_delays();
+
+    /**
+     * @brief      Return a pointer to the delay model
+     */
     DelayModel* delay_model();
 
 private:

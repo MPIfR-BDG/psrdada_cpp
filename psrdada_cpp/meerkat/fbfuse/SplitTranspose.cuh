@@ -10,6 +10,18 @@ namespace meerkat {
 namespace fbfuse {
 namespace kernel {
 
+/**
+ * @brief      Perform a split transpose of input data
+ *             in TAFTP order.
+ *
+ * @param      input            8-bit complex voltages data in TAFTP order
+ * @param      output           8-bit real power data in FTPA order
+ * @param[in]  total_nantennas  The total number of antennas (e.g. T[A]FTP)
+ * @param[in]  used_nantennas   The number of antennas in the split subset
+ * @param[in]  start_antenna    The index of the first antenna in the split subset
+ * @param[in]  nchans           The number of frequency channels (e.g. TA[F]TP)
+ * @param[in]  ntimestamps      The number of timestamps (outer T dimension, e.g. [T]AFTP)
+ */
 __global__
 void split_transpose_k(
     char2 const * __restrict__ input,

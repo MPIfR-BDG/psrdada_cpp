@@ -184,6 +184,16 @@ DelayManager::DelayVectorType const& DelayManager::delays()
     return _delays;
 }
 
+double DelayManager::epoch() const
+{
+    return _delay_model->epoch;
+}
+
+double DelayManager::duration() const
+{
+    return _delay_model->duration;
+}
+
 } //namespace fbfuse
 } //namespace meerkat
 } //namespace psrdada_cpp

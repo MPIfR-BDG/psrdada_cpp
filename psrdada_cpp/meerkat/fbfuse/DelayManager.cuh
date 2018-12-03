@@ -49,9 +49,15 @@ public:
      */
     DelayVectorType const& delays();
 
-    //needs implemented
-    //double epoch() const;
-    //double duration() const;
+    /**
+     * @brief      Return the epoch of the current delay model
+     */
+    double epoch() const;
+
+    /**
+     * @brief      Return the duration (length of validity) of the current delay model
+     */
+    double duration() const;
 
 private:
     bool update_available();

@@ -11,12 +11,19 @@ namespace meerkat {
 namespace fbfuse {
 namespace kernels {
 
+/**
+ * @brief      2 char4 instances...
+ */
 struct char4x2
 {
     char4 x;
     char4 y;
 };
 
+
+/**
+ * @brief      4 char2 instances...
+ */
 struct char2x4
 {
     char2 x;
@@ -25,12 +32,57 @@ struct char2x4
     char2 w;
 };
 
+/**
+ * @brief      Wrapper for the DP4A int8 fused multiply add instruction
+ *
+ * @param      c     The output value
+ * @param[in]  a     An integer composed of 4 chars
+ * @param[in]  b     An integer composed of 4 chars
+ *
+ * @detail     If we treat a and b like to char4 instances, then the dp4a
+ *             instruction performs the following:
+ *
+ *             c = (a.x * b.x) + (a.y * b.y) + (a.z * b.z) + (a.w * b.w)
+ *
+ * @note       The assembly instruction that underpins this operation (dp4a.s32.s32)
+ *             is only available on compute 6.1 cards (GP102, GP104 and GP106 architectures).
+ *             To use this properly the code must be *explicitly* compiled for 6.1 architectures
+ *             using gencode. The PTX JIT compiler will not use this optimisation and the
+ *             function will default to using standard small integer math (slow).
+ */
 __forceinline__ __device__
 void dp4a(int &c, const int &a, const int &b);
 
+/**
+ * @brief      Transpose an int2 from a char2x4 to a char4x2.
+ *
+ * @param      input  The value to transpose
+ *
+ * @note       This is used to go from (for 4 sequential antennas):
+ *
+ *             [[real, imag],
+ *              [real, imag],
+ *              [real, imag],
+ *              [real, imag]]
+ *
+ *             to
+ *
+ *             [[real, real, real, real],
+ *              [imag, imag, imag, imag]]
+ */
 __forceinline__ __device__
 int2 int2_transpose(int2 const &input);
 
+/**
+ * @brief      The coherent beamforming kernel
+ *
+ * @param      aptf_voltages  The aptf voltages (8 int8 complex values packed into int2)
+ * @param      apbf_weights   The apbf weights (8 int8 complex values packed into int2)
+ * @param      ftb_powers     The ftb powers
+ * @param[in]  output_scale   The output scaling
+ * @param[in]  output_offset  The output offset
+ * @param[in]  nsamples       The number of samples in the aptf_voltages
+ */
 __global__
 void bf_aptf_general_k(
     int2 const* __restrict__ aptf_voltages,
@@ -42,7 +94,9 @@ void bf_aptf_general_k(
 
 } //namespace kernels
 
-
+/**
+ * @brief      Class for coherent beamformer.
+ */
 class CoherentBeamformer
 {
 public:
@@ -54,9 +108,23 @@ public:
     typedef thrust::device_vector<char2> WeightsVectorType;
 
 public:
-    CoherentBeamformer(PipelineConfig const&);
+    /**
+     * @brief      Constructs a CoherentBeamformer object.
+     *
+     * @param      config  The pipeline configuration
+     */
+    CoherentBeamformer(PipelineConfig const& config);
     ~CoherentBeamformer();
     CoherentBeamformer(CoherentBeamformer const&) = delete;
+
+    /**
+     * @brief      Form coherent beams
+     *
+     * @param      input    Input array of 8-bit voltages in FTPA order
+     * @param      weights  8-bit beamforming weights in FTA order
+     * @param      output   Output array of 8-bit powers in TBTF order
+     * @param[in]  stream   The CUDA stream to use for processing
+     */
     void beamform(VoltageVectorType const& input,
         WeightsVectorType const& weights,
         PowerVectorType& output,

@@ -15,7 +15,7 @@ class WeightsManagerTester: public ::testing::Test
 public:
     typedef WeightsManager::DelayVectorType DelayVectorType;
     typedef WeightsManager::WeightsVectorType WeightsVectorType;
-    typedef WeightsManager::TimeType TimeType;	
+    typedef WeightsManager::TimeType TimeType;
 
 protected:
     void SetUp() override;
