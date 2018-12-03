@@ -313,7 +313,7 @@ public:
     std::size_t nsamples_per_heap() const {return FBFUSE_NSAMPLES_PER_HEAP;}
 
 private:
-    void calculate_channel_frequencies();
+    void calculate_channel_frequencies() const;
     void update_power_offsets_and_scalings();
 
 private:
@@ -325,8 +325,8 @@ private:
     key_t _ib_dada_key;
     float _cfreq;
     float _bw;
-    std::vector<float> _channel_frequencies;
-    bool _channel_frequencies_stale;
+    mutable std::vector<float> _channel_frequencies;
+    mutable bool _channel_frequencies_stale;
     float _input_level;
     float _output_level;
     float _cb_power_scaling;

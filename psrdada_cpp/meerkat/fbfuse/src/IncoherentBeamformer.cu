@@ -29,7 +29,7 @@ void icbf_taftp_general_k(
         for (int start_channel_idx = 0; start_channel_idx < FBFUSE_NCHANS; start_channel_idx += FBFUSE_IB_FSCRUNCH)
         {
 	    float xx = 0.0f, yy = 0.0f, zz = 0.0f, ww = 0.0f;
-            for (int sub_channel_idx = start_channel_idx; sub_channel_idx < (start_channel_idx + 1) * FBFUSE_IB_FSCRUNCH; ++sub_channel_idx)
+            for (int sub_channel_idx = start_channel_idx; sub_channel_idx < start_channel_idx + FBFUSE_IB_FSCRUNCH; ++sub_channel_idx)
             {
                 for (int antenna_idx = 0; antenna_idx < FBFUSE_IB_NANTENNAS; ++antenna_idx)
                 {
@@ -64,6 +64,7 @@ void icbf_taftp_general_k(
         {
             tf_powers[output_offset + idx] = output_buffer[idx];
         }
+       __syncthreads();
     }
 }
 

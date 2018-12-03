@@ -176,7 +176,7 @@ std::vector<float> const& PipelineConfig::channel_frequencies() const
     return _channel_frequencies;
 }
 
-void PipelineConfig::calculate_channel_frequencies()
+void PipelineConfig::calculate_channel_frequencies() const
 {
     /**
      * Need to revisit this implementation as it is not clear how the
