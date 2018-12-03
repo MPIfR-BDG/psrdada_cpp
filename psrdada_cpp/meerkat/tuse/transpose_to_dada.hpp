@@ -120,5 +120,5 @@ private:
 } // namespace meerkat
 } // namespace psrdada_cpp
 
-#include "psrdada_cpp/detail/transpose_to_dada.cpp"
+#include "psrdada_cpp/meerkat/tuse/detail/transpose_to_dada.cpp"
 #endif //PSRDADA_CPP_TRANSPOSE_TO_DADA_HPP
