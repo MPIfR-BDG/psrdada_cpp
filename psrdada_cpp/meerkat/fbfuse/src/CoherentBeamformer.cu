@@ -89,7 +89,7 @@ void bf_aptf_general_k(
     float power = 0.0f;
     int2 antennas, weights;
     int antenna_group_idx;
-
+    const int sample_offset = FBFUSE_CB_TSCRUNCH * (blockIdx.x * FBFUSE_CB_NWARPS_PER_BLOCK + warp_idx);
 
     for (int channel_idx = blockIdx.y * FBFUSE_CB_FSCRUNCH ;
         channel_idx < (blockIdx.y + 1) * FBFUSE_CB_FSCRUNCH ;
@@ -118,7 +118,6 @@ void bf_aptf_general_k(
          * computes 32 beams. Each thread computes only 1 beam and access to all the antennas required for that
          * computation is achieved via a shared memory broadcasts.
          */
-        int sample_offset = FBFUSE_CB_TSCRUNCH * (blockIdx.x * FBFUSE_CB_NWARPS_PER_BLOCK + warp_idx);
         for (int sample_idx = sample_offset; sample_idx < (sample_offset + FBFUSE_CB_TSCRUNCH); ++sample_idx)
         {
             int ftpa_voltages_partial_idx = FBFUSE_CB_NANTENNAS/4 * FBFUSE_NPOL * (nsamples * channel_idx + sample_idx);
@@ -158,15 +157,16 @@ void bf_aptf_general_k(
                 power += r*r + i*i;
             }
         }
-        int const output_sample_idx = sample_offset / FBFUSE_CB_TSCRUNCH;
-        int const tf_size = FBFUSE_CB_NSAMPLES_PER_HEAP * gridDim.y;
-        int const btf_size = gridDim.z * FBFUSE_CB_WARP_SIZE * tf_size;
-        int const output_idx = (output_sample_idx / FBFUSE_CB_NSAMPLES_PER_HEAP * btf_size
+        __syncthreads();
+    }
+    int const output_sample_idx = sample_offset / FBFUSE_CB_TSCRUNCH;
+    int const tf_size = FBFUSE_CB_NSAMPLES_PER_HEAP * gridDim.y;
+    int const btf_size = gridDim.z * FBFUSE_CB_WARP_SIZE * tf_size;
+    int const output_idx = (output_sample_idx / FBFUSE_CB_NSAMPLES_PER_HEAP * btf_size
             + (start_beam_idx + lane_idx) * tf_size
             + (output_sample_idx % FBFUSE_CB_NSAMPLES_PER_HEAP) * gridDim.y
             + blockIdx.y);
-        tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);
-    }
+    tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);
 }
 } //namespace kernels
 
