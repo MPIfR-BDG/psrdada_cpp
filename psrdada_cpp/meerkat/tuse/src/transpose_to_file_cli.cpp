@@ -90,7 +90,7 @@ int main(int argc, char** argv)
         {
           std::string filename = "beam" + std::to_string(ii) + ".fil";
           files.emplace_back(std::make_shared<SimpleFileWriter>(filename));
-      }
+        }
       meerkat::tuse::TransposeToDada<SimpleFileWriter> transpose(nbeams,std::move(files));
       transpose.set_nsamples(nsamples);
       transpose.set_nchans(nchans);
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
      std::cerr << "Unhandled Exception reached the top of main: "
      << e.what() << ", application will now exit" << std::endl;
      return ERROR_UNHANDLED_EXCEPTION;
- }
- return SUCCESS;
+  }
+  return SUCCESS;
 
 }
