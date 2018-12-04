@@ -63,14 +63,12 @@ target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 add_executable(dbdisk examples/dbdisk.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 
-#include subdirs
-add_subdirectory(meerkat)
-add_subdirectory(effelsberg)
-
 install (TARGETS junkdb dbnull dbdisk syncdb fbfuse_output_db DESTINATION bin)
 install (TARGETS ${CMAKE_PROJECT_NAME}
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 install(FILES ${psrdada_cpp_inc} DESTINATION include/psrdada_cpp)
+
 add_subdirectory(meerkat)
+add_subdirectory(effelsberg)
