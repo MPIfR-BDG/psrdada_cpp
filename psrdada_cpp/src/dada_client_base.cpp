@@ -1,4 +1,7 @@
 #include "psrdada_cpp/dada_client_base.hpp"
+#if ENABLE_CUDA
+#include "dada_cuda.h"
+#endif //ENABLE_CUDA
 
 namespace psrdada_cpp {
 
