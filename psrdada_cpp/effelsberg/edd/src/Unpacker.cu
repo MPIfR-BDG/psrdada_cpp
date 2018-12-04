@@ -22,7 +22,7 @@ __device__ __forceinline__ uint64_t swap64(uint64_t x)
 }
 
 __global__
-void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n)
+void unpack_edd_12bit_to_float32(uint64_t const* __restrict__ in, float* __restrict__ out, int n)
 {
     /**
      * Note: This kernels will not work with more than 512 threads.
@@ -74,7 +74,7 @@ void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ 
 }
 
 __global__
-void unpack_edd_8bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n)
+void unpack_edd_8bit_to_float32(uint64_t const* __restrict__ in, float* __restrict__ out, int n)
 {
     /**
      * Note: This kernels will not work with more than 512 threads.

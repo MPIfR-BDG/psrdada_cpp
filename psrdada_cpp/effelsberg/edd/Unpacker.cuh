@@ -10,10 +10,10 @@ namespace edd {
 namespace kernels {
 
 __global__
-void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
+void unpack_edd_12bit_to_float32(uint64_t const* __restrict__ in, float* __restrict__ out, int n);
 
 __global__
-void unpack_edd_8bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
+void unpack_edd_8bit_to_float32(uint64_t const* __restrict__ in, float* __restrict__ out, int n);
 
 }
 
