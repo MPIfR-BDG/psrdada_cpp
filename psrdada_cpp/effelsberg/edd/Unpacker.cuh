@@ -33,7 +33,7 @@ public:
     void unpack(InputType const& input, OutputType& output);
 
 private:
-    cudaStream_t _copy_stream;
+    cudaStream_t _stream;
 };
 
 } //namespace edd

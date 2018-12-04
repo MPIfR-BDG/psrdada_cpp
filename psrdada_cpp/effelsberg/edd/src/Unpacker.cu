@@ -128,8 +128,8 @@ void Unpacker::unpack<12>(InputType const& input, OutputType& output)
     BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
     output.resize(output_size);
     int nblocks = input.size() / EDD_NTHREADS_UNPACK;
-    InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data())
-    OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data())
+    InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data());
+    OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data());
     kernels::unpack_edd_12bit_to_float32<<< nblocks, EDD_NTHREADS_UNPACK, 0, _stream>>>(
             input_ptr, output_ptr, input.size());
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
@@ -143,8 +143,8 @@ void Unpacker::unpack<8>(InputType const& input, OutputType& output)
     BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
     output.resize(output_size);
     int nblocks = input.size() / EDD_NTHREADS_UNPACK;
-    InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data())
-    OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data())
+    InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data());
+    OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data());
     kernels::unpack_edd_8bit_to_float32<<< nblocks, EDD_NTHREADS_UNPACK, 0, _stream>>>(
             input_ptr, output_ptr, input.size());
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
