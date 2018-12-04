@@ -3,6 +3,9 @@
 
 #include "dada_hdu.h"
 #include "dada_def.h"
+#if ENABLE_CUDA
+#include "dada_cuda.h"
+#endif //ENABLE_CUDA
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/common.hpp"
 
