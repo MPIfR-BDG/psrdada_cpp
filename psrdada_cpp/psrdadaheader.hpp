@@ -1,5 +1,5 @@
 #ifndef PSRDADA_CPP_PSRDADAHEADER_HPP
-#define PSRDADA_CPP_PSRDADAHEADER_HPP  
+#define PSRDADA_CPP_PSRDADAHEADER_HPP
 
 /*
 
@@ -35,97 +35,96 @@
  * which can be accessed via getters
  */
 
-namespace psrdada_cpp{
+namespace psrdada_cpp
+{
 class PsrDadaHeader
 {
-    public:
-        
-            PsrDadaHeader();
-            ~PsrDadaHeader();            
+public:
 
-            /**
-             * @brief: Get values from given key words
-             */ 
-            void from_bytes(RawBytes& block);
+    PsrDadaHeader();
+    ~PsrDadaHeader();
 
-            /**
-             * @ All getters for Sigproc header
-             */
-            std::uint32_t bw();
+    /**
+     * @brief: Get values from given key words
+     */
+    void from_bytes(RawBytes& block);
 
-            double freq();
-           
-            std::uint32_t nbits();
+    /**
+     * @ All getters for Sigproc header
+     */
+    std::uint32_t bw();
 
-            double tsamp();
+    double freq();
 
-            std::string ra();
-     
-            std::string dec();
+    std::uint32_t nbits();
 
-            std::string telescope();
-     
-            std::string instrument();
+    double tsamp();
 
-            std::string source_name();
-            
-            double tstart();
- 
-            std::uint32_t nchans();
+    std::string ra();
 
-            /**
-             * @brief: All the setters
-             */
-            void set_bw(std::uint32_t bw);
-            
-            void set_freq(double freq);
-    
-            void set_nbits(std::uint32_t nbits);
+    std::string dec();
 
-            void set_tsamp(double tsamp);
+    std::string telescope();
 
-            void set_ra(std::string ra);
+    std::string instrument();
 
-            void set_dec(std::string dec);
+    std::string source_name();
 
-            void set_telescope(std::string telescope);
+    double tstart();
 
-            void set_instrument(std::string instrument);
+    std::uint32_t nchans();
 
-            void set_source(std::string source);
+    /**
+     * @brief: All the setters
+     */
+    void set_bw(std::uint32_t bw);
 
-            void set_tstart(double tstart);
+    void set_freq(double freq);
 
-            void set_nchans(std::uint32_t nchans); 
+    void set_nbits(std::uint32_t nbits);
 
-            /**
-             * @brief: returns the value of the key word based on the keyword
-             */
-            std::string get_value(std::string name, std::stringstream& header);
- 
+    void set_tsamp(double tsamp);
 
+    void set_ra(std::string ra);
 
-    private:
+    void set_dec(std::string dec);
 
-            /**
-             * @brief All standard PSRDADA header parameters (can add/subtract
-             * if needed)
-             */  
-            std::uint32_t _bw;
-            double _freq;
-            std::uint32_t _nchans;
-            std::uint32_t _ndim;
-            std::uint32_t _npol;
-            std::uint32_t _nbits;
-            double _tsamp;
-            std::string _source_name;
-            std::string _ra;
-            std::string _dec;
-            std::string _telescope;
-            std::string _instrument;
-            double _mjd;
+    void set_telescope(std::string telescope);
+
+    void set_instrument(std::string instrument);
+
+    void set_source(std::string source);
+
+    void set_tstart(double tstart);
+
+    void set_nchans(std::uint32_t nchans);
+
+    /**
+     * @brief: returns the value of the key word based on the keyword
+     */
+    std::string get_value(std::string name, std::stringstream& header);
+
+private:
+
+    /**
+     * @brief All standard PSRDADA header parameters (can add/subtract
+     * if needed)
+     */
+    std::uint32_t _bw;
+    double _freq;
+    std::uint32_t _nchans;
+    std::uint32_t _ndim;
+    std::uint32_t _npol;
+    std::uint32_t _nbits;
+    double _tsamp;
+    std::string _source_name;
+    std::string _ra;
+    std::string _dec;
+    std::string _telescope;
+    std::string _instrument;
+    double _mjd;
 
 };
 } // namespace psrdada_cpp
 
-#endif // PSRDADA_CPP_PSRDADAHEADER_HPP 
+#endif // PSRDADA_CPP_PSRDADAHEADER_HPP

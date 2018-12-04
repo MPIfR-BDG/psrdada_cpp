@@ -26,7 +26,8 @@ namespace psrdada_cpp {
         if (dada_hdu_lock_write (_hdu) < 0)
         {
             _log.write(LOG_ERR, "open_hdu: could not lock write\n");
-            throw std::runtime_error("Error locking HDU");
+            throw std::runtime_error(std::string("Error locking HDU with key: ")
+                + std::to_string(_key));
         }
         _locked = true;
     }
@@ -41,7 +42,8 @@ namespace psrdada_cpp {
         if (dada_hdu_unlock_write (_hdu) < 0)
         {
             _log.write(LOG_ERR, "open_hdu: could not release write\n");
-            throw std::runtime_error("Error releasing HDU");
+            throw std::runtime_error(std::string("Error releasing HDU with key: ")
+                + std::to_string(_key));
         }
         _locked = false;
     }
@@ -91,7 +93,7 @@ namespace psrdada_cpp {
         {
             throw std::runtime_error("No header block to be released");
         }
-        BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Writing header content:\n " << _current_block->ptr();
+        BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Writing header content:\n" << _current_block->ptr();
         BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Header bytes used " << _current_block->used_bytes();
         BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Releasing header block";
         if (ipcbuf_mark_filled(_parent._hdu->header_block, _current_block->used_bytes()) < 0)

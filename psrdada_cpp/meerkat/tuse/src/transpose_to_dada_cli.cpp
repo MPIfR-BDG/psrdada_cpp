@@ -1,17 +1,14 @@
+#include "psrdada_cpp/meerkat/tuse/transpose_to_dada.hpp"
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_output_stream.hpp"
-#include "psrdada_cpp/transpose_to_dada.hpp"
 #include "psrdada_cpp/psrdada_to_sigproc_header.hpp"
+#include "boost/program_options.hpp"
 #include <memory>
 #include <fstream>
-
-#include "boost/program_options.hpp"
-
 #include <ctime>
-
 
 using namespace psrdada_cpp;
 
@@ -30,16 +27,15 @@ int main(int argc, char** argv)
         key_t input_key;
         std::uint32_t nchans;
         std::uint32_t nsamples;
-        std::uint32_t ntime;
         std::uint32_t nfreq;
         std::uint32_t nbeams;
-	std::uint32_t ngroups;
+        std::uint32_t ngroups;
         std::string filename;
         std::fstream fkeys;
         key_t* output_keys = new key_t[nbeams];
-        std::vector<std::string> keys;
-        /** Define and parse the program options
- *         */
+        /**
+         * Define and parse the program options
+         */
         namespace po = boost::program_options;
         po::options_description desc("Options");
         desc.add_options()
@@ -47,29 +43,27 @@ int main(int argc, char** argv)
         ("input_key,i", po::value<std::string>()
             ->default_value("dada")
             ->notifier([&input_key](std::string in)
-                {
-                    input_key = string_to_key(in);
-                }),
-         "The shared memory key for the input dada buffer to connect to  (hex string)")
-	 ("ngroups,g", po::value<std::uint32_t>(&ngroups)->required(),
+            {
+                input_key = string_to_key(in);
+            }),
+            "The shared memory key for the input dada buffer to connect to  (hex string)")
+        ("ngroups,g", po::value<std::uint32_t>(&ngroups)->required(),
           "Number of heap groups in one DADA block")
-         ("nbeams,b", po::value<std::uint32_t>(&nbeams)->required(),
+        ("nbeams,b", po::value<std::uint32_t>(&nbeams)->required(),
             "The number of beams in the stream")
 
-         ("key_file,o", po::value<std::string> (&filename)->required(),
-          "File containing the keys for each dada buffer corresponding to each beam")
+        ("key_file,o", po::value<std::string> (&filename)->required(),
+          "File containing the keys for each ouput dada buffer corresponding to each beam")
 
-         ("nchannels,c", po::value<std::uint32_t>(&nchans)->required(),
-            "The number of frequency channels per packet in the stream")
-         ("nsamples,s", po::value<std::uint32_t>(&nsamples)->required(),
+        ("nchannels,c", po::value<std::uint32_t>(&nchans)->required(),
+            "The number of frequency channels per heap in the stream")
+        ("nsamples,s", po::value<std::uint32_t>(&nsamples)->required(),
             "The number of time samples per heap in the stream")
-         ("ntime,t", po::value<std::uint32_t>(&ntime)->required(),
-            "The number of time samples per packet in the stream")
-         ("nfreq,f", po::value<std::uint32_t>(&nfreq)->required(),
-            "The number of frequency blocks in the stream");
+        ("nfreq,f", po::value<std::uint32_t>(&nfreq)->required(),
+            "The number of frequency subbands in the stream");
 
-/* Catch Error and program description */
-         po::variables_map vm;
+        /* Catch Error and program description */
+        po::variables_map vm;
         try
         {
             po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -97,47 +91,34 @@ int main(int argc, char** argv)
             std::getline(fkeys,key);
             output_keys[ii] = string_to_key(key);
         }
-
         fkeys.close();
-       /* Application Code */
- 
+        /* Application Code */
         MultiLog log("outstream");
+        /* Setting up the pipeline based on the type of sink*/
+        std::vector<std::shared_ptr<DadaOutputStream>> outstreams;
+        for (ii=0 ; ii < nbeams; ++ii)
+        {
+            outstreams.emplace_back(std::make_shared<DadaOutputStream>(output_keys[ii],log));
+        }
 
-       /* Setting up the pipeline based on the type of sink*/
-
-
-	std::vector<std::shared_ptr<DadaOutputStream>> outstreams;
-	for (ii=0 ; ii < nbeams; ++ii)
-	{
-		outstreams.emplace_back(std::make_shared<DadaOutputStream>(output_keys[ii],log));
-	}
-
-	TransposeToDada<DadaOutputStream> transpose(nbeams,std::move(outstreams));
+        meerkat::tuse::TransposeToDada<DadaOutputStream> transpose(nbeams,std::move(outstreams));
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
-        transpose.set_ntime(ntime);
         transpose.set_nfreq(nfreq);
-	transpose.set_ngroups(ngroups);
-	transpose.set_nbeams(nbeams);
-
+        transpose.set_ngroups(ngroups);
+        transpose.set_nbeams(nbeams);
         PsrDadaToSigprocHeader<decltype(transpose)> ptos(transpose);
-
         MultiLog log1("instream");
-
         DadaInputStream<decltype(ptos)> input(input_key,log1,ptos);
-         
         input.start();
-        
+        /* End Application Code */
+    }
+    catch(std::exception& e)
+    {
+       std::cerr << "Unhandled Exception reached the top of main: "
+       << e.what() << ", application will now exit" << std::endl;
+       return ERROR_UNHANDLED_EXCEPTION;
+   }
+   return SUCCESS;
 
-      /* End Application Code */
-
-       }
-       catch(std::exception& e)
-       {
-           std::cerr << "Unhandled Exception reached the top of main: "
-           << e.what() << ", application will now exit" << std::endl;
-           return ERROR_UNHANDLED_EXCEPTION;
-       }
-       return SUCCESS;
-
-}  
+}

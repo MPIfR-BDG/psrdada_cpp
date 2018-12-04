@@ -5,13 +5,15 @@
 #include "psrdada_cpp/common.hpp"
 
 namespace psrdada_cpp {
+namespace meerkat {
+namespace tuse {
 
 namespace transpose{
 
     /**
      * @brief the method that does the actual transpose
-     */ 
-    void do_transpose(RawBytes& transposed_data, RawBytes& input_data, std::uint32_t nchans, std::uint32_t nsamples,std::uint32_t ntime, std::uint32_t nfreq, std::uint32_t beamnum, std::uint32_t numbeams, std::uint32_t ngroups);
+     */
+    void do_transpose(RawBytes& transposed_data, RawBytes& input_data, std::uint32_t nchans, std::uint32_t nsamples, std::uint32_t nfreq, std::uint32_t beamnum, std::uint32_t numbeams, std::uint32_t ngroups);
 }
 
 template <class HandlerType>
@@ -28,7 +30,7 @@ public:
      *
      * @detail     The number of beams to process and a vector of
      * 		   shared pointers to open DADA blocks are given
-     * 		   as arguments. The transpose is performed on 
+     * 		   as arguments. The transpose is performed on
      * 		   a beam to beam basis.
      *
      * @param      block  A RawBytes object wrapping a DADA header buffer
@@ -54,8 +56,8 @@ public:
  	 *@brief: Setter for ngroups
 	 */
 
-	void set_ngroups(const int ngroups);  
-     
+	void set_ngroups(const int ngroups);
+
        /**
         * @brief Setter for frequency channels
         */
@@ -63,16 +65,10 @@ public:
         void set_nchans(const int nchans);
 
        /**
-        * @brief Setter of number of samples
+        * @brief Setter of number of time samples
         */
 
         void set_nsamples(const int nsamples);
-  
-       /**
-        * @brief Setter for number of time samples
-        */
-
-        void set_ntime(const int ntime);
 
        /**
         * @brief Setter for number of frequency blocks
@@ -87,48 +83,42 @@ public:
         std::uint32_t nchans();
 
        /**
-        * @brief getter for number of time blocks
+        * @brief getter for number of time samples
         */
 
         std::uint32_t nsamples();
 
        /**
-        * @brief getter for number of time samples 
+        * @brief getter for frequency blocks
         */
 
-        std::uint32_t ntime();
-        
-       /**
-        * @brief getter for frequency blocks 
-        */   
-   
         std::uint32_t nfreq();
 
        /**
  	*@brief: getter for ngroups
 	*/
 
-	std::uint32_t ngroups(); 
+	std::uint32_t ngroups();
 
        /**
         *@brief: getter for nbeams
 	*/
 
-	std::uint32_t nbeams(); 
+	std::uint32_t nbeams();
 
 private:
     std::uint32_t _numbeams;
     std::vector<std::shared_ptr<HandlerType>> _handler;
     std::uint32_t _nchans;
     std::uint32_t _nsamples;
-    std::uint32_t _ntime;
     std::uint32_t _nfreq;
     std::uint32_t _ngroups;
 
 };
 
+} // namespace tuse
+} // namespace meerkat
+} // namespace psrdada_cpp
 
-} //psrdada_cpp
-
-#include "psrdada_cpp/detail/transpose_to_dada.cpp"
+#include "psrdada_cpp/meerkat/tuse/detail/transpose_to_dada.cpp"
 #endif //PSRDADA_CPP_TRANSPOSE_TO_DADA_HPP

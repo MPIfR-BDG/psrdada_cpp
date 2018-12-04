@@ -20,12 +20,13 @@ namespace psrdada_cpp {
     template <class HandlerType>
     void DadaInputStream<HandlerType>::start()
     {
+        bool handler_stop_request = false;
         if (_running)
         {
             throw std::runtime_error("Stream is already running");
         }
         _running = true;
-        while (!_stop)
+        while (!_stop && !handler_stop_request)
         {
             BOOST_LOG_TRIVIAL(info) << "Attaching new read client to buffer";
             DadaReadClient client(_key,_log);
@@ -34,14 +35,14 @@ namespace psrdada_cpp {
             _handler.init(header_block);
             header_stream.release();
             auto& data_stream = client.data_stream();
-            while (!_stop)
+            while (!_stop && !handler_stop_request)
             {
                 if (data_stream.at_end())
                 {
                     BOOST_LOG_TRIVIAL(info) << "Reached end of data";
                     break;
                 }
-                _stop = _handler(data_stream.next());
+                handler_stop_request = _handler(data_stream.next());
                 data_stream.release();
             }
         }
