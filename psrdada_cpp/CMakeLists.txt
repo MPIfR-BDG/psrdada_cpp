@@ -7,6 +7,7 @@ include_directories(${PROJECT_BINARY_DIR})
 set(psrdada_cpp_src
     src/cli_utils.cpp
     src/dada_client_base.cpp
+    src/dada_db.cpp
     src/dada_write_client.cpp
     src/dada_null_sink.cpp
     src/dada_disk_sink.cpp
@@ -42,7 +43,7 @@ target_link_libraries (junkdb ${PSRDADA_CPP_LIBRARIES})
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 
-#dbnull
+#dbisk
 add_executable(dbdisk examples/dbdisk.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 

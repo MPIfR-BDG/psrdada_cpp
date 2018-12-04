@@ -65,6 +65,11 @@ namespace psrdada_cpp {
         void reconnect();
 
         /**
+         * @brief     Pin memory with CUDA API
+         */
+        void cuda_register_memory();
+
+        /**
          * @brief      Return a string identifier based on the buffer key and log name
          */
         std::string const& id() const;
