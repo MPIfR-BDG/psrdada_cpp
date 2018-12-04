@@ -1,4 +1,5 @@
 #include "psrdada_cpp/effelsberg/edd/test/UnpackerTester.cuh"
+#include "psrdada_cpp/cuda_utils.hpp"
 
 #define BSWAP64(x) ((0xFF00000000000000 & x) >> 56) | \
                    ((0x00FF000000000000 & x) >> 40) | \
