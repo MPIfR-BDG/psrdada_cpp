@@ -1,6 +1,10 @@
 #ifndef PSRDADA_CPP_EFFELSBERG_EDD_UNPACKERTESTER_CUH
 #define PSRDADA_CPP_EFFELSBERG_EDD_UNPACKERTESTER_CUH
 
+#include "psrdada_cpp/effelsberg/edd/Unpacker.cuh"
+#include <gtest/gtest.h>
+#include <vector>
+
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
