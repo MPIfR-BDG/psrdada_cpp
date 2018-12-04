@@ -23,9 +23,9 @@ namespace psrdada_cpp
         RawBytes header(junk_header.data(),header_size,header_size,false);
         handler.init(header);
         std::size_t bytes_written = 0;
-	std::vector<char> junk_block(total_bytes,0);
+	std::vector<char> junk_block(nbytes_per_write,0);
 	srand(0);
-	for (std::uint32_t ii=0; ii < total_bytes; ++ii)
+	for (std::uint32_t ii=0; ii < nbytes_per_write; ++ii)
 	{
 	    junk_block[ii] = rand()%255 + 1;
 	}	

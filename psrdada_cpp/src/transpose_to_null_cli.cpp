@@ -108,13 +108,13 @@ int main(int argc, char** argv)
 
 
 
-	TransposeToDada<NullSink> transpose(nbeams,std::move(nullsinks));
-        transpose.set_nsamples(nsamples);
-        transpose.set_nchans(nchans);
-        transpose.set_ntime(ntime);
-        transpose.set_nfreq(nfreq);
-	transpose.set_ngroups(ngroups);
-	transpose.set_nbeams(nbeams);
+    TransposeToDada<NullSink> transpose(nbeams,std::move(nullsinks));
+    transpose.set_nsamples(nsamples);
+    transpose.set_nchans(nchans);
+    transpose.set_ntime(ntime);
+    transpose.set_nfreq(nfreq);
+    transpose.set_ngroups(ngroups);
+    transpose.set_nbeams(nbeams);
 
         PsrDadaToSigprocHeader<decltype(transpose)> ptos(transpose);
 
