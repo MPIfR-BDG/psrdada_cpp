@@ -5,7 +5,7 @@ link_directories(${GTEST_LIBRARY_DIR})
 set(
     gtest_edd_src
     src/UnpackerTester.cu
-
+    src/DetectorAccumulatorTester.cu
 )
 cuda_add_executable(gtest_edd ${gtest_edd_src} )
 target_link_libraries(gtest_edd ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES})
