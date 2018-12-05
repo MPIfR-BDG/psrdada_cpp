@@ -1,5 +1,5 @@
-#ifndef PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
-#define PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_FftSpectrometer_HPP
+#define PSRDADA_CPP_EFFELSBERG_EDD_FftSpectrometer_HPP
 
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/double_buffer.hpp"
@@ -8,37 +8,26 @@
 #include "thrust/system/cuda/experimental/pinned_allocator.h"
 #include "cufft.h"
 
-#define NTHREADS_UNPACK 512
-
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
-namespace kernels {
-
-__global__
-void unpack_edd_12bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
-
-__global__
-void unpack_edd_8bit_to_float32(uint64_t* __restrict__ in, float* __restrict__ out, int n);
-
-__global__
-void detect_and_accumulate(cufftComplex* __restrict__ in, char* __restrict__ out,
-    int nchans, int nsamps, int naccumulate, float scale, float offset);
-
-
-} //kernels
 
 template <class HandlerType>
-class SimpleFFTSpectrometer
+class FftSpectrometer
 {
 public:
-    SimpleFFTSpectrometer(
-        int nsamps_per_block,
+    typedef uint64_t RawVoltageType;
+    typedef float UnpackedVoltageType;
+    typedef float2 ChannelisedVoltageType;
+    typedef int8_t IntegratedPowerType;
+
+public:
+    FftSpectrometer(
         int fft_length,
         int naccumulate,
         int nbits,
         HandlerType& handler);
-    ~SimpleFFTSpectrometer();
+    ~FftSpectrometer();
 
     /**
      * @brief      A callback to be called on connection
@@ -62,11 +51,10 @@ public:
     bool operator()(RawBytes& block);
 
 private:
-    void process(thrust::device_vector<uint64_t>* digitiser_raw,
-        thrust::device_vector<char>* detected);
+    void process(thrust::device_vector<uint64_t> const& digitiser_raw,
+        thrust::device_vector<int8_t>* detected);
 
 private:
-    int _nsamps;
     int _fft_length;
     int _naccumulate;
     int _nbits;
@@ -75,10 +63,12 @@ private:
     int _nchans;
     int _pass;
 
-    thrust::device_vector<float> _edd_unpacked;
-    thrust::device_vector<cufftComplex> _channelised;
-    DoubleBuffer<thrust::device_vector<uint64_t>> _edd_raw;
-    DoubleBuffer<thrust::device_vector<char>> _detected;
+    std::unique_ptr<Unpacker> _unpacker;
+    std::unique_ptr<DetectorAccumulator> _detector;
+    DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
+    DoubleDeviceBuffer<IntegratedPowerType> _power_db;
+    thrust::device_vector<UnpackedVoltageType> _unpacked_voltage;
+    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
     DoubleBuffer<thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char>>> _detected_host;
     cudaStream_t _h2d_stream;
     cudaStream_t _proc_stream;
@@ -91,4 +81,4 @@ private:
 } //psrdada_cpp
 
 #include "psrdada_cpp/effelsberg/edd/detail/eddfft.cu"
-#endif //PSRDADA_CPP_EFFELSBERG_EDD_EDDFFT_HPP
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_FftSpectrometer_HPP
