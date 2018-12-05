@@ -8,10 +8,10 @@
 namespace psrdada_cpp {
 
 template <typename T>
-using DoubleHostVector = DoubleBuffer<thrust::host_vector<T>>;
+using DoubleHostBuffer = DoubleBuffer<thrust::host_vector<T>>;
 
 template <typename T>
-using DoublePinnedHostVector = DoubleBuffer<thrust::host_vector<T,
+using DoublePinnedHostBuffer = DoubleBuffer<thrust::host_vector<T,
     thrust::system::cuda::experimental::pinned_allocator<char>>>;
 
 } //namespace psrdada_cpp

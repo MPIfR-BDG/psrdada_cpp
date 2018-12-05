@@ -7,7 +7,7 @@
 namespace psrdada_cpp {
 
 template <typename T>
-using DoubleDeviceVector = DoubleBuffer<thrust::device_vector<T>>;
+using DoubleDeviceBuffer = DoubleBuffer<thrust::device_vector<T>>;
 
 } //namespace psrdada_cpp
 
