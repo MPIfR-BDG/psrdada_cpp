@@ -2,6 +2,7 @@
 #define PSRDADA_CPP_EFFELSBERG_EDD_UNPACKERTESTER_CUH
 
 #include "psrdada_cpp/effelsberg/edd/Unpacker.cuh"
+#include "thrust/host_vector.h"
 #include <gtest/gtest.h>
 #include <vector>
 
@@ -13,8 +14,8 @@ namespace test {
 class UnpackerTester: public ::testing::Test
 {
 public:
-    typedef std::vector<uint64_t> InputType;
-    typedef std::vector<float> OutputType;
+    typedef thrust::host_vector<uint64_t> InputType;
+    typedef thrust::host_vector<float> OutputType;
 
 protected:
     void SetUp() override;
@@ -26,6 +27,10 @@ public:
 
 protected:
     void unpacker_12_to_32_c_reference(
+        InputType const& input,
+        OutputType& output);
+
+    void unpacker_10_to_32_c_reference(
         InputType const& input,
         OutputType& output);
 
