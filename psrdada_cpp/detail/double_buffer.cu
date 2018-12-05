@@ -3,57 +3,57 @@
 
 namespace psrdada_cpp {
 
-template <typename T>
-DoubleBuffer<T>::DoubleBuffer()
+template <typename VectorType>
+DoubleBuffer<VectorType>::DoubleBuffer()
 {
 }
 
-template <typename T>
-DoubleBuffer<T>::~DoubleBuffer()
+template <typename VectorType>
+DoubleBuffer<VectorType>::~DoubleBuffer()
 {
 
 }
 
-template <typename T>
-void DoubleBuffer<T>::resize(std::size_t size)
+template <typename VectorType>
+void DoubleBuffer<VectorType>::resize(std::size_t size)
 {
     _buf0.resize(size);
     _buf1.resize(size);
 }
 
-template <typename T>
-void DoubleBuffer<T>::resize(std::size_t size, T fill_value)
+template <typename VectorType>
+void DoubleBuffer<VectorType>::resize(std::size_t size, typename VectorType::value_type fill_value)
 {
     _buf0.resize(size, fill_value);
     _buf1.resize(size, fill_value);
 }
 
-template <typename T>
-void DoubleBuffer<T>::swap()
+template <typename VectorType>
+void DoubleBuffer<VectorType>::swap()
 {
     _buf0.swap(_buf1);
 }
 
-template <typename T>
-typename DoubleBuffer<T>::VectorType& DoubleBuffer<T>::a()
+template <typename VectorType>
+VectorType& DoubleBuffer<VectorType>::a()
 {
     return _buf0;
 }
 
-template <typename T>
-typename DoubleBuffer<T>::VectorType& DoubleBuffer<T>::b()
+template <typename VectorType>
+VectorType& DoubleBuffer<VectorType>::b()
 {
     return _buf1;
 }
 
-template <typename T>
-T* DoubleBuffer<T>::a_ptr()
+template <typename VectorType>
+typename VectorType::value_type* DoubleBuffer<VectorType>::a_ptr()
 {
     return thrust::raw_pointer_cast(_buf0.data());
 }
 
-template <typename T>
-T* DoubleBuffer<T>::b_ptr()
+template <typename VectorType>
+typename VectorType::value_type* DoubleBuffer<VectorType>::b_ptr()
 {
     return thrust::raw_pointer_cast(_buf1.data());
 }

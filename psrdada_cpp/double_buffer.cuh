@@ -41,7 +41,7 @@ public:
      * @param[in]  size        The desired size in units of the data type
      * @param[in]  fill_value  The fill value for newly allocated memory
      */
-    void resize(std::size_t size, T fill_value);
+    void resize(std::size_t size, typename VectorType::value_type fill_value);
 
     /**
      * @brief      Swap the a and b buffers
@@ -61,12 +61,12 @@ public:
     /**
      * @brief      Return a pointer to the contents of the "a" vector
      */
-    T* a_ptr();
+    typename VectorType::value_type* a_ptr();
 
     /**
      * @brief      Return a pointer to the contents of the "b" vector
      */
-    T* b_ptr();
+    typename VectorType::value_type* b_ptr();
 
 private:
     VectorType _buf0;
