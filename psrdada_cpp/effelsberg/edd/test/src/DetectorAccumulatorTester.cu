@@ -39,7 +39,8 @@ void DetectorAccumulatorTester::detect_c_reference(
     float offset)
 {
     int nsamples = input.size() / nchans;
-    int nsamples_out = nsamples / tscrunch
+    int nsamples_out = nsamples / tscrunch;
+    output.resize(nsamples_out * nchans);
     for (int chan_idx = 0; chan_idx < nchans; ++chan_idx)
     {
         for (int output_sample_idx = 0;
@@ -76,22 +77,23 @@ TEST_F(DetectorAccumulatorTester, noise_test)
 {
     int nchans = 512;
     int tscrunch = 16;
-    float stdev = 5.0;
+    float stdev = 15.0;
     float scale = std::sqrt(stdev * tscrunch);
-    int n = nchans * tscrunch * 16
+    int n = nchans * tscrunch * 16;
     std::default_random_engine generator;
-    std::normal_distribution<float> distribution(1.0, stdev);
+    std::normal_distribution<float> distribution(0.0, stdev);
     InputType host_input(n);
     for (int ii = 0; ii < n; ++ii)
     {
-        host_input[ii] = distribution(generator);
+        host_input[ii].x = distribution(generator);
+	host_input[ii].y = distribution(generator);
     }
     DetectorAccumulator::InputType gpu_input = host_input;
     DetectorAccumulator::OutputType gpu_output;
     OutputType host_output;
     DetectorAccumulator detector(nchans, tscrunch, scale, 0.0, _stream);
     detector.detect(gpu_input, gpu_output);
-    detect_c_reference(host_input, host_output);
+    detect_c_reference(host_input, host_output, nchans, tscrunch, scale, 0.0);
     compare_against_host(gpu_output, host_output);
 }
 

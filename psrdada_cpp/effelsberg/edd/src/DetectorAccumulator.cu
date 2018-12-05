@@ -24,7 +24,7 @@ void detect_and_accumulate(float2 const* __restrict__ in, int8_t* __restrict__ o
                 float y = tmp.y * tmp.y;
                 sum += x + y;
             }
-            out[write_offset + chan_idx] = (int8_t) (sum - offset)/scale;
+            out[write_offset + chan_idx] = (int8_t) ((sum - offset)/scale);
         }
     }
 }
@@ -48,13 +48,13 @@ DetectorAccumulator::~DetectorAccumulator()
 
 }
 
-DetectorAccumulator::detect(InputType const& input, OutputType& output)
+void DetectorAccumulator::detect(InputType const& input, OutputType& output)
 {
     assert(input.size() % (_nchans * _tscrunch) == 0 /* Input is not a multiple of _nchans * _tscrunch*/);
     output.resize(input.size()/_tscrunch);
     int nsamps = input.size() / _nchans;
-    float const* input_ptr = thrust::raw_pointer_cast(input.data());
-    float* output_ptr = thrust::raw_pointer_cast(output.data());
+    float2 const* input_ptr = thrust::raw_pointer_cast(input.data());
+    int8_t* output_ptr = thrust::raw_pointer_cast(output.data());
     kernels::detect_and_accumulate<<<1024, 1024, 0, _stream>>>(
         input_ptr, output_ptr, _nchans, nsamps, _tscrunch, _scale, _offset);
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
