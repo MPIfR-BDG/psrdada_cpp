@@ -1,9 +1,6 @@
 #ifndef PSRDADA_CPP_DOUBLE_BUFFER_HPP
 #define PSRDADA_CPP_DOUBLE_BUFFER_HPP
 
-#include "psrdada_cpp/double_buffer.cuh"
-#include "thrust/device_vector.h"
-
 namespace psrdada_cpp {
 
 /**
@@ -78,6 +75,6 @@ private:
 
 } //namespace psrdada_cpp
 
-#include "psrdada_cpp/detail/double_device_buffer.cu"
+#include "psrdada_cpp/detail/double_buffer.cu"
 
 #endif //PSRDADA_CPP_DOUBLE_DEVICE_BUFFER_HPP
