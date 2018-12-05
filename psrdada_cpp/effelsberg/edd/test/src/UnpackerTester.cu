@@ -180,6 +180,7 @@ void UnpackerTester::unpacker_8_to_32_c_reference(
     output.reserve(input.size() * 8);
     for (uint64_t val: input)
     {
+        val = be64toh(val);
         output.push_back(static_cast<float>(
             static_cast<int64_t>((0xFF00000000000000 & val) <<  0) >> 56));
         output.push_back(static_cast<float>(
@@ -207,7 +208,7 @@ void UnpackerTester::compare_against_host(
     ASSERT_EQ(host_output.size(), copy_from_gpu.size());
     for (std::size_t ii = 0; ii < host_output.size(); ++ii)
     {
-        ASSERT_EQ(host_output[ii], copy_from_gpu[ii]);
+	ASSERT_EQ(host_output[ii], copy_from_gpu[ii]);
     }
 }
 
@@ -232,7 +233,7 @@ TEST_F(UnpackerTester, 12_bit_unpack_test)
 
 TEST_F(UnpackerTester, 8_bit_unpack_test)
 {
-    std::size_t n = 1024;
+    std::size_t n = 512 * 8;
     std::default_random_engine generator;
     std::uniform_int_distribution<int> distribution(1,1<<31);
     InputType host_input(n);
