@@ -39,7 +39,7 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     _nchans = _fft_length / 2 + 1;
     int batch = nsamps_per_buffer/_fft_length;
     BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
-    int n[] = {_fft_length};
+    int n[] = {static_cast<int>(_fft_length)};
     CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
         NULL, 1, _fft_length/2 + 1, CUFFT_R2C, batch));
     cufftSetStream(_fft_plan, _proc_stream);
@@ -84,8 +84,8 @@ void FftSpectrometer<HandlerType>::process(
     BOOST_LOG_TRIVIAL(debug) << "Unpacking raw voltages";
     switch (_nbits)
     {
-        case 8:  _unpacker.unpack<8>(digitiser_raw, _unpacked_voltage); break;
-        case 12: _unpacker.unpack<12>(digitiser_raw, _unpacked_voltage); break;
+        case 8:  _unpacker->unpack<8>(digitiser_raw, _unpacked_voltage); break;
+        case 12: _unpacker->unpack<12>(digitiser_raw, _unpacked_voltage); break;
         default: throw std::runtime_error("Unsupported number of bits");
     }
     BOOST_LOG_TRIVIAL(debug) << "Performing FFT";
@@ -95,7 +95,7 @@ void FftSpectrometer<HandlerType>::process(
         (cufftReal*) _unpacked_voltage_ptr,
         (cufftComplex*) _channelised_voltage_ptr));
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-    _detector.detect(_channelised_voltage, detected);
+    _detector->detect(_channelised_voltage, detected);
 }
 
 template <class HandlerType>
@@ -138,11 +138,11 @@ bool FftSpectrometer<HandlerType>::operator()(RawBytes& block)
     
     if (_call_count == 3)
     {
-        return false
+        return false;
     }   
 
     //Wrap _detected_host_previous in a RawBytes object here;
-    RawBytes bytes(static_cast<char*>(_host_power_db.b_ptr()),
+    RawBytes bytes(reinterpret_cast<char*>(_host_power_db.b_ptr()),
         _host_power_db.size() * sizeof(IntegratedPowerType),
         _host_power_db.size() * sizeof(IntegratedPowerType));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";

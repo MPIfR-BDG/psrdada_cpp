@@ -12,7 +12,7 @@ using DoubleHostBuffer = DoubleBuffer<thrust::host_vector<T>>;
 
 template <typename T>
 using DoublePinnedHostBuffer = DoubleBuffer<thrust::host_vector<T,
-    thrust::system::cuda::experimental::pinned_allocator<char>>>;
+    thrust::system::cuda::experimental::pinned_allocator<T>>>;
 
 } //namespace psrdada_cpp
 
