@@ -23,9 +23,12 @@ public:
 
 public:
     FftSpectrometer(
-        int fft_length,
-        int naccumulate,
-        int nbits,
+        std::size_t buffer_bytes,
+        std::size_t fft_length,
+        std::size_t naccumulate,
+        std::size_t nbits,
+        float scaling,
+        float offset,
         HandlerType& handler);
     ~FftSpectrometer();
 
@@ -55,21 +58,23 @@ private:
         thrust::device_vector<int8_t>* detected);
 
 private:
-    int _fft_length;
-    int _naccumulate;
-    int _nbits;
+    std::size_t _buffer_bytes;
+    std::size_t _fft_length;
+    std::size_t _naccumulate;
+    std::size_t _nbits;
+    float _scaling;
+    float _offset;
     HandlerType& _handler;
     cufftHandle _fft_plan;
     int _nchans;
-    int _pass;
-
+    int _call_count;
     std::unique_ptr<Unpacker> _unpacker;
     std::unique_ptr<DetectorAccumulator> _detector;
     DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
     DoubleDeviceBuffer<IntegratedPowerType> _power_db;
     thrust::device_vector<UnpackedVoltageType> _unpacked_voltage;
     thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
-    DoubleBuffer<thrust::host_vector<char, thrust::system::cuda::experimental::pinned_allocator<char>>> _detected_host;
+    DoublePinnedHostBuffer<IntegratedPowerType> _host_power_db;
     cudaStream_t _h2d_stream;
     cudaStream_t _proc_stream;
     cudaStream_t _d2h_stream;

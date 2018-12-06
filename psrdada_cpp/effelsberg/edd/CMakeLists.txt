@@ -6,7 +6,7 @@ set(PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES
     ${DEPENDENCY_LIBRARIES})
 
 set(psrdada_cpp_effelsberg_edd_src
-    #src/eddfft.cu
+    src/FftSpectrometer.cu
     src/Unpacker.cu
     src/DetectorAccumulator.cu
     )
