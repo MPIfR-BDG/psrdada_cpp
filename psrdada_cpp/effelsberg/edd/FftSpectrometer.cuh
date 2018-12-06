@@ -1,11 +1,11 @@
 #ifndef PSRDADA_CPP_EFFELSBERG_EDD_FftSpectrometer_HPP
 #define PSRDADA_CPP_EFFELSBERG_EDD_FftSpectrometer_HPP
 
+#include "psrdada_cpp/effelsberg/edd/Unpacker.cuh"
+#include "psrdada_cpp/effelsberg/edd/DetectorAccumulator.cuh"
 #include "psrdada_cpp/raw_bytes.hpp"
-#include "psrdada_cpp/double_buffer.hpp"
+#include "psrdada_cpp/double_buffer.cuh"
 #include "thrust/device_vector.h"
-#include "thrust/host_vector.h"
-#include "thrust/system/cuda/experimental/pinned_allocator.h"
 #include "cufft.h"
 
 namespace psrdada_cpp {
@@ -54,8 +54,8 @@ public:
     bool operator()(RawBytes& block);
 
 private:
-    void process(thrust::device_vector<uint64_t> const& digitiser_raw,
-        thrust::device_vector<int8_t>* detected);
+    void process(thrust::device_vector<RawVoltageType> const& digitiser_raw,
+        thrust::device_vector<IntegratedPowerType>& detected);
 
 private:
     std::size_t _buffer_bytes;
