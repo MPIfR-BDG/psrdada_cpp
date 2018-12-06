@@ -85,5 +85,5 @@ private:
 } //effelsberg
 } //psrdada_cpp
 
-#include "psrdada_cpp/effelsberg/edd/detail/eddfft.cu"
+#include "psrdada_cpp/effelsberg/edd/detail/FftSpectrometer.cu"
 #endif //PSRDADA_CPP_EFFELSBERG_EDD_FftSpectrometer_HPP
