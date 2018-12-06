@@ -44,6 +44,11 @@ public:
     void resize(std::size_t size, typename VectorType::value_type fill_value);
 
     /**
+     * @brief   Return the size of the buffer in elements
+     */
+    std::size_t size() const;
+
+    /**
      * @brief      Swap the a and b buffers
      */
     void swap();
