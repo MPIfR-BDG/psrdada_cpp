@@ -29,6 +29,12 @@ void DoubleBuffer<VectorType>::resize(std::size_t size, typename VectorType::val
 }
 
 template <typename VectorType>
+std::size_t DoubleBuffer<VectorType>::size() const
+{
+	return _buf0.size();
+}
+
+template <typename VectorType>
 void DoubleBuffer<VectorType>::swap()
 {
     _buf0.swap(_buf1);
