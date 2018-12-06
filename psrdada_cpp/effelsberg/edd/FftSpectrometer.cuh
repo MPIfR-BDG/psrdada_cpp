@@ -4,7 +4,8 @@
 #include "psrdada_cpp/effelsberg/edd/Unpacker.cuh"
 #include "psrdada_cpp/effelsberg/edd/DetectorAccumulator.cuh"
 #include "psrdada_cpp/raw_bytes.hpp"
-#include "psrdada_cpp/double_buffer.cuh"
+#include "psrdada_cpp/double_device_buffer.cuh"
+#include "psrdada_cpp/double_host_buffer.cuh"
 #include "thrust/device_vector.h"
 #include "cufft.h"
 
