@@ -41,6 +41,7 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     float scale = std::pow(_input_level * std::sqrt(static_cast<float>(_nchans)), 2);
     float offset = scale * dof;
     float scaling = scale * std::sqrt(2 * dof);
+    BOOST_LOG_TRIVIAL(debug) << "Correction factors for 8-bit conversion: offset = " << offset << ", scaling = " << scaling;
     BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
     int n[] = {static_cast<int>(_fft_length)};
     CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
