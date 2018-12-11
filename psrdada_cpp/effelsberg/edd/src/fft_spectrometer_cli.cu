@@ -30,8 +30,7 @@ int main(int argc, char** argv)
         int nsamps_per_block;
         int naccumulate;
         int nbits;
-        float scaling;
-        float offset;
+        float input_level;
         std::time_t now = std::time(NULL);
         std::tm * ptm = std::localtime(&now);
         char buffer[32];
@@ -62,8 +61,8 @@ int main(int argc, char** argv)
         ("nbits,b", po::value<int>(&nbits)->required(),
             "The number of bits per sample in the packetiser output (8 or 12)")
 
-        ("scaling", po::value<float>(&scaling)->required(),
-            "The power scaling for data produced by the spectrometer (used for conversion back to 8-bit)")
+        ("input_level", po::value<float>(&input_level)->required(),
+            "The input power level (standard deviation, used for 8-bit conversion)")
 
         ("offset", po::value<float>(&offset)->required(),
             "The power offset for data produced by the spectrometer (used for conversion back to 8-bit)")
@@ -86,7 +85,7 @@ int main(int argc, char** argv)
             po::store(po::parse_command_line(argc, argv, desc), vm);
             if ( vm.count("help")  )
             {
-                std::cout << "EDDFFT -- Read EDD data from a DADA buffer and perform a simple FFT spectrometer"
+                std::cout << "FftSpectrometer -- Read EDD data from a DADA buffer and perform a simple FFT spectrometer"
                 << std::endl << desc << std::endl;
                 return SUCCESS;
             }
@@ -106,7 +105,7 @@ int main(int argc, char** argv)
         std::size_t buffer_bytes = client.data_buffer_size()
         SimpleFileWriter sink(filename);
         //NullSink sink;
-        effelsberg::edd::FftSpectrometer<decltype(sink)> spectrometer(buffer_bytes, fft_length, naccumulate, nbits, scaling, offset, sink);
+        effelsberg::edd::FftSpectrometer<decltype(sink)> spectrometer(buffer_bytes, fft_length, naccumulate, nbits, input_level, sink);
         DadaInputStream<decltype(spectrometer)> istream(input_key, log, spectrometer);
         istream.start();
         /**

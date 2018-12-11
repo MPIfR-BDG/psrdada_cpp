@@ -42,7 +42,7 @@ void FftSpectrometerTester::performance_test(
     std::vector<char> header_block(4096);
     RawBytes header_raw_bytes(header_block.data(), 4096, 4096);
     NullSink null_sink;
-    FftSpectrometer<NullSink> spectrometer(input_block_bytes, fft_length, tscrunch, nbits, 1.0f, 0.0f, null_sink);
+    FftSpectrometer<NullSink> spectrometer(input_block_bytes, fft_length, tscrunch, nbits, 16.0f, null_sink);
     spectrometer.init(header_raw_bytes);
     for (int ii = 0; ii < 100; ++ii)
     {

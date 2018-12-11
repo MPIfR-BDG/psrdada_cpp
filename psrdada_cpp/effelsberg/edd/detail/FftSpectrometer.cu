@@ -14,15 +14,13 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     std::size_t fft_length,
     std::size_t naccumulate,
     std::size_t nbits,
-    float scaling,
-    float offset,
+    float input_level,
     HandlerType& handler)
     : _buffer_bytes(buffer_bytes)
     , _fft_length(fft_length)
     , _naccumulate(naccumulate)
     , _nbits(nbits)
-    , _scaling(scaling)
-    , _offset(offset)
+    , _input_level(input_level)
     , _handler(handler)
     , _fft_plan(0)
     , _call_count(0)
@@ -38,6 +36,11 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     std::size_t n64bit_words = buffer_bytes / sizeof(uint64_t);
     _nchans = _fft_length / 2 + 1;
     int batch = nsamps_per_buffer/_fft_length;
+    BOOST_LOG_TRIVIAL(debug) << "Calculating scales and offsets";
+    float dof = 2 * _naccumulate;
+    float scale = (_input_level * np.sqrt(_nchans))**2;
+    float offset = scale * dof;
+    float scaling = scale * std::sqrt(2 * dof);
     BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
     int n[] = {static_cast<int>(_fft_length)};
     CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
@@ -55,7 +58,7 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
     _unpacker.reset(new Unpacker(_proc_stream));
     _detector.reset(new DetectorAccumulator(_nchans, _naccumulate,
-        _scaling, _offset, _proc_stream));
+        scaling, offset, _proc_stream));
 }
 
 template <class HandlerType>
