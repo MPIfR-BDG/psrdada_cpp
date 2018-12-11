@@ -27,7 +27,6 @@ int main(int argc, char** argv)
     {
         key_t input_key;
         int fft_length;
-        int nsamps_per_block;
         int naccumulate;
         int nbits;
         float scaling;
@@ -103,7 +102,7 @@ int main(int argc, char** argv)
          */
         MultiLog log("edd::FftSpectrometer");
         DadaClientBase client(input_key, log);
-        std::size_t buffer_bytes = client.data_buffer_size()
+        std::size_t buffer_bytes = client.data_buffer_size();
         SimpleFileWriter sink(filename);
         //NullSink sink;
         effelsberg::edd::FftSpectrometer<decltype(sink)> spectrometer(buffer_bytes, fft_length, naccumulate, nbits, scaling, offset, sink);
