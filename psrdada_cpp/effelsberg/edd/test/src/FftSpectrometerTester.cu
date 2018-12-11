@@ -1,6 +1,7 @@
 #include "psrdada_cpp/effelsberg/edd/test/FftSpectrometerTester.cuh"
 #include "psrdada_cpp/effelsberg/edd/FftSpectrometer.cuh"
 #include "psrdada_cpp/dada_null_sink.hpp"
+#include "psrdada_cpp/double_host_buffer.cuh"
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <vector>
@@ -34,8 +35,10 @@ void FftSpectrometerTester::performance_test(
     std::size_t nsamps_out, std::size_t nbits)
 {
     std::size_t input_block_bytes = tscrunch * fft_length * nsamps_out * nbits/8;
-    std::vector<char> input_block(input_block_bytes);
-    RawBytes input_raw_bytes(input_block.data(), input_block_bytes, input_block_bytes);
+   
+    DoublePinnedHostBuffer<char> input_block;
+    input_block.resize(input_block_bytes);	
+    RawBytes input_raw_bytes(input_block.a_ptr(), input_block_bytes, input_block_bytes);
     std::vector<char> header_block(4096);
     RawBytes header_raw_bytes(header_block.data(), 4096, 4096);
     NullSink null_sink;
@@ -43,7 +46,7 @@ void FftSpectrometerTester::performance_test(
     spectrometer.init(header_raw_bytes);
     for (int ii = 0; ii < 100; ++ii)
     {
-        spectrometer(header_raw_bytes);
+        spectrometer(input_raw_bytes);
     }
 }
 
