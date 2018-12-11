@@ -12,15 +12,10 @@ set(psrdada_cpp_effelsberg_edd_src
 
 cuda_add_library(${CMAKE_PROJECT_NAME}_effelsberg_edd ${psrdada_cpp_effelsberg_edd_src})
 
-#simple FFT spectrometer test
-#cuda_add_executable(eddfft_test src/eddfft_test.cu)
-#target_link_libraries(eddfft_test ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} cufft)
-#install(TARGETS eddfft_test DESTINATION bin)
-
 #simple FFT spectrometer interface
-#cuda_add_executable(eddfft src/eddfft_cli.cu)
-#target_link_libraries(eddfft ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} cufft)
-#install(TARGETS eddfft DESTINATION bin)
+cuda_add_executable(fft_spectrometer src/fft_spectrometer.cu)
+target_link_libraries(fft_spectrometer ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
+install(TARGETS fft_spectrometer DESTINATION bin)
 
 add_subdirectory(test)
 endif(ENABLE_CUDA)

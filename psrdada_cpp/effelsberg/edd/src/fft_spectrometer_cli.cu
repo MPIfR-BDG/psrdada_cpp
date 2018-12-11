@@ -1,10 +1,11 @@
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 #include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/dada_client_base.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_output_stream.hpp"
 #include "psrdada_cpp/simple_file_writer.hpp"
-#include "psrdada_cpp/effelsberg/edd/eddfft.cuh"
+#include "psrdada_cpp/effelsberg/edd/FftSpectrometer.cuh"
 #include "psrdada_cpp/dada_null_sink.hpp"
 #include "boost/program_options.hpp"
 #include <time.h>
@@ -29,6 +30,8 @@ int main(int argc, char** argv)
         int nsamps_per_block;
         int naccumulate;
         int nbits;
+        float scaling;
+        float offset;
         std::time_t now = std::time(NULL);
         std::tm * ptm = std::localtime(&now);
         char buffer[32];
@@ -50,9 +53,6 @@ int main(int argc, char** argv)
                 }),
            "The shared memory key for the dada buffer to connect to (hex string)")
 
-        ("nsamps_per_block,s", po::value<int>(&nsamps_per_block)->required(),
-            "The number of samples in each dada block")
-
         ("fft_length,n", po::value<int>(&fft_length)->required(),
             "The length of the FFT to perform on the data")
 
@@ -61,6 +61,12 @@ int main(int argc, char** argv)
 
         ("nbits,b", po::value<int>(&nbits)->required(),
             "The number of bits per sample in the packetiser output (8 or 12)")
+
+        ("scaling", po::value<float>(&scaling)->required(),
+            "The power scaling for data produced by the spectrometer (used for conversion back to 8-bit)")
+
+        ("offset", po::value<float>(&offset)->required(),
+            "The power offset for data produced by the spectrometer (used for conversion back to 8-bit)")
 
         ("outfile,o", po::value<std::string>(&filename)
             ->default_value(filename),
@@ -95,10 +101,12 @@ int main(int argc, char** argv)
         /**
          * All the application code goes here
          */
-        MultiLog log("eddfft");
+        MultiLog log("edd::FftSpectrometer");
+        DadaClientBase client(input_key, log);
+        std::size_t buffer_bytes = client.data_buffer_size()
         SimpleFileWriter sink(filename);
         //NullSink sink;
-        effelsberg::edd::SimpleFFTSpectrometer<decltype(sink)> spectrometer(nsamps_per_block, fft_length, naccumulate, nbits, sink);
+        effelsberg::edd::FftSpectrometer<decltype(sink)> spectrometer(buffer_bytes, fft_length, naccumulate, nbits, scaling, offset, sink);
         DadaInputStream<decltype(spectrometer)> istream(input_key, log, spectrometer);
         istream.start();
         /**
