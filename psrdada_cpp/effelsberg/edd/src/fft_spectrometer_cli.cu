@@ -30,6 +30,7 @@ int main(int argc, char** argv)
         int naccumulate;
         int nbits;
         float input_level;
+        float output_level;
         std::time_t now = std::time(NULL);
         std::tm * ptm = std::localtime(&now);
         char buffer[32];
@@ -62,6 +63,9 @@ int main(int argc, char** argv)
 
         ("input_level", po::value<float>(&input_level)->required(),
             "The input power level (standard deviation, used for 8-bit conversion)")
+
+        ("output_level", po::value<float>(&output_level)->required(),
+            "The output power level (standard deviation, used for 8-bit conversion)")
 
         ("outfile,o", po::value<std::string>(&filename)
             ->default_value(filename),
@@ -101,7 +105,7 @@ int main(int argc, char** argv)
         std::size_t buffer_bytes = client.data_buffer_size();
         SimpleFileWriter sink(filename);
         //NullSink sink;
-        effelsberg::edd::FftSpectrometer<decltype(sink)> spectrometer(buffer_bytes, fft_length, naccumulate, nbits, input_level, sink);
+        effelsberg::edd::FftSpectrometer<decltype(sink)> spectrometer(buffer_bytes, fft_length, naccumulate, nbits, input_level, output_level, sink);
         DadaInputStream<decltype(spectrometer)> istream(input_key, log, spectrometer);
         istream.start();
         /**

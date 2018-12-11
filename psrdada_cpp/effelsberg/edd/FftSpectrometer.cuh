@@ -29,6 +29,7 @@ public:
         std::size_t naccumulate,
         std::size_t nbits,
         float input_level,
+        float output_level,
         HandlerType& handler);
     ~FftSpectrometer();
 
@@ -62,7 +63,6 @@ private:
     std::size_t _fft_length;
     std::size_t _naccumulate;
     std::size_t _nbits;
-    float _input_level;
     HandlerType& _handler;
     cufftHandle _fft_plan;
     int _nchans;

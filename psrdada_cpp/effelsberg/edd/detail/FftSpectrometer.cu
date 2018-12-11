@@ -15,12 +15,12 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     std::size_t naccumulate,
     std::size_t nbits,
     float input_level,
+    float output_level,
     HandlerType& handler)
     : _buffer_bytes(buffer_bytes)
     , _fft_length(fft_length)
     , _naccumulate(naccumulate)
     , _nbits(nbits)
-    , _input_level(input_level)
     , _handler(handler)
     , _fft_plan(0)
     , _call_count(0)
@@ -38,9 +38,9 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     int batch = nsamps_per_buffer/_fft_length;
     BOOST_LOG_TRIVIAL(debug) << "Calculating scales and offsets";
     float dof = 2 * _naccumulate;
-    float scale = std::pow(_input_level * std::sqrt(static_cast<float>(_nchans)), 2);
+    float scale = std::pow(input_level * std::sqrt(static_cast<float>(_nchans)), 2);
     float offset = scale * dof;
-    float scaling = scale * std::sqrt(2 * dof);
+    float scaling = scale * std::sqrt(2 * dof) / output_level;
     BOOST_LOG_TRIVIAL(debug) << "Correction factors for 8-bit conversion: offset = " << offset << ", scaling = " << scaling;
     BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
     int n[] = {static_cast<int>(_fft_length)};
