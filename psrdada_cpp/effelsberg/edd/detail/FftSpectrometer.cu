@@ -38,7 +38,7 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     int batch = nsamps_per_buffer/_fft_length;
     BOOST_LOG_TRIVIAL(debug) << "Calculating scales and offsets";
     float dof = 2 * _naccumulate;
-    float scale = (_input_level * np.sqrt(_nchans))**2;
+    float scale = std::pow(_input_level * std::sqrt(static_cast<float>(_nchans)), 2);
     float offset = scale * dof;
     float scaling = scale * std::sqrt(2 * dof);
     BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";

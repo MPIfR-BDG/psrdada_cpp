@@ -28,8 +28,7 @@ public:
         std::size_t fft_length,
         std::size_t naccumulate,
         std::size_t nbits,
-        float scaling,
-        float offset,
+        float input_level,
         HandlerType& handler);
     ~FftSpectrometer();
 

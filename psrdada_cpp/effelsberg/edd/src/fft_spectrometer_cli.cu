@@ -63,9 +63,6 @@ int main(int argc, char** argv)
         ("input_level", po::value<float>(&input_level)->required(),
             "The input power level (standard deviation, used for 8-bit conversion)")
 
-        ("offset", po::value<float>(&offset)->required(),
-            "The power offset for data produced by the spectrometer (used for conversion back to 8-bit)")
-
         ("outfile,o", po::value<std::string>(&filename)
             ->default_value(filename),
             "The output file to write spectra to")
