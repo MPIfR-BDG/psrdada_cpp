@@ -49,10 +49,14 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     cufftSetStream(_fft_plan, _proc_stream);
     BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
     _raw_voltage_db.resize(n64bit_words);
+    BOOST_LOG_TRIVIAL(debug) << "Input voltages size (in 64-bit words): " << _raw_voltage_db.size();
     _unpacked_voltage.resize(nsamps_per_buffer);
+    BOOST_LOG_TRIVIAL(debug) << "Unpacked voltages size (in samples): " << _unpacked_voltage.size();
     _channelised_voltage.resize(_nchans * batch);
+    BOOST_LOG_TRIVIAL(debug) << "Channelised voltages size: " << _channelised_voltage.size();
     _power_db.resize(_nchans * batch / _naccumulate);
-    _host_power_db.resize(_nchans * batch / _naccumulate);
+    BOOST_LOG_TRIVIAL(debug) << "Powers size: " << _power_db.size();
+    _host_power_db.resize(_power_db.size());
     CUDA_ERROR_CHECK(cudaStreamCreate(&_h2d_stream));
     CUDA_ERROR_CHECK(cudaStreamCreate(&_proc_stream));
     CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_stream));
