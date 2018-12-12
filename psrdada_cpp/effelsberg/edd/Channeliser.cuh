@@ -2,7 +2,7 @@
 #define PSRDADA_CPP_EFFELSBERG_EDD_CHANNELISER_HPP
 
 #include "psrdada_cpp/effelsberg/edd/Unpacker.cuh"
-#include "psrdada_cpp/effelsberg/edd/DetectorAccumulator.cuh"
+#include "psrdada_cpp/effelsberg/edd/ScaledTransposeTFtoTFT.cuh"
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/double_device_buffer.cuh"
 #include "psrdada_cpp/double_host_buffer.cuh"
@@ -66,7 +66,7 @@ private:
     int _nchans;
     int _call_count;
     std::unique_ptr<Unpacker> _unpacker;
-    std::unique_ptr<DetectorAccumulator> _detector;
+    std::unique_ptr<ScaledTransposeTFtoTFT> _transposer;
     DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
     DoubleDeviceBuffer<PackedChannelisedVoltageType> _packed_channelised_voltage;
     thrust::device_vector<UnpackedVoltageType> _unpacked_voltage;

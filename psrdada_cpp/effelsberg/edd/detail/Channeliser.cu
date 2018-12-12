@@ -60,6 +60,7 @@ Channeliser<HandlerType>::Channeliser(
     CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_stream));
     CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
     _unpacker.reset(new Unpacker(_proc_stream));
+    _transposer.reset(new ScaledTransposeTFtoTFT(_nchans, 8192, scale, 0.0, _proc_stream));
 }
 
 template <class HandlerType>
@@ -99,9 +100,7 @@ void Channeliser<HandlerType>::process(
         (cufftReal*) _unpacked_voltage_ptr,
         (cufftComplex*) _channelised_voltage_ptr));
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-    
-
-
+    _transposer.transpose(_channelised_voltage, _packed_channelised_voltage);
 }
 
 template <class HandlerType>
@@ -125,8 +124,8 @@ bool Channeliser<HandlerType>::operator()(RawBytes& block)
 
     // Synchronize all streams
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-    _power_db.swap();
-    process(_raw_voltage_db.b(), _power_db.a());
+    _packed_channelised_voltage.swap();
+    process(_raw_voltage_db.b(), _packed_channelised_voltage.a());
 
     if (_call_count == 2)
     {
@@ -134,11 +133,11 @@ bool Channeliser<HandlerType>::operator()(RawBytes& block)
     }
 
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
-    _host_power_db.swap();
+    _host_packed_channelised_voltage.swap();
     CUDA_ERROR_CHECK(cudaMemcpyAsync(
-        static_cast<void*>(_host_power_db.a_ptr()),
-        static_cast<void*>(_power_db.b_ptr()),
-        _power_db.size() * sizeof(IntegratedPowerType),
+        static_cast<void*>(_host_packed_channelised_voltage.a_ptr()),
+        static_cast<void*>(_packed_channelised_voltage.b_ptr()),
+        _packed_channelised_voltage.size() * sizeof(PackedChannelisedVoltageType),
         cudaMemcpyDeviceToHost,
         _d2h_stream));
     
@@ -148,9 +147,9 @@ bool Channeliser<HandlerType>::operator()(RawBytes& block)
     }   
 
     //Wrap _detected_host_previous in a RawBytes object here;
-    RawBytes bytes(reinterpret_cast<char*>(_host_power_db.b_ptr()),
-        _host_power_db.size() * sizeof(IntegratedPowerType),
-        _host_power_db.size() * sizeof(IntegratedPowerType));
+    RawBytes bytes(reinterpret_cast<char*>(_host_packed_channelised_voltage.b_ptr()),
+        _host_packed_channelised_voltage.size() * sizeof(PackedChannelisedVoltageType),
+        _host_packed_channelised_voltage.size() * sizeof(PackedChannelisedVoltageType));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";
     // The handler can't do anything asynchronously without a copy here 
     // as it would be unsafe (given that it does not own the memory it 

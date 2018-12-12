@@ -4,6 +4,7 @@ link_directories(${GTEST_LIBRARY_DIR})
 
 set(
     gtest_edd_src
+    src/ChanneliserTester.cu
     src/DetectorAccumulatorTester.cu
     src/FftSpectrometerTester.cu
     src/UnpackerTester.cu
