@@ -139,7 +139,7 @@ void Unpacker::unpack<12>(InputType const& input, OutputType& output)
 template <>
 void Unpacker::unpack<8>(InputType const& input, OutputType& output)
 {
-    BOOST_LOG_TRIVIAL(debug) << "Unpacking 12-bit data";
+    BOOST_LOG_TRIVIAL(debug) << "Unpacking 8-bit data";
     std::size_t output_size = input.size() * 8;
     BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
     output.resize(output_size);

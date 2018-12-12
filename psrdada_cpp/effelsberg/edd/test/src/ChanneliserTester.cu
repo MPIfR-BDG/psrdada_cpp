@@ -30,14 +30,6 @@ void ChanneliserTester::TearDown()
 {
 }
 
-
-       std::size_t buffer_bytes,
-        std::size_t fft_length,
-        std::size_t nbits,
-        float input_level,
-        float output_level,
-        HandlerType& handler
-
 void ChanneliserTester::performance_test(std::size_t fft_length, std::size_t nbits)
 {
     std::size_t input_block_bytes = fft_length * 8192 * 1024 * nbits / 8;
@@ -49,7 +41,7 @@ void ChanneliserTester::performance_test(std::size_t fft_length, std::size_t nbi
     RawBytes header_raw_bytes(header_block.data(), 4096, 4096);
     NullSink null_sink;
     Channeliser<NullSink> channeliser(input_block_bytes, fft_length, nbits, 16.0f, 16.0f, null_sink);
-    spectrometer.init(header_raw_bytes);
+    channeliser.init(header_raw_bytes);
     for (int ii = 0; ii < 100; ++ii)
     {
         channeliser(input_raw_bytes);
@@ -59,7 +51,8 @@ void ChanneliserTester::performance_test(std::size_t fft_length, std::size_t nbi
 
 TEST_F(ChanneliserTester, simple_exec_test)
 {
-    performance_test(1024, 16, 128, 12);
+    performance_test(16, 12);
+    performance_test(32, 8);
 }
 
 } //namespace test

@@ -30,7 +30,7 @@ Channeliser<HandlerType>::Channeliser(
     BOOST_LOG_TRIVIAL(debug)
     << "Creating new Channeliser instance with parameters: \n"
     << "fft_length = " << _fft_length << "\n"
-    << "naccumulate = " << _naccumulate;
+    << "nbits = " << _nbits;
     std::size_t nsamps_per_buffer = buffer_bytes * 8 / nbits;
     assert(nsamps_per_buffer % _fft_length == 0 /*Number of samples is not multiple of FFT size*/);
     std::size_t n64bit_words = buffer_bytes / sizeof(uint64_t);
@@ -38,7 +38,7 @@ Channeliser<HandlerType>::Channeliser(
     int batch = nsamps_per_buffer/_fft_length;
     BOOST_LOG_TRIVIAL(debug) << "Calculating scales and offsets";
     float scale = std::sqrt(_nchans) * input_level;
-    BOOST_LOG_TRIVIAL(debug) << "Correction factors for 8-bit conversion: offset = " << offset << ", scaling = " << scaling;
+    BOOST_LOG_TRIVIAL(debug) << "Correction factors for 8-bit conversion:  scaling = " << scale;
     BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
     int n[] = {static_cast<int>(_fft_length)};
     //Not we put this into transposed output order, so the inner dimension will be time.
@@ -84,7 +84,7 @@ void Channeliser<HandlerType>::init(RawBytes& block)
 template <class HandlerType>
 void Channeliser<HandlerType>::process(
     thrust::device_vector<RawVoltageType> const& digitiser_raw,
-    thrust::device_vector<PackedChannelisedVoltageType>& packed_channelised))
+    thrust::device_vector<PackedChannelisedVoltageType>& packed_channelised)
 {
     BOOST_LOG_TRIVIAL(debug) << "Unpacking raw voltages";
     switch (_nbits)
@@ -100,7 +100,7 @@ void Channeliser<HandlerType>::process(
         (cufftReal*) _unpacked_voltage_ptr,
         (cufftComplex*) _channelised_voltage_ptr));
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-    _transposer.transpose(_channelised_voltage, _packed_channelised_voltage);
+    _transposer->transpose(_channelised_voltage, packed_channelised);
 }
 
 template <class HandlerType>

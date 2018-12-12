@@ -21,7 +21,7 @@ protected:
 public:
     ChanneliserTester();
     ~ChanneliserTester();
-    void performance_test(std::size_t nchans, std::size_t nsamps_per_packet, std::size_t nbits);
+    void performance_test(std::size_t nchans, std::size_t nbits);
 };
 
 } //namespace test
