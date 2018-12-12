@@ -37,11 +37,11 @@ void ScaledTransposeTFtoTFTTester::transpose_c_reference(
         const int nsamps, 
         const int nsamps_per_packet,
         const float scale,
-        const float offset);
+        const float offset)
 {
     int nsamples = input.size() / nchans;
     int outer_t_dim = nsamps / nsamps_per_packet;
-    output.size(input.size());
+    output.resize(input.size());
     for (int outer_t_idx = 0; outer_t_idx < outer_t_dim; ++outer_t_idx)
     {
         for (int chan_idx = 0; chan_idx < nchans; ++chan_idx)
@@ -68,7 +68,8 @@ void ScaledTransposeTFtoTFTTester::compare_against_host(
     ASSERT_EQ(host_output.size(), copy_from_gpu.size());
     for (std::size_t ii = 0; ii < host_output.size(); ++ii)
     {
-	ASSERT_EQ(host_output[ii], copy_from_gpu[ii]);
+	ASSERT_EQ(host_output[ii].x, copy_from_gpu[ii].x);
+	ASSERT_EQ(host_output[ii].y, copy_from_gpu[ii].y);
     }
 }
 
@@ -78,7 +79,7 @@ TEST_F(ScaledTransposeTFtoTFTTester, counter_test)
     int nsamps_per_packet = 8192/nchans;
     float stdev = 64.0f;
     float scale = 4.0f;
-    int nsamps = nsamps_per_packet * 1024
+    int nsamps = nsamps_per_packet * 1024;
     int n = nchans * nsamps;
     std::default_random_engine generator;
     std::normal_distribution<float> distribution(0.0, stdev);
@@ -91,9 +92,9 @@ TEST_F(ScaledTransposeTFtoTFTTester, counter_test)
     ScaledTransposeTFtoTFT::InputType gpu_input = host_input;
     ScaledTransposeTFtoTFT::OutputType gpu_output;
     OutputType host_output;
-    ScaledTransposeTFtoTFT transposer(nchans, nsamps_per_packet, nscale, 0.0, _stream);
+    ScaledTransposeTFtoTFT transposer(nchans, nsamps_per_packet, scale, 0.0, _stream);
     transposer.transpose(gpu_input, gpu_output);
-    detect_c_reference(host_input, host_output, nchans, nsamps, nsamps_per_packet, scale, 0.0);
+    transpose_c_reference(host_input, host_output, nchans, nsamps, nsamps_per_packet, scale, 0.0);
     compare_against_host(gpu_output, host_output);
 }
 

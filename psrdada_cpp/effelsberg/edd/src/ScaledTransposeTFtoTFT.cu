@@ -17,7 +17,7 @@ void tf_to_tft_transpose(
     const float scale,
     const float offset)
 {
-    extern __shared__ char2* temp; //nbytes = sizeof(char2) * nsamps_per_load * nchans;
+    extern __shared__ char2 temp[]; //nbytes = sizeof(char2) * nsamps_per_load * nchans;
     const int load_offset = nsamps_per_packet * blockIdx.x * nchans;
     for (int sub_samp_load_idx = 0;
         sub_samp_load_idx < nsamps_per_packet/nsamps_per_load;
@@ -41,17 +41,16 @@ void tf_to_tft_transpose(
             }
         }
         __syncthreads();
-        int store_offset = load_offset + nsamps_per_load * sub_samp_load_idx;
         for (int chan_store_idx = threadIdx.y;
             chan_store_idx < nchans;
             chan_store_idx += blockDim.y)
         {
             for (int samp_store_idx = threadIdx.x;
                 samp_store_idx < nsamps_per_load;
-                samp_store_idx += blockDix.x)
+                samp_store_idx += blockIdx.x)
             {
                 int store_idx = (load_offset + chan_store_idx * nsamps_per_packet 
-                    + samps_per_load * sub_samp_load_idx + samp_store_idx);
+                    + nsamps_per_load * sub_samp_load_idx + samp_store_idx);
                 output[store_idx] = temp[samp_store_idx * nsamps_per_load + chan_store_idx];
             }
         }
@@ -88,7 +87,7 @@ void ScaledTransposeTFtoTFT::transpose(InputType const& input, OutputType& outpu
     assert(input.size() % (_nchans * _nsamps_per_packet) == 0 /* Input is not a multiple of _nchans * _nsamps_per_packet*/);
     output.resize(input.size());
     const int nsamps_per_load = 16;
-    assert(_nsamps_per_packet % nsamps_per_load) == 0;
+    assert((_nsamps_per_packet % nsamps_per_load) == 0);
     const int nsamps = input.size() / _nchans;
     int shared_mem_bytes = sizeof(OutputType::value_type) * _nchans * nsamps_per_load;
     int nblocks = nsamps / _nsamps_per_packet;
