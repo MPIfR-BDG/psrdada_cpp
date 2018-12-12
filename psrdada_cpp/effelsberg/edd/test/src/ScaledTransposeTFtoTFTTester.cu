@@ -76,7 +76,7 @@ void ScaledTransposeTFtoTFTTester::compare_against_host(
 TEST_F(ScaledTransposeTFtoTFTTester, counter_test)
 {
     int nchans = 16;
-    int nsamps_per_packet = 8192/nchans;
+    int nsamps_per_packet = 8192;
     float stdev = 64.0f;
     float scale = 4.0f;
     int nsamps = nsamps_per_packet * 1024;
