@@ -1,5 +1,5 @@
-#ifndef PSRDADA_CPP_EFFELSBERG_EDD_FFTSPECTROMETER_HPP
-#define PSRDADA_CPP_EFFELSBERG_EDD_FFTSPECTROMETER_HPP
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_CHANNELISER_HPP
+#define PSRDADA_CPP_EFFELSBERG_EDD_CHANNELISER_HPP
 
 #include "psrdada_cpp/effelsberg/edd/Unpacker.cuh"
 #include "psrdada_cpp/effelsberg/edd/DetectorAccumulator.cuh"
@@ -14,24 +14,23 @@ namespace effelsberg {
 namespace edd {
 
 template <class HandlerType>
-class FftSpectrometer
+class Channeliser
 {
 public:
     typedef uint64_t RawVoltageType;
     typedef float UnpackedVoltageType;
     typedef float2 ChannelisedVoltageType;
-    typedef int8_t IntegratedPowerType;
+    typedef char2 PackedChannelisedVoltageType;
 
 public:
-    FftSpectrometer(
+    Channeliser(
         std::size_t buffer_bytes,
         std::size_t fft_length,
-        std::size_t naccumulate,
         std::size_t nbits,
         float input_level,
         float output_level,
         HandlerType& handler);
-    ~FftSpectrometer();
+    ~Channeliser();
 
     /**
      * @brief      A callback to be called on connection
@@ -56,12 +55,11 @@ public:
 
 private:
     void process(thrust::device_vector<RawVoltageType> const& digitiser_raw,
-        thrust::device_vector<IntegratedPowerType>& detected);
+        thrust::device_vector<PackedChannelisedVoltageType>& packed_channelised);
 
 private:
     std::size_t _buffer_bytes;
     std::size_t _fft_length;
-    std::size_t _naccumulate;
     std::size_t _nbits;
     HandlerType& _handler;
     cufftHandle _fft_plan;
@@ -70,10 +68,10 @@ private:
     std::unique_ptr<Unpacker> _unpacker;
     std::unique_ptr<DetectorAccumulator> _detector;
     DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
-    DoubleDeviceBuffer<IntegratedPowerType> _power_db;
+    DoubleDeviceBuffer<PackedChannelisedVoltageType> _packed_channelised_voltage;
     thrust::device_vector<UnpackedVoltageType> _unpacked_voltage;
     thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
-    DoublePinnedHostBuffer<IntegratedPowerType> _host_power_db;
+    DoublePinnedHostBuffer<PackedChannelisedVoltageType> _host_packed_channelised_voltage;
     cudaStream_t _h2d_stream;
     cudaStream_t _proc_stream;
     cudaStream_t _d2h_stream;
@@ -84,5 +82,5 @@ private:
 } //effelsberg
 } //psrdada_cpp
 
-#include "psrdada_cpp/effelsberg/edd/detail/FftSpectrometer.cu"
-#endif //PSRDADA_CPP_EFFELSBERG_EDD_FFTSPECTROMETER_HPP
+#include "psrdada_cpp/effelsberg/edd/detail/Channeliser.cu"
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_CHANNELISER_HPP
