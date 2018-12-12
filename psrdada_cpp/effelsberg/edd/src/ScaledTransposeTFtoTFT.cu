@@ -79,7 +79,7 @@ ScaledTransposeTFtoTFT::~ScaledTransposeTFtoTFT()
 
 void ScaledTransposeTFtoTFT::transpose(InputType const& input, OutputType& output)
 {
-
+    BOOST_LOG_TRIVIAL(debug) << "Preparing scaled transpose";
     const int max_threads = 1024;
     const int dim_x = std::min(_nchans, max_threads);
     const int dim_y = max_threads/dim_x;
@@ -88,16 +88,19 @@ void ScaledTransposeTFtoTFT::transpose(InputType const& input, OutputType& outpu
     output.resize(input.size());
     const int nsamps_per_load = 16;
     assert((_nsamps_per_packet % nsamps_per_load) == 0);
-    const int nsamps = input.size() / _nchans;
+    const int nsamps = input.size() / _nchans;   
     int shared_mem_bytes = sizeof(OutputType::value_type) * _nchans * nsamps_per_load;
     int nblocks = nsamps / _nsamps_per_packet;
+    BOOST_LOG_TRIVIAL(debug) << "Scaled transpose will use " << shared_mem_bytes << " bytes of shared memory.";
     dim3 grid(nblocks);
     dim3 block(dim_x, dim_y);
     InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data());
     OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data());
+    BOOST_LOG_TRIVIAL(debug) << "Executing scaled transpose";
     kernels::tf_to_tft_transpose<<<grid, block, shared_mem_bytes, _stream>>>(
         input_ptr, output_ptr, _nchans, nsamps, _nsamps_per_packet, nsamps_per_load, _scale, _offset);
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
+    BOOST_LOG_TRIVIAL(debug) << "Scaled transpose complete";
 }
 
 } //namespace edd
