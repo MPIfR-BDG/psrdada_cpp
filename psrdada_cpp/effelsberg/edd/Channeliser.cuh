@@ -13,7 +13,6 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
-template <class HandlerType>
 class Channeliser
 {
 public:
@@ -29,7 +28,7 @@ public:
         std::size_t nbits,
         float input_level,
         float output_level,
-        HandlerType& handler);
+        DadaWriteClient& client);
     ~Channeliser();
 
     /**
@@ -61,7 +60,7 @@ private:
     std::size_t _buffer_bytes;
     std::size_t _fft_length;
     std::size_t _nbits;
-    HandlerType& _handler;
+    DadaWriteClient& _client;
     cufftHandle _fft_plan;
     int _nchans;
     int _call_count;
@@ -71,7 +70,6 @@ private:
     DoubleDeviceBuffer<PackedChannelisedVoltageType> _packed_channelised_voltage;
     thrust::device_vector<UnpackedVoltageType> _unpacked_voltage;
     thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
-    DoublePinnedHostBuffer<PackedChannelisedVoltageType> _host_packed_channelised_voltage;
     cudaStream_t _h2d_stream;
     cudaStream_t _proc_stream;
     cudaStream_t _d2h_stream;
