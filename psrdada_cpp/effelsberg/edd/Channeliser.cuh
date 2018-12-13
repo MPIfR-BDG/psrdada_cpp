@@ -6,6 +6,7 @@
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/double_device_buffer.cuh"
 #include "psrdada_cpp/double_host_buffer.cuh"
+#include "psrdada_cpp/dada_write_client.hpp"
 #include "thrust/device_vector.h"
 #include "cufft.h"
 
@@ -80,5 +81,4 @@ private:
 } //effelsberg
 } //psrdada_cpp
 
-#include "psrdada_cpp/effelsberg/edd/detail/Channeliser.cu"
 #endif //PSRDADA_CPP_EFFELSBERG_EDD_CHANNELISER_HPP
