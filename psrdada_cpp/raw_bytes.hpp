@@ -22,28 +22,31 @@ namespace psrdada_cpp {
         char* _ptr;
         std::size_t _total_bytes;
         std::size_t _used_bytes;
+        bool _on_device;
 
     public:
         /**
          * @brief      Create a new RawBytes instance
          *
-         * @param      ptr    The pointer to the buffer to wrap
-         * @param[in]  total  The total number of bytes in the buffer
-         * @param[in]  used   The number of bytes currently used in the buffer
+         * @param      ptr            The pointer to the buffer to wrap
+         * @param[in]  total          The total number of bytes in the buffer
+         * @param[in]  used           The number of bytes currently used in the buffer
+         * @oaram[in]  device_memory  Indicates whether the memory in this buffer resides
+         *                            on a GPU or not
          */
-        RawBytes(char* ptr, std::size_t total, std::size_t used=0);
+        RawBytes(char* ptr, std::size_t total, std::size_t used=0, bool device_memory=false);
         RawBytes(RawBytes const&) = delete;
         ~RawBytes();
 
         /**
          * @brief      Get the total number of bytes in the buffer
          */
-        std::size_t total_bytes();
+        std::size_t total_bytes() const;
 
         /**
          * @brief      Get the number of currently used bytes in the buffer
          */
-        std::size_t used_bytes();
+        std::size_t used_bytes() const;
 
         /**
          * @brief      Set the number of currently used bytes in the buffer
@@ -58,6 +61,11 @@ namespace psrdada_cpp {
          * @brief      Get a raw pointer to the start of the buffer
          */
         char* ptr();
+
+        /**
+         * @brief      Does the buffer reside in GPU memory
+         */
+        bool on_device() const;
     };
 
 } //namespace psrdada_cpp
