@@ -892,15 +892,20 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
         ascii_header_set (header, "EVENT_DM", "%f",  events[i].dm);
         ascii_header_set (header, "EVENT_WIDTH", "%f",  events[i].width);
         ascii_header_set (header, "EVENT_BEAM", "%u",  events[i].beam);
+        //ascii_header_set (header, "EVENT_FIRST_FREQUENCY", "%f", events[i].f1);
+        //ascii_header_set (header, "EVENT_LAST_FREQUENCY", "%f", events[i].f2)
 
         // tag this header as filled
         ipcbuf_mark_filled (dbevent->out_hdu->header_block, header_size);
 
         //TBD: Convert the written amount to the actual amount of data required
         // Will need DM, nchans, Centre Frequency
-
+        // How much time before the event? How much after? the data after at least > time before for the snapped candidate.
+        
         /*char* event_buffer = NULL;
-        int numbytes  = ((dm_delay(DM, freq1, freq2) /tsamp) + x) * nchans * 2  // 16 bytes per sample
+        // offset calcluation here
+        event_buffer = malloc(event_bytes * sizeof(char));
+        int numbytes  = ((dm_delay(events[i].dm, events[i].f1, events[i].f2) /tsamp) + x) * nchans * 2  // 16 bytes per sample
         int ii ;
         for (ii = 0 ; ii < nchans; ++ii)
         {
