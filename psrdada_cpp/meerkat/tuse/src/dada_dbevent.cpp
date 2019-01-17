@@ -652,6 +652,11 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
 
   // first line on the socket should be the number of events
   fgets (buffer, buffer_size, sockin);
+  if (buffer == NULL)
+  {
+    fprintf(stderr, "Error: Null pointer from socket\n");
+    exit(1);
+  }
   if (sscanf (buffer, "N_EVENTS %" PRIu64, &n_events) != 1)
   {
     multilog(log, LOG_WARNING, "failed to parse N_EVENTS\n");
@@ -664,6 +669,11 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
 
   // second line on the socket should be the UTC_START of the obsevation
   fgets (buffer, buffer_size, sockin);
+  if (buffer == NULL)
+  {
+    fprintf(stderr, "Error: Null pointer from socket\n");
+    exit(1);
+  }
   time_t event_utc_start = str2utctime (buffer);
 
   char * comment = 0;
@@ -680,7 +690,11 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
     char * saveptr = 0;
 
     fgets (buffer, buffer_size, sockin);
-
+    if (buffer ==NULL)
+    {
+        fprintf(stderr, "Error: Null pointer from socket\n");
+        exit(1);
+    }
     //if (dbevent->verbose > 1)
     multilog (log, LOG_INFO, " <- %s", buffer);
 
