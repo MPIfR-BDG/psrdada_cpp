@@ -38,9 +38,9 @@
 
 using namespace std;
 
-const size_t DADA_DBEVENT_DEFAULT_PORT= 30000;
-const size_t DADA_DBEVENT_DEFAULT_INPUT_BUFFER = 80;
-const size_t DADA_DBEVENT_DEFAULT_INPUT_DELAY= 60;
+const int DADA_DBEVENT_DEFAULT_PORT= 30000;
+const int DADA_DBEVENT_DEFAULT_INPUT_BUFFER = 80;
+const int DADA_DBEVENT_DEFAULT_INPUT_DELAY= 60;
 #define  DADA_DBEVENT_TIMESTR "%Y-%m-%d-%H:%M:%S"
 
 
@@ -100,7 +100,7 @@ typedef struct {
 
 } event_t;
 
-#define  DADA_DBEVENT_INIT { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+#define  DADA_DBEVENT_INIT { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
 static int sort_events (const void *p1, const void *p2)
 {
@@ -141,6 +141,7 @@ void usage()
 void signal_handler(int signalValue) 
 {
     fprintf(stderr, "dada_dbevent: SIGINT/TERM\n");
+    fprintf(stderr,"value of signal interrupt is: %d\n", signalValue);
     quit = 1;
 }
 
@@ -227,13 +228,13 @@ int main (int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  if (sscanf (argv[optind], "%x", &in_dada_key) != 1) 
+  if (sscanf (argv[optind], "%x",(unsigned int*) &in_dada_key) != 1) 
   {
     fprintf (stderr,"dada_dbevent: could not parse in_key from %s\n", argv[optind]);
     return EXIT_FAILURE;
   }
 
-  if (sscanf (argv[optind+1], "%x", &out_dada_key) != 1) 
+  if (sscanf (argv[optind+1], "%x",(unsigned int*) &out_dada_key) != 1) 
   {
     fprintf (stderr,"dada_dbevent: could not parse out_key from %s\n", argv[optind+1]);
     return EXIT_FAILURE;
@@ -446,7 +447,7 @@ int main (int argc, char **argv)
       else
         seek_byte = (int64_t) dbevent.in_bufsz;
 
-      if ((seek_byte < 0) || (seek_byte > dbevent.in_bufsz))
+      if ((seek_byte < 0) || (seek_byte > (int) dbevent.in_bufsz))
         multilog (log, LOG_WARNING, "main: seek_byte limits warning: %" PRIi64"\n", seek_byte);
 
       if (verbose)
@@ -572,7 +573,7 @@ int check_read_offset (dada_dbevent_t * dbevent)
         seek_byte = dbevent->in_bufsz;
       }
 
-      if ((seek_byte < 0) || (seek_byte > dbevent->in_bufsz))
+      if (((int) seek_byte < 0) || (seek_byte > dbevent->in_bufsz))
       {
         multilog (dbevent->log, LOG_WARNING, "check_read_offset: seek_byte limits warning: %" PRIi64"\n", seek_byte);
       }
@@ -612,7 +613,7 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
   unsigned more_events = 1;
 
   unsigned buffer_size = 1024;
-  char buffer[buffer_size];
+  char *buffer = new char[buffer_size];
 
   char * event_start;
   char * event_start_fractional;
@@ -724,7 +725,7 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
       remainder = offset % dbevent->resolution;
       if (remainder != 0)
       {
-        if (offset > dbevent->resolution)
+        if (offset > (int) dbevent->resolution)
           events[i].start_byte = (uint64_t) (offset - remainder);
         else
           events[i].start_byte = dbevent->resolution;
@@ -933,6 +934,7 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
       }
 
       multilog (dbevent->log, LOG_INFO, "recorded=%d missed=%d\n", events_recorded, events_missed);
+      delete[] buffer;
     }
   }
 
