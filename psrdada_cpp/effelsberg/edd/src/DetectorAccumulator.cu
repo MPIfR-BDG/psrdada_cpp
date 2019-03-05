@@ -57,7 +57,6 @@ void DetectorAccumulator::detect(InputType const& input, OutputType& output)
     int8_t* output_ptr = thrust::raw_pointer_cast(output.data());
     kernels::detect_and_accumulate<<<1024, 1024, 0, _stream>>>(
         input_ptr, output_ptr, _nchans, nsamps, _tscrunch, _scale, _offset);
-    CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
 }
 
 } //namespace edd
