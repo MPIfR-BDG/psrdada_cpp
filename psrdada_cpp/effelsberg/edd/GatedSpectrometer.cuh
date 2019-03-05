@@ -109,8 +109,7 @@ private:
 
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G0;
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G1;
-  thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G0;
-  thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G1;
+  thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
 
   DoublePinnedHostBuffer<IntegratedPowerType> _host_power_db;
 

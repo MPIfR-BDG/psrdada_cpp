@@ -102,10 +102,9 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
   _unpacked_voltage_G1.resize(nsamps_per_buffer);
   BOOST_LOG_TRIVIAL(debug) << "  Unpacked voltages size (in samples): "
                            << _unpacked_voltage_G0.size();
-  _channelised_voltage_G0.resize(_nchans * batch);
-  _channelised_voltage_G1.resize(_nchans * batch);
+  _channelised_voltage.resize(_nchans * batch);
   BOOST_LOG_TRIVIAL(debug) << "  Channelised voltages size: "
-                           << _channelised_voltage_G0.size();
+                           << _channelised_voltage.size();
   _power_db_G0.resize(_nchans * batch / _naccumulate);
   _power_db_G1.resize(_nchans * batch / _naccumulate);
   BOOST_LOG_TRIVIAL(debug) << "  Powers size: " << _power_db_G0.size() << ", "
@@ -174,20 +173,18 @@ void GatedSpectrometer<HandlerType>::process(
   UnpackedVoltageType *_unpacked_voltage_ptr =
       thrust::raw_pointer_cast(_unpacked_voltage_G0.data());
   ChannelisedVoltageType *_channelised_voltage_ptr =
-      thrust::raw_pointer_cast(_channelised_voltage_G0.data());
+      thrust::raw_pointer_cast(_channelised_voltage.data());
   CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal *)_unpacked_voltage_ptr,
                                  (cufftComplex *)_channelised_voltage_ptr));
+  _detector->detect(_channelised_voltage, detected_G0);
 
   BOOST_LOG_TRIVIAL(debug) << "Performing FFT 2";
   _unpacked_voltage_ptr = thrust::raw_pointer_cast(_unpacked_voltage_G1.data());
-  _channelised_voltage_ptr =
-      thrust::raw_pointer_cast(_channelised_voltage_G1.data());
   CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal *)_unpacked_voltage_ptr,
                                  (cufftComplex *)_channelised_voltage_ptr));
 
 //  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-  _detector->detect(_channelised_voltage_G0, detected_G0);
-  _detector->detect(_channelised_voltage_G1, detected_G1);
+  _detector->detect(_channelised_voltage, detected_G1);
 } // process
 
 
