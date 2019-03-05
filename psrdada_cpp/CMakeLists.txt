@@ -18,6 +18,7 @@ set(psrdada_cpp_src
     src/simple_file_writer.cpp
     src/sigprocheader.cpp
     src/psrdadaheader.cpp
+    src/file_to_dada_cli.cpp
    )
 
 set(psrdada_cpp_inc
@@ -37,6 +38,7 @@ set(psrdada_cpp_inc
   sigprocheader.hpp
   psrdadaheader.hpp
   psrdada_to_sigproc_header.hpp
+  file_input_stream.hpp
   )
 
 # -- the main library target
@@ -53,6 +55,11 @@ target_link_libraries (syncdb ${PSRDADA_CPP_LIBRARIES})
 #fbfuse_output_db
 add_executable(fbfuse_output_db examples/fbfuse_output_db.cpp)
 target_link_libraries (fbfuse_output_db ${PSRDADA_CPP_LIBRARIES})
+
+#file_to_dada_cli
+add_executable(file_to_dada src/file_to_dada_cli.cpp)
+target_link_libraries (file_to_dada ${PSRDADA_CPP_LIBRARIES})
+
 
 #dbnull
 add_executable(dbnull examples/dbnull.cpp)

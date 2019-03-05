@@ -71,6 +71,10 @@ typedef struct {
 
     void * work_buffer;
 
+    void * event_buffer;
+
+    size_t event_buffer_size;
+
     size_t work_buffer_size;
 
     uint64_t in_nbufs;
@@ -97,6 +101,14 @@ typedef struct {
     float width;
 
     unsigned beam;
+    
+    float tsamp;
+    
+    uint32_t nchans;
+
+    float f1;
+    
+    float f2;
 
 } event_t;
 
@@ -151,6 +163,11 @@ double dm_delay(float DM, double freq1, double freq2)
     double freqghz2 = freq2/1e9;
     double delta_t  = 4.15 * 1e-3 * DM * ((1/pow(freqghz1,2)) - 1/(pow(freqghz2,2)));  // in seconds
     return delta_t;
+}
+
+int calcbytes(double seconds, int nchans, double tsamp, int bytespersamp)
+{
+    return (int) bytespersamp*(seconds/tsamp) * nchans;
 }
 
 int main (int argc, char **argv)
@@ -887,6 +904,19 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
           return -1;
         }
 
+        /*// save cut-outs of the event here
+        dbevent->event_buffer_size  =  ((2.0 + events[i].width)/events[i].tsamp) * events[i].nchans * 2;  // 16 bytes per sample
+        dbevent->event_buffer = malloc(dbevent->event_buffer_size * sizeof(char));
+        int first_offset = 0;  //calc_offset();
+        (char*) dbevent->work_buffer += first_offset;
+        for (int ii=0; ii < nchans; ++ii)
+        {   
+            int ftemp1 = f1;
+            int ftemp2 = f1 + ((f1 - f2)/events[i].nchans);
+            double delay = dm_delay(events[i].f1, events[i].f2, events[i].dm);
+            memcpy(dbevent->event_buffer, dbevent->work_buffer, dbevent->event_buffer_size);
+        }*/
+
         events_recorded++;
 
         char * header = ipcbuf_get_next_write (dbevent->out_hdu->header_block);
@@ -907,30 +937,16 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
         ascii_header_set (header, "EVENT_DM", "%f",  events[i].dm);
         ascii_header_set (header, "EVENT_WIDTH", "%f",  events[i].width);
         ascii_header_set (header, "EVENT_BEAM", "%u",  events[i].beam);
-        //ascii_header_set (header, "EVENT_FIRST_FREQUENCY", "%f", events[i].f1);
-        //ascii_header_set (header, "EVENT_LAST_FREQUENCY", "%f", events[i].f2)
-
+        ascii_header_set (header, "EVENT_FIRST_FREQUENCY", "%f", events[i].f1);
+        ascii_header_set (header, "EVENT_LAST_FREQUENCY", "%f", events[i].f2);
+        ascii_header_set (header, "EVENT_TSAMP", "%f", events[i].tsamp);
+        ascii_header_set (header, "EVENT_NCHANS", "%d", events[i].nchans);
+    
         // tag this header as filled
         ipcbuf_mark_filled (dbevent->out_hdu->header_block, header_size);
 
-        //TBD: Convert the written amount to the actual amount of data required
-        // Will need DM, nchans, Centre Frequency
-        // How much time before the event? How much after? the data after at least > time before for the snapped candidate.
-        
-        /*char* event_buffer = NULL;
-        // offset calcluation here
-        event_buffer = malloc(event_bytes * sizeof(char));
-        int numbytes  = ((dm_delay(events[i].dm, events[i].f1, events[i].f2) /tsamp) + x) * nchans * 2  // 16 bytes per sample
-        int ii ;
-        for (ii = 0 ; ii < nchans; ++ii)
-        {
-            // Find where the start byte is , seek the pointer to it
-            // memcpy to event_buffer with numbytes
-            // seek again to end of the time samples for that channel
-        }*/
-
         // write the specified amount to the output data block
-        ipcio_write (dbevent->out_hdu->data_block, (char *) dbevent->work_buffer, to_read);
+        ipcio_write (dbevent->out_hdu->data_block, (char *) dbevent->event_buffer, to_read);
 
         // close the data block to ensure EOD is written
         if (dada_hdu_unlock_write (dbevent->out_hdu) < 0)
@@ -939,6 +955,7 @@ int receive_events (dada_dbevent_t * dbevent, int listen_fd)
           return -1; 
         }
 
+        // close the data block to ensure EOD is written
         // lock write again to re-open for the next event
         if (dada_hdu_lock_write (dbevent->out_hdu) < 0)
         {
