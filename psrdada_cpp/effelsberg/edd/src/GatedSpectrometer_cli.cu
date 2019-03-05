@@ -1,0 +1,149 @@
+#include "boost/program_options.hpp"
+#include "psrdada_cpp/cli_utils.hpp"
+#include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/dada_client_base.hpp"
+#include "psrdada_cpp/dada_input_stream.hpp"
+#include "psrdada_cpp/dada_null_sink.hpp"
+#include "psrdada_cpp/dada_output_stream.hpp"
+#include "psrdada_cpp/multilog.hpp"
+#include "psrdada_cpp/simple_file_writer.hpp"
+
+#include "psrdada_cpp/effelsberg/edd/GatedSpectrometer.cuh"
+
+#include <ctime>
+#include <iostream>
+#include <time.h>
+
+
+using namespace psrdada_cpp;
+
+
+namespace {
+const size_t ERROR_IN_COMMAND_LINE = 1;
+const size_t SUCCESS = 0;
+const size_t ERROR_UNHANDLED_EXCEPTION = 2;
+} // namespace
+
+
+int main(int argc, char **argv) {
+  try {
+    key_t input_key;
+    int fft_length;
+    int naccumulate;
+    int nbits;
+    size_t nSideChannels;
+    size_t selectedSideChannel;
+    size_t selectedBit;
+    size_t speadHeapSize;
+    float input_level;
+    float output_level;
+    std::time_t now = std::time(NULL);
+    std::tm *ptm = std::localtime(&now);
+    char buffer[32];
+    std::strftime(buffer, 32, "%Y-%m-%d-%H:%M:%S.bp", ptm);
+    std::string filename(buffer);
+
+    /** Define and parse the program options
+    */
+    namespace po = boost::program_options;
+    po::options_description desc("Options");
+
+    desc.add_options()("help,h", "Print help messages");
+    desc.add_options()(
+        "input_key,i",
+        po::value<std::string>()->default_value("dada")->notifier(
+            [&input_key](std::string in) { input_key = string_to_key(in); }),
+        "The shared memory key for the dada buffer to connect to (hex "
+        "string)");
+    desc.add_options()("fft_length,n", po::value<int>(&fft_length)->required(),
+                       "The length of the FFT to perform on the data");
+    desc.add_options()("naccumulate,a",
+                       po::value<int>(&naccumulate)->required(),
+                       "The number of samples to integrate in each channel");
+    desc.add_options()("nsidechannelitems,n",
+                       po::value<size_t>()->default_value(0)->notifier(
+                           [&nSideChannels](size_t in) { nSideChannels = in; }),
+                       "Number of side channel items");
+    desc.add_options()(
+        "selected_sidechannel",
+        po::value<size_t>()->default_value(0)->notifier(
+            [&selectedSideChannel](size_t in) { selectedSideChannel = in; }),
+        "Side channel selected for evaluation.");
+    desc.add_options()("selected_bit",
+                       po::value<size_t>()->default_value(63)->notifier(
+                           [&selectedBit](size_t in) { selectedBit = in; }),
+                       "Side channel selected for evaluation.");
+    desc.add_options()("speadheap_size,s",
+                       po::value<size_t>()->default_value(4096)->notifier(
+                           [&speadHeapSize](size_t in) { speadHeapSize = in; }),
+                       "size of the spead data heaps. The number of the "
+                       "heaps in the dada block depends on the number of "
+                       "side channel items.");
+    desc.add_options()("nbits,b", po::value<int>(&nbits)->required(),
+                       "The number of bits per sample in the "
+                       "packetiser output (8 or 12)");
+    desc.add_options()("input_level",
+                       po::value<float>(&input_level)->required(),
+                       "The input power level (standard "
+                       "deviation, used for 8-bit conversion)");
+    desc.add_options()("output_level",
+                       po::value<float>(&output_level)->required(),
+                       "The output power level (standard "
+                       "deviation, used for 8-bit "
+                       "conversion)");
+    desc.add_options()(
+        "outfile,o", po::value<std::string>(&filename)->default_value(filename),
+        "The output file to write spectra "
+        "to");
+    desc.add_options()(
+        "log_level", po::value<std::string>()->default_value("info")->notifier(
+                         [](std::string level) { set_log_level(level); }),
+        "The logging level to use "
+        "(debug, info, warning, "
+        "error)");
+
+    po::variables_map vm;
+    try {
+      po::store(po::parse_command_line(argc, argv, desc), vm);
+      if (vm.count("help")) {
+        std::cout << "GatedSpectrometer -- Read EDD data from a DADA buffer "
+                     "and split the data into two streams depending on a bit "
+                     "set in the side channel data. On each stream a simple "
+                     "FFT spectrometer is performed."
+                  << std::endl
+                  << desc << std::endl;
+        return SUCCESS;
+      }
+      po::notify(vm);
+    } catch (po::error &e) {
+      std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
+      std::cerr << desc << std::endl;
+      return ERROR_IN_COMMAND_LINE;
+    }
+
+    /**
+     * All the application code goes here
+     */
+    MultiLog log("edd::GatedSpectrometer");
+    DadaClientBase client(input_key, log);
+    std::size_t buffer_bytes = client.data_buffer_size();
+
+    SimpleFileWriter sink(filename);
+    effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(
+        buffer_bytes, nSideChannels, selectedSideChannel, selectedBit,
+        speadHeapSize, fft_length, naccumulate, nbits, input_level,
+        output_level, sink);
+    DadaInputStream<decltype(spectrometer)> istream(input_key, log,
+                                                    spectrometer);
+    istream.start();
+    /**
+     * End of application code
+     */
+  } catch (std::exception &e) {
+    std::cerr << "Unhandled Exception reached the top of main: " << e.what()
+              << ", application will now exit" << std::endl;
+    return ERROR_UNHANDLED_EXCEPTION;
+  }
+  return SUCCESS;
+}
+
