@@ -116,6 +116,8 @@ private:
   cudaStream_t _h2d_stream;
   cudaStream_t _proc_stream;
   cudaStream_t _d2h_stream;
+
+	cudaEvent_t _procA, _procB;
 };
 
 
