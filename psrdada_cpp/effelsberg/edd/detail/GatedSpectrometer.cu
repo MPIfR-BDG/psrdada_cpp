@@ -73,8 +73,6 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
                            << " byte\n";
 
   std::size_t nsamps_per_buffer = _dataBlockBytes * 8 / nbits;
-  assert(nsamps_per_buffer % _fft_length ==
-         0 /*Number of samples is not multiple of FFT size*/);
   std::size_t n64bit_words = _dataBlockBytes / sizeof(uint64_t);
   _nchans = _fft_length / 2 + 1;
   int batch = nsamps_per_buffer / _fft_length;
