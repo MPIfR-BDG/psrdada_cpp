@@ -78,7 +78,8 @@ private:
   void process(thrust::device_vector<RawVoltageType> const &digitiser_raw,
                thrust::device_vector<RawVoltageType> const &sideChannelData,
                thrust::device_vector<IntegratedPowerType> &detected_G0,
-               thrust::device_vector<IntegratedPowerType> &detected_G1);
+               thrust::device_vector<IntegratedPowerType> &detected_G1, 
+               thrust::device_vector<int> &noOfBitSet);
 
 private:
   std::size_t _buffer_bytes;
@@ -106,6 +107,7 @@ private:
   DoubleDeviceBuffer<IntegratedPowerType> _power_db_G0;
   DoubleDeviceBuffer<IntegratedPowerType> _power_db_G1;
   DoubleDeviceBuffer<RawVoltageType> _sideChannelData_db;
+	DoubleDeviceBuffer<int> _noOfBitSetsInSideChannel;
 
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G0;
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G1;

@@ -108,6 +108,42 @@ TEST(GatedSpectrometer, GatingKernel)
 }
 
 
+TEST(GatedSpectrometer, countBitSet)
+{
+	size_t nBlocks = 16;
+	thrust::device_vector<int64_t> _sideChannelData(nBlocks);
+	thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0);
+	const int64_t *sideCD =
+        (int64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
+
+	thrust::device_vector<int> res(1);
+
+	// test 1 side channel
+	res[0] = 0;
+	psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size()+255)/256, 256>>>(sideCD, nBlocks, 0, 1, 0, thrust::raw_pointer_cast(res.data()));
+	EXPECT_EQ(res[0], 0);
+
+	res[0] = 0;
+	thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 1L);
+	psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size()+255)/256, 256>>>(sideCD, nBlocks, 0, 1, 0, thrust::raw_pointer_cast(res.data()));
+	EXPECT_EQ(res[0], nBlocks);
+
+	// test mult side channels w stride.
+	res[0] = 0;
+	int nSideChannels = 4;
+	thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0);
+	for (size_t i = 2; i < _sideChannelData.size(); i+=nSideChannels)
+		_sideChannelData[i] = 1L;
+	psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size()+255)/256, 256>>>(sideCD, nBlocks, 0, nSideChannels, 3, thrust::raw_pointer_cast(res.data()));
+	EXPECT_EQ(res[0], 0);
+
+	res[0] = 0;
+	psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size()+255)/256, 256>>>(sideCD, nBlocks, 0, nSideChannels, 2, thrust::raw_pointer_cast(res.data()));
+	EXPECT_EQ(res[0], nBlocks / nSideChannels);
+
+}
+
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
 
