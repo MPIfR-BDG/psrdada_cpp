@@ -206,7 +206,8 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
     BOOST_LOG_TRIVIAL(error) << "Unexpected Buffer Size - Got "
                              << block.used_bytes() << " byte, expected "
                              << _buffer_bytes << " byte)";
-    exit(-1);
+		cudaDeviceSynchronize();
+		return true; 
   }
 
 //  CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
