@@ -31,31 +31,32 @@ __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
   }
 }
 
+
 __global__ void countBitSet(const int64_t *sideChannelData, size_t N, int64_t bitpos, int64_t noOfSideChannels, int64_t selectedSideChannel, int *nBitsSet)
 {
-	// really not optimized reduction, but here only trivial array sizes.
-	int i = blockIdx.x*blockDim.x + threadIdx.x;
-	__shared__ int x[256];
-	if (i == 0)
-		nBitsSet[0] = 0;
-	if (i < N / noOfSideChannels)
-		x[threadIdx.x] = TEST_BIT(sideChannelData[i * noOfSideChannels + selectedSideChannel], bitpos);
-	else
-		x[threadIdx.x] = 0;
-	__syncthreads();
+  // really not optimized reduction, but here only trivial array sizes.
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  __shared__ int x[256];
 
-	for(int s = blockDim.x / 2; s > 0; s = s / 2)
-	{
-		if (threadIdx.x < s)
-			x[threadIdx.x] += x[threadIdx.x + s];
-		__syncthreads();
-	}
+  if (i == 0)
+    nBitsSet = 0;
 
-	if(threadIdx.x == 0)
-		atomicAdd(nBitsSet, x[threadIdx.x]);
+  if (i < N / noOfSideChannels)
+    x[threadIdx.x] = TEST_BIT(sideChannelData[i * noOfSideChannels + selectedSideChannel], bitpos);
+  else
+    x[threadIdx.x] = 0;
+  __syncthreads();
+
+  for(int s = blockDim.x / 2; s > 0; s = s / 2)
+  {
+    if (threadIdx.x < s)
+      x[threadIdx.x] += x[threadIdx.x + s];
+    __syncthreads();
+  }
+
+  if(threadIdx.x == 0)
+    atomicAdd(nBitsSet, x[threadIdx.x]);
 }
-
-
 
 
 template <class HandlerType>
@@ -136,14 +137,14 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
                            << _power_db_G1.size();
   // on the host both power are stored in the same data buffer
   _host_power_db.resize( _power_db_G0.size() + _power_db_G1 .size());
-	_noOfBitSetsInSideChannel.resize(1);
+  _noOfBitSetsInSideChannel.resize(1);
 
   CUDA_ERROR_CHECK(cudaStreamCreate(&_h2d_stream));
   CUDA_ERROR_CHECK(cudaStreamCreate(&_proc_stream));
   CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_stream));
   CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
 
-	// Create and record process status events to signal that processing chain is clear
+  // Create and record process status events to signal that processing chain is clear
   CUDA_ERROR_CHECK(cudaEventCreateWithFlags(&_procA, cudaEventDisableTiming));
   CUDA_ERROR_CHECK(cudaEventRecord(_procA, _proc_stream));
   CUDA_ERROR_CHECK(cudaEventCreateWithFlags(&_procB, cudaEventDisableTiming));
@@ -163,8 +164,8 @@ GatedSpectrometer<HandlerType>::~GatedSpectrometer() {
   cudaStreamDestroy(_h2d_stream);
   cudaStreamDestroy(_proc_stream);
   cudaStreamDestroy(_d2h_stream);
-	cudaEventDestroy(_procA);
-	cudaEventDestroy(_procB);
+  cudaEventDestroy(_procA);
+  cudaEventDestroy(_procB);
 }
 
 
@@ -192,8 +193,8 @@ void GatedSpectrometer<HandlerType>::process(
   default:
     throw std::runtime_error("Unsupported number of bits");
   }
-	// raw voltage buffer is free again
-	CUDA_ERROR_CHECK(cudaEventRecord(_procB, _proc_stream));
+  // raw voltage buffer is free again
+  CUDA_ERROR_CHECK(cudaEventRecord(_procB, _proc_stream));
 
   BOOST_LOG_TRIVIAL(debug) << "Perform gating";
   const int64_t *sideCD =
@@ -204,7 +205,10 @@ void GatedSpectrometer<HandlerType>::process(
       _unpacked_voltage_G0.size(), _speadHeapSize, _selectedBit, _nSideChannels,
       _selectedSideChannel);
 
-	countBitSet<<<(sideChannelData.size()+255)/256, 256, 0,  _proc_stream>>>(sideCD, sideChannelData.size(), _selectedBit, _nSideChannels, _selectedBit, thrust::raw_pointer_cast(noOfBitSet.data()));
+  countBitSet<<<(sideChannelData.size()+255)/256, 256, 0,
+    _proc_stream>>>(sideCD, sideChannelData.size(), _selectedBit,
+        _nSideChannels, _selectedBit,
+        thrust::raw_pointer_cast(noOfBitSet.data()));
 
   BOOST_LOG_TRIVIAL(debug) << "Performing FFT 1";
   UnpackedVoltageType *_unpacked_voltage_ptr =
@@ -222,7 +226,6 @@ void GatedSpectrometer<HandlerType>::process(
 
 //  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   _detector->detect(_channelised_voltage, detected_G1);
-
 } // process
 
 
@@ -235,21 +238,21 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
     BOOST_LOG_TRIVIAL(error) << "Unexpected Buffer Size - Got "
                              << block.used_bytes() << " byte, expected "
                              << _buffer_bytes << " byte)";
-		cudaDeviceSynchronize();
-		cudaProfilerStop();
-		return true;
+    cudaDeviceSynchronize();
+    cudaProfilerStop();
+    return true;
   }
 
 //  CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
   _raw_voltage_db.swap();
   _sideChannelData_db.swap();
-	std::swap(_procA, _procB);
+  std::swap(_procA, _procB);
 
   BOOST_LOG_TRIVIAL(debug) << "   block.used_bytes() = " << block.used_bytes()
                            << ", dataBlockBytes = " << _dataBlockBytes << "\n";
 
-	// If necessary wait until the raw data has been processed
-	CUDA_ERROR_CHECK(cudaEventSynchronize(_procA));
+  // If necessary wait until the raw data has been processed
+  CUDA_ERROR_CHECK(cudaEventSynchronize(_procA));
 
   CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_raw_voltage_db.a_ptr()),
                                    static_cast<void *>(block.ptr()),
@@ -267,12 +270,12 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
   // Synchronize all streams
   _power_db_G0.swap();
   _power_db_G1.swap();
-	_noOfBitSetsInSideChannel.swap();
+  _noOfBitSetsInSideChannel.swap();
 
   process(_raw_voltage_db.b(), _sideChannelData_db.b(), _power_db_G0.a(),
           _power_db_G1.a(), _noOfBitSetsInSideChannel.a());
 
-	// signal that data block has been processed
+  // signal that data block has been processed
   //CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
 
   if (_call_count == 2) {
@@ -293,12 +296,12 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
       _power_db_G1.size() * sizeof(IntegratedPowerType), cudaMemcpyDeviceToHost,
       _d2h_stream));
 
-	int R[1];
-	CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(R),
-				static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
-					1 * sizeof(int),cudaMemcpyDeviceToHost, _d2h_stream));
+  int R[1];
+  CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(R),
+        static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
+          1 * sizeof(int),cudaMemcpyDeviceToHost, _d2h_stream));
 
-	BOOST_LOG_TRIVIAL(info) << "NOOF BIT SET IN SIDE CHANNEL: " << R[0] << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "NOOF BIT SET IN SIDE CHANNEL: " << R[0] << std::endl;
 
   if (_call_count == 3) {
     return false;
