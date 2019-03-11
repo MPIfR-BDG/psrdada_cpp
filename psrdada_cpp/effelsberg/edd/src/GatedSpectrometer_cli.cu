@@ -126,6 +126,7 @@ int main(int argc, char **argv) {
      */
     MultiLog log("edd::GatedSpectrometer");
     DadaClientBase client(input_key, log);
+		//client.cuda_register_memory();
     std::size_t buffer_bytes = client.data_buffer_size();
 
     SimpleFileWriter sink(filename);

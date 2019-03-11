@@ -39,9 +39,9 @@ __global__ void countBitSet(const int64_t *sideChannelData, size_t N, int64_t bi
   __shared__ int x[256];
 
   if (i == 0)
-    nBitsSet = 0;
+    nBitsSet[0] = 0;
 
-  if (i < N / noOfSideChannels)
+  if (i * noOfSideChannels + selectedSideChannel < N)
     x[threadIdx.x] = TEST_BIT(sideChannelData[i * noOfSideChannels + selectedSideChannel], bitpos);
   else
     x[threadIdx.x] = 0;
@@ -55,7 +55,7 @@ __global__ void countBitSet(const int64_t *sideChannelData, size_t N, int64_t bi
   }
 
   if(threadIdx.x == 0)
-    atomicAdd(nBitsSet, x[threadIdx.x]);
+   atomicAdd(nBitsSet, x[threadIdx.x]);
 }
 
 
@@ -226,6 +226,7 @@ void GatedSpectrometer<HandlerType>::process(
 
 //  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   _detector->detect(_channelised_voltage, detected_G1);
+  BOOST_LOG_TRIVIAL(debug) << "Exit processing";
 } // process
 
 
@@ -243,7 +244,7 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
     return true;
   }
 
-//  CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
+  //CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
   _raw_voltage_db.swap();
   _sideChannelData_db.swap();
   std::swap(_procA, _procB);
@@ -312,6 +313,7 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
                  _host_power_db.size() * sizeof(IntegratedPowerType),
                  _host_power_db.size() * sizeof(IntegratedPowerType));
   BOOST_LOG_TRIVIAL(debug) << "Calling handler";
+  cudaDeviceSynchronize();
   // The handler can't do anything asynchronously without a copy here
   // as it would be unsafe (given that it does not own the memory it
   // is being passed).
