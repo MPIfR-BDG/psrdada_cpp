@@ -181,7 +181,7 @@ void GatedSpectrometer<HandlerType>::init(RawBytes &block) {
 template <class HandlerType>
 void GatedSpectrometer<HandlerType>::process(
     thrust::device_vector<RawVoltageType> const &digitiser_raw,
-    thrust::device_vector<RawVoltageType> const &sideChannelData,
+    thrust::device_vector<int64_t> const &sideChannelData,
     thrust::device_vector<IntegratedPowerType> &detected_G0,
     thrust::device_vector<IntegratedPowerType> &detected_G1, thrust::device_vector<unsigned int> &noOfBitSet) {
   BOOST_LOG_TRIVIAL(debug) << "Unpacking raw voltages";
@@ -199,16 +199,16 @@ void GatedSpectrometer<HandlerType>::process(
   CUDA_ERROR_CHECK(cudaEventRecord(_procB, _proc_stream));
 
   BOOST_LOG_TRIVIAL(debug) << "Perform gating";
-  const int64_t *sideCD =
-      (int64_t *)(thrust::raw_pointer_cast(sideChannelData.data()));
   gating<<<1024, 1024, 0, _proc_stream>>>(
       thrust::raw_pointer_cast(_unpacked_voltage_G0.data()),
-      thrust::raw_pointer_cast(_unpacked_voltage_G1.data()), sideCD,
+      thrust::raw_pointer_cast(_unpacked_voltage_G1.data()),
+      thrust::raw_pointer_cast(sideChannelData.data()),
       _unpacked_voltage_G0.size(), _speadHeapSize, _selectedBit, _nSideChannels,
       _selectedSideChannel);
 
   countBitSet<<<(sideChannelData.size()+255)/256, 256, 0,
-    _proc_stream>>>(sideCD, sideChannelData.size(), _selectedBit,
+    _proc_stream>>>(thrust::raw_pointer_cast(sideChannelData.data()),
+        sideChannelData.size(), _selectedBit,
         _nSideChannels, _selectedBit,
         thrust::raw_pointer_cast(noOfBitSet.data()));
 
