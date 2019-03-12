@@ -75,7 +75,7 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
       _call_count(0) {
   assert(((_nbits == 12) || (_nbits == 8)));
   assert(_naccumulate > 0); // Sanity check
-  BOOST_LOG_TRIVIAL(debug)
+  BOOST_LOG_TRIVIAL(info)
       << "Creating new GatedSpectrometer instance with parameters: \n"
       << "  fft_length = " << _fft_length << "\n"
       << "  naccumulate = " << _naccumulate << "\n"
@@ -93,7 +93,7 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
          (selectedSideChannel <
           nSideChannels));  // Sanity check of side channel value
   assert(selectedBit < 64); // Sanity check of selected bit
-  BOOST_LOG_TRIVIAL(debug) << "Resulting memory configuration: \n"
+  BOOST_LOG_TRIVIAL(info) << "Resulting memory configuration: \n"
                            << "  totalSizeOfHeap: " << _totalHeapSize
                            << " byte\n"
                            << "  number of heaps per buffer: " << _nHeaps
