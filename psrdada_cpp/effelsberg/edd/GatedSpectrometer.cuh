@@ -43,6 +43,15 @@ public:
    * @param      nSideChannels Number of side channel items in the data stream,
    * @param      selectedSideChannel Side channel item used for gating
    * @param      selectedBit bit of side channel item used for gating
+   * @param      speadHeapSize Size of the spead heap block.
+   * @param      fftLength Size of the FFT
+   * @param      naccumulate Number of samples to integrate in the individual
+   *             FFT bins
+   * @param      nbits Bit depth of the sampled signal
+   * @param      input_level Normalization level of the input signal
+   * @param      output_level Normalization level of the output signal
+   * @param      handler Output handler
+   *
    */
   GatedSpectrometer(std::size_t buffer_bytes, std::size_t nSideChannels,
                     std::size_t selectedSideChannel, std::size_t selectedBit,
@@ -70,7 +79,7 @@ public:
    *             data block.
    *
    * @param      block  A RawBytes object wrapping a DADA data buffer output
-   * are the integrated specttra with/without bit set.
+   *             are the integrated specttra with/without bit set.
    */
   bool operator()(RawBytes &block);
 
@@ -78,7 +87,7 @@ private:
   void process(thrust::device_vector<RawVoltageType> const &digitiser_raw,
                thrust::device_vector<RawVoltageType> const &sideChannelData,
                thrust::device_vector<IntegratedPowerType> &detected_G0,
-               thrust::device_vector<IntegratedPowerType> &detected_G1, 
+               thrust::device_vector<IntegratedPowerType> &detected_G1,
                thrust::device_vector<int> &noOfBitSet);
 
 private:
@@ -107,7 +116,7 @@ private:
   DoubleDeviceBuffer<IntegratedPowerType> _power_db_G0;
   DoubleDeviceBuffer<IntegratedPowerType> _power_db_G1;
   DoubleDeviceBuffer<RawVoltageType> _sideChannelData_db;
-	DoubleDeviceBuffer<int> _noOfBitSetsInSideChannel;
+  DoubleDeviceBuffer<int> _noOfBitSetsInSideChannel;
 
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G0;
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G1;
@@ -119,13 +128,31 @@ private:
   cudaStream_t _proc_stream;
   cudaStream_t _d2h_stream;
 
-	cudaEvent_t _procA, _procB;
+  cudaEvent_t _procA, _procB;
 };
 
 
-/// Route the data in G0 to G1 if corresponding sideChannelData bit at bitpos is
-/// set to 1.
-/// The data in the other stream is set to 0.
+/**
+   * @brief      Splits the input data depending on a bit set into two arrays.
+   *
+   * @detail     The resulting gaps are filled with zeros in the other stream.
+   *
+   * @param      GO Input data. Data is set to zero if corresponding
+   *             sideChannelData bit at bitpos os set.
+   * @param      G1 Data in this array is set to zero if corresponding
+   *             sideChannelData bit at bitpos is not set.
+   * @param      sideChannelData noOfSideChannels items per block of heapSize
+   *             bytes in the input data.
+   * @param      N lebgth of the input/output arrays G0.
+   * @param      heapsize Size of the blocks for which there is an entry in the
+                 sideChannelData.
+   * @param      bitpos Position of the bit to evaluate for processing.
+   * @param      noOfSideChannels Number of side channels items per block of
+   *             data.
+   * @param      selectedSideChannel No. of side channel item to be eveluated.
+                 0 <= selectedSideChannel < noOfSideChannels.
+   *
+   */
 __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                        size_t N, size_t heapSize, int64_t bitpos,
                        int64_t noOfSideChannels, int64_t selectedSideChannel);
