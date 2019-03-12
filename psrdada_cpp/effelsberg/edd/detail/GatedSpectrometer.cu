@@ -13,8 +13,8 @@ namespace edd {
 
 
 __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
-                       size_t N, size_t heapSize, int64_t bitpos,
-                       int64_t noOfSideChannels, int64_t selectedSideChannel) {
+                       size_t N, size_t heapSize, size_t bitpos,
+                       size_t noOfSideChannels, size_t selectedSideChannel) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
        i += blockDim.x * gridDim.x) {
     const float w = G0[i];
@@ -32,7 +32,9 @@ __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
 }
 
 
-__global__ void countBitSet(const int64_t *sideChannelData, size_t N, int64_t bitpos, int64_t noOfSideChannels, int64_t selectedSideChannel, int *nBitsSet)
+__global__ void countBitSet(const int64_t *sideChannelData, size_t N, size_t
+    bitpos, size_t noOfSideChannels, size_t selectedSideChannel, unsigned int
+    *nBitsSet)
 {
   // really not optimized reduction, but here only trivial array sizes.
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -181,7 +183,7 @@ void GatedSpectrometer<HandlerType>::process(
     thrust::device_vector<RawVoltageType> const &digitiser_raw,
     thrust::device_vector<RawVoltageType> const &sideChannelData,
     thrust::device_vector<IntegratedPowerType> &detected_G0,
-    thrust::device_vector<IntegratedPowerType> &detected_G1, thrust::device_vector<int> &noOfBitSet) {
+    thrust::device_vector<IntegratedPowerType> &detected_G1, thrust::device_vector<unsigned int> &noOfBitSet) {
   BOOST_LOG_TRIVIAL(debug) << "Unpacking raw voltages";
   switch (_nbits) {
   case 8:
@@ -300,7 +302,7 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
   int R[1];
   CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(R),
         static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
-          1 * sizeof(int),cudaMemcpyDeviceToHost, _d2h_stream));
+          1 * sizeof(unsigned int),cudaMemcpyDeviceToHost, _d2h_stream));
 
   BOOST_LOG_TRIVIAL(info) << "NOOF BIT SET IN SIDE CHANNEL: " << R[0] << std::endl;
 

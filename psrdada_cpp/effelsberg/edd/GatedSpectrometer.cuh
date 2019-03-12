@@ -88,7 +88,7 @@ private:
                thrust::device_vector<RawVoltageType> const &sideChannelData,
                thrust::device_vector<IntegratedPowerType> &detected_G0,
                thrust::device_vector<IntegratedPowerType> &detected_G1,
-               thrust::device_vector<int> &noOfBitSet);
+               thrust::device_vector<unsigned int> &noOfBitSet);
 
 private:
   std::size_t _buffer_bytes;
@@ -116,7 +116,7 @@ private:
   DoubleDeviceBuffer<IntegratedPowerType> _power_db_G0;
   DoubleDeviceBuffer<IntegratedPowerType> _power_db_G1;
   DoubleDeviceBuffer<RawVoltageType> _sideChannelData_db;
-  DoubleDeviceBuffer<int> _noOfBitSetsInSideChannel;
+  DoubleDeviceBuffer<unsigned int> _noOfBitSetsInSideChannel;
 
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G0;
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G1;
@@ -154,8 +154,8 @@ private:
    *
    */
 __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
-                       size_t N, size_t heapSize, int64_t bitpos,
-                       int64_t noOfSideChannels, int64_t selectedSideChannel);
+                       size_t N, size_t heapSize, size_t bitpos,
+                       size_t noOfSideChannels, size_t selectedSideChannel);
 
 
 } // edd
