@@ -313,7 +313,6 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
                  _host_power_db.size() * sizeof(IntegratedPowerType),
                  _host_power_db.size() * sizeof(IntegratedPowerType));
   BOOST_LOG_TRIVIAL(debug) << "Calling handler";
-  cudaDeviceSynchronize();
   // The handler can't do anything asynchronously without a copy here
   // as it would be unsafe (given that it does not own the memory it
   // is being passed).
