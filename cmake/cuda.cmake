@@ -12,7 +12,7 @@ if(ENABLE_CUDA)
 
   set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
   set(CUDA_PROPAGATE_HOST_FLAGS OFF)
-
+  add_definitions(-DENABLE_CUDA)
   # Pass options to NVCC ( -ccbin /path  --compiler-options -lfftw3f --compiler-options -lm --verbose)
   list(APPEND CUDA_NVCC_FLAGS -DENABLE_CUDA --std c++11 -Wno-deprecated-gpu-targets)
   list(APPEND CUDA_NVCC_FLAGS_DEBUG --debug; --device-debug; --generate-line-info -Xcompiler "-Werror")

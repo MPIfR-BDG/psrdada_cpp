@@ -10,7 +10,7 @@ namespace psrdada_cpp {
     {
 
         BOOST_LOG_TRIVIAL(debug) << this->id() << "Pinning dada buffers for CUDA memcpy";
-        dada_cuda_dbregister(_hdu);
+        cuda_register_memory();
         lock();
     }
 
