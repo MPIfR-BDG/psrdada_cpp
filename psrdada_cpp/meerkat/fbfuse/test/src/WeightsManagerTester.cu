@@ -85,7 +85,7 @@ void WeightsManagerTester::compare_against_host(
         _config.channel_frequencies(), _config.cb_nantennas(),
         _config.cb_nbeams(), _config.channel_frequencies().size(),
         epoch, 0.0, 1);
-    for (int ii = 0; ii < cuda_weights.size(); ++ii)
+    for (size_t ii = 0; ii < cuda_weights.size(); ++ii)
     {
         ASSERT_EQ(c_weights[ii].x, cuda_weights[ii].x);
         ASSERT_EQ(c_weights[ii].y, cuda_weights[ii].y);

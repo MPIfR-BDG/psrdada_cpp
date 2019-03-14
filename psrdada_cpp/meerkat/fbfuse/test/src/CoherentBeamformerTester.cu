@@ -139,7 +139,7 @@ void CoherentBeamformerTester::compare_against_host(
         _config.npol(),
         _config.cb_power_scaling(),
         _config.cb_power_offset());
-    for (int ii = 0; ii < btf_powers_host.size(); ++ii)
+    for (size_t ii = 0; ii < btf_powers_host.size(); ++ii)
     {
         ASSERT_TRUE(std::abs(static_cast<int>(btf_powers_host[ii]) - btf_powers_cuda[ii]) <= 1);
     }
@@ -164,13 +164,13 @@ TEST_F(CoherentBeamformerTester, representative_noise_test)
     int nsamples = _config.nsamples_per_heap() * ntimestamps;
     std::size_t weights_size = _config.cb_nantennas() * _config.nchans() * _config.cb_nbeams();
     HostVoltageVectorType ftpa_voltages_host(input_size);
-    for (int ii = 0; ii < ftpa_voltages_host.size(); ++ii)
+    for (size_t ii = 0; ii < ftpa_voltages_host.size(); ++ii)
     {
         ftpa_voltages_host[ii].x = static_cast<int8_t>(std::lround(normal_dist(generator)));
         ftpa_voltages_host[ii].y = static_cast<int8_t>(std::lround(normal_dist(generator)));
     }
     HostWeightsVectorType fbpa_weights_host(weights_size);
-    for (int ii = 0; ii < fbpa_weights_host.size(); ++ii)
+    for (size_t ii = 0; ii < fbpa_weights_host.size(); ++ii)
     {
         // Build complex weight as C * exp(i * theta).
         std::complex<double> val = 127.0f * std::exp(std::complex<float>(0.0f, uniform_dist(generator)));

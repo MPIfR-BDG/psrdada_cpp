@@ -57,9 +57,9 @@ void SplitTransposeTester::transpose_c_reference(
             int input_antenna_idx = antenna_idx + start_antenna;
             for (int chan_idx = 0; chan_idx < nchans; ++chan_idx)
             {
-                for (int samp_idx = 0; samp_idx < _config.nsamples_per_heap(); ++samp_idx)
+                for (size_t samp_idx = 0; samp_idx < _config.nsamples_per_heap(); ++samp_idx)
                 {
-                    for (int pol_idx = 0; pol_idx < _config.npol(); ++pol_idx)
+                    for (size_t pol_idx = 0; pol_idx < _config.npol(); ++pol_idx)
                     {
                         int input_idx = (timestamp_idx * aftp + input_antenna_idx
                             * ftp + chan_idx * tp + samp_idx * _config.npol() + pol_idx);
@@ -86,7 +86,7 @@ void SplitTransposeTester::compare_against_host(
         _config.total_nantennas(), _config.cb_nantennas(),
         _config.cb_antenna_offset(), _config.nchans(),
         ntimestamps);
-    for (int ii = 0; ii < host_output.size(); ++ii)
+    for (size_t ii = 0; ii < host_output.size(); ++ii)
     {
         ASSERT_EQ(host_output[ii].x, cuda_output[ii].x);
         ASSERT_EQ(host_output[ii].y, cuda_output[ii].y);
@@ -101,7 +101,7 @@ TEST_F(SplitTransposeTester, cycling_prime_test)
         * _config.nchans() * _config.nsamples_per_heap() * _config.npol());
 
     HostVoltageType host_gpu_input(input_size);
-    for (int ii = 0; ii < input_size; ++ii)
+    for (size_t ii = 0; ii < input_size; ++ii)
     {
         host_gpu_input[ii].x = (ii % 113);
         host_gpu_input[ii].y = (ii % 107);

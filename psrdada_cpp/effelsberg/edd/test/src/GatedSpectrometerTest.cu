@@ -122,7 +122,7 @@ TEST(GatedSpectrometer, countBitSet) {
   psrdada_cpp::effelsberg::edd::
       countBitSet<<<(_sideChannelData.size() + 255) / 256, 256>>>(
     sideCD, nBlocks, 0, 1, 0, thrust::raw_pointer_cast(res.data()));
-  EXPECT_EQ(res[0], 0);
+  EXPECT_EQ(res[0], 0u);
 
   res[0] = 0;
   thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 1L);
@@ -139,7 +139,7 @@ TEST(GatedSpectrometer, countBitSet) {
   psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size() + 255) / 256, 256>>>(
     sideCD, nBlocks, 0, nSideChannels, 3,
     thrust::raw_pointer_cast(res.data()));
-  EXPECT_EQ(res[0], 0);
+  EXPECT_EQ(res[0], 0u);
 
   res[0] = 0;
   psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size() + 255) / 256, 256>>>(
