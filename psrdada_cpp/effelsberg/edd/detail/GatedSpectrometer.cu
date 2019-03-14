@@ -146,12 +146,6 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
   CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_stream));
   CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
 
-  // Create and record process status events to signal that processing chain is clear
-  CUDA_ERROR_CHECK(cudaEventCreateWithFlags(&_procA, cudaEventDisableTiming));
-  CUDA_ERROR_CHECK(cudaEventRecord(_procA, _proc_stream));
-  CUDA_ERROR_CHECK(cudaEventCreateWithFlags(&_procB, cudaEventDisableTiming));
-  CUDA_ERROR_CHECK(cudaEventRecord(_procB, _proc_stream));
-
   _unpacker.reset(new Unpacker(_proc_stream));
   _detector.reset(new DetectorAccumulator(_nchans, _naccumulate, scaling,
                                           offset, _proc_stream));
@@ -166,8 +160,6 @@ GatedSpectrometer<HandlerType>::~GatedSpectrometer() {
   cudaStreamDestroy(_h2d_stream);
   cudaStreamDestroy(_proc_stream);
   cudaStreamDestroy(_d2h_stream);
-  cudaEventDestroy(_procA);
-  cudaEventDestroy(_procB);
 }
 
 
@@ -196,7 +188,7 @@ void GatedSpectrometer<HandlerType>::process(
     throw std::runtime_error("Unsupported number of bits");
   }
   // raw voltage buffer is free again
-  CUDA_ERROR_CHECK(cudaEventRecord(_procB, _proc_stream));
+  //CUDA_ERROR_CHECK(cudaEventRecord(_procB, _proc_stream));
 
   BOOST_LOG_TRIVIAL(debug) << "Perform gating";
   gating<<<1024, 1024, 0, _proc_stream>>>(
@@ -226,7 +218,7 @@ void GatedSpectrometer<HandlerType>::process(
   CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal *)_unpacked_voltage_ptr,
                                  (cufftComplex *)_channelised_voltage_ptr));
 
-//  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
+  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   _detector->detect(_channelised_voltage, detected_G1);
   BOOST_LOG_TRIVIAL(debug) << "Exit processing";
 } // process
@@ -246,16 +238,12 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
     return true;
   }
 
-  //CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
+  CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
   _raw_voltage_db.swap();
   _sideChannelData_db.swap();
-  std::swap(_procA, _procB);
 
   BOOST_LOG_TRIVIAL(debug) << "   block.used_bytes() = " << block.used_bytes()
                            << ", dataBlockBytes = " << _dataBlockBytes << "\n";
-
-  // If necessary wait until the raw data has been processed
-  CUDA_ERROR_CHECK(cudaEventSynchronize(_procA));
 
   CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_raw_voltage_db.a_ptr()),
                                    static_cast<void *>(block.ptr()),
@@ -279,13 +267,13 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
           _power_db_G1.a(), _noOfBitSetsInSideChannel.a());
 
   // signal that data block has been processed
-  //CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
+  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
 
   if (_call_count == 2) {
     return false;
   }
 
-  //CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
+  CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
   _host_power_db.swap();
   CUDA_ERROR_CHECK(
       cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr()),
