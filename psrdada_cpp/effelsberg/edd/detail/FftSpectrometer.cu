@@ -2,6 +2,7 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
+#include <cuda_profiler_api.h>
 #include <cuda.h>
 
 namespace psrdada_cpp {
@@ -111,7 +112,15 @@ bool FftSpectrometer<HandlerType>::operator()(RawBytes& block)
 {
     ++_call_count;
     BOOST_LOG_TRIVIAL(debug) << "FftSpectrometer operator() called (count = " << _call_count << ")";
-    assert(block.used_bytes() == _buffer_bytes /* Unexpected buffer size */);
+    if (block.used_bytes() != _buffer_bytes) { /* Unexpected buffer size */
+        BOOST_LOG_TRIVIAL(error) << "Unexpected Buffer Size - Got "
+                                 << block.used_bytes() << " byte, expected "
+                                 << _buffer_bytes << " byte)";
+        cudaDeviceSynchronize();
+        cudaProfilerStop();
+        return true;
+      }
+
 
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
     _raw_voltage_db.swap();
