@@ -20,7 +20,7 @@ install(TARGETS fft_spectrometer DESTINATION bin)
 
 #Gated FFT spectrometer interface
 cuda_add_executable(gated_spectrometer src/GatedSpectrometer_cli.cu)
-target_link_libraries(gated_spectrometer ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
+target_link_libraries(gated_spectrometer ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} -lcublas)
 install(TARGETS gated_spectrometer DESTINATION bin)
 
 add_subdirectory(test)

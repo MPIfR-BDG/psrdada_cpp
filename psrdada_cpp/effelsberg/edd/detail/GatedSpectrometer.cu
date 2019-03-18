@@ -11,13 +11,13 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
-
-__global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
+__global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const int64_t* __restrict__ sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
-                       size_t noOfSideChannels, size_t selectedSideChannel) {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
+                       size_t noOfSideChannels, size_t selectedSideChannel, const float* __restrict__ _baseLineN) {
+  float baseLine = *_baseLineN / N;
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
        i += blockDim.x * gridDim.x) {
-    const float w = G0[i];
+    const float w = G0[i] - baseLine;
     const int64_t sideChannelItem =
         sideChannelData[((i / heapSize) * (noOfSideChannels)) +
                         selectedSideChannel]; // Probably not optimal access as
@@ -26,8 +26,8 @@ __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                                               // handled by cache?
 
     const int bit_set = TEST_BIT(sideChannelItem, bitpos);
-    G1[i] = w * bit_set;
-    G0[i] = w * (!bit_set);
+    G1[i] = w * bit_set + baseLine;
+    G0[i] = w * (!bit_set) + baseLine;
   }
 }
 
@@ -58,6 +58,43 @@ __global__ void countBitSet(const int64_t *sideChannelData, size_t N, size_t
 
   if(threadIdx.x == 0)
    atomicAdd(nBitsSet, x[threadIdx.x]);
+}
+
+
+// blocksize for the array sum kernel
+#define array_sum_Nthreads 1024
+
+__global__ void array_sum(float *in, size_t N, float *out) {
+  extern __shared__ float data[];
+
+  size_t tid = threadIdx.x;
+
+  float ls = 0;
+
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
+       i += blockDim.x * gridDim.x) {
+    ls += in[i]; // + in[i + blockDim.x];   // loading two elements increase the used bandwidth by ~10% but requires matching blocksize and size of input array
+  }
+
+  data[tid] = ls;
+  __syncthreads();
+
+  for (size_t i = blockDim.x / 2; i > 0; i /= 2) {
+    if (tid < i) {
+      data[tid] += data[tid + i];
+    }
+    __syncthreads();
+  }
+
+  // unroll last warp
+  // if (tid < 32)
+  //{
+  //  warpReduce(data, tid);
+  //}
+
+  if (tid == 0) {
+    out[blockIdx.x] = data[0];
+  }
 }
 
 
@@ -128,6 +165,8 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
                            << _raw_voltage_db.size();
   _unpacked_voltage_G0.resize(nsamps_per_buffer);
   _unpacked_voltage_G1.resize(nsamps_per_buffer);
+
+  _baseLineN.resize(array_sum_Nthreads);
   BOOST_LOG_TRIVIAL(debug) << "  Unpacked voltages size (in samples): "
                            << _unpacked_voltage_G0.size();
   _channelised_voltage.resize(_nchans * batch);
@@ -187,8 +226,9 @@ void GatedSpectrometer<HandlerType>::process(
   default:
     throw std::runtime_error("Unsupported number of bits");
   }
-  // raw voltage buffer is free again
-  //CUDA_ERROR_CHECK(cudaEventRecord(_procB, _proc_stream));
+  BOOST_LOG_TRIVIAL(debug) << "Calculate baseline";
+  psrdada_cpp::effelsberg::edd::array_sum<<<64, array_sum_Nthreads, array_sum_Nthreads * sizeof(float), _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage_G0.data()), _unpacked_voltage_G0.size(), thrust::raw_pointer_cast(_baseLineN.data()));
+  psrdada_cpp::effelsberg::edd::array_sum<<<1, array_sum_Nthreads, array_sum_Nthreads * sizeof(float), _proc_stream>>>(thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(), thrust::raw_pointer_cast(_baseLineN.data()));
 
   BOOST_LOG_TRIVIAL(debug) << "Perform gating";
   gating<<<1024, 1024, 0, _proc_stream>>>(
@@ -196,7 +236,7 @@ void GatedSpectrometer<HandlerType>::process(
       thrust::raw_pointer_cast(_unpacked_voltage_G1.data()),
       thrust::raw_pointer_cast(sideChannelData.data()),
       _unpacked_voltage_G0.size(), _speadHeapSize, _selectedBit, _nSideChannels,
-      _selectedSideChannel);
+      _selectedSideChannel, thrust::raw_pointer_cast(_baseLineN.data()));
 
   countBitSet<<<(sideChannelData.size()+255)/256, 256, 0,
     _proc_stream>>>(thrust::raw_pointer_cast(sideChannelData.data()),
@@ -306,7 +346,9 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
   // The handler can't do anything asynchronously without a copy here
   // as it would be unsafe (given that it does not own the memory it
   // is being passed).
-  return _handler(bytes);
+
+  _handler(bytes);
+  return false; //
 } // operator ()
 
 } // edd

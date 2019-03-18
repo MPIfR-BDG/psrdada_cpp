@@ -9,7 +9,7 @@
 
 namespace {
 
-TEST(BitManipulationMacros, SetBit_TestBit) {
+TEST(GatedSpectrometer, BitManipulationMacros) {
   for (int i = 0; i < 64; i++) {
     int64_t v = 0;
     SET_BIT(v, i);
@@ -62,6 +62,7 @@ TEST(GatedSpectrometer, GatingKernel)
   thrust::device_vector<float> G0(blockSize * nBlocks);
   thrust::device_vector<float> G1(blockSize * nBlocks);
   thrust::device_vector<int64_t> _sideChannelData(nBlocks);
+  thrust::device_vector<float> baseLine(1);
 
   thrust::fill(G0.begin(), G0.end(), 42);
   thrust::fill(G1.begin(), G1.end(), 23);
@@ -69,13 +70,14 @@ TEST(GatedSpectrometer, GatingKernel)
 
   // everything to G0
   {
+    baseLine[0] = 0.;
     const int64_t *sideCD =
         (int64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
     psrdada_cpp::effelsberg::edd::gating<<<1024, 1024>>>(
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
           G0.size(), blockSize, 0, 1,
-          0);
+          0, thrust::raw_pointer_cast(baseLine.data()));
     thrust::pair<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator> minmax;
     minmax = thrust::minmax_element(G0.begin(), G0.end());
     EXPECT_EQ(*minmax.first, 42);
@@ -86,8 +88,9 @@ TEST(GatedSpectrometer, GatingKernel)
     EXPECT_EQ(*minmax.second, 0);
   }
 
-  // everything to G1
+  // everything to G1 // with baseline -5
   {
+    baseLine[0] = -5. * G0.size();
     thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 1L);
     const int64_t *sideCD =
         (int64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
@@ -95,11 +98,11 @@ TEST(GatedSpectrometer, GatingKernel)
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
           G0.size(), blockSize, 0, 1,
-          0);
+          0, thrust::raw_pointer_cast(baseLine.data()));
     thrust::pair<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator> minmax;
     minmax = thrust::minmax_element(G0.begin(), G0.end());
-    EXPECT_EQ(*minmax.first, 0);
-    EXPECT_EQ(*minmax.second, 0);
+    EXPECT_EQ(*minmax.first, -5.);
+    EXPECT_EQ(*minmax.second, -5.);
 
     minmax = thrust::minmax_element(G1.begin(), G1.end());
     EXPECT_EQ(*minmax.first, 42);
@@ -148,6 +151,29 @@ TEST(GatedSpectrometer, countBitSet) {
   EXPECT_EQ(res[0], nBlocks / nSideChannels);
 }
 
+
+TEST(GatedSpectrometer, array_sum) {
+
+  const size_t NBLOCKS = 16 * 32;
+  const size_t NTHREADS = 1024;
+
+  size_t inputLength = 1 << 22 + 1 ;
+  size_t dataLength = inputLength;
+  ////zero pad input array
+  //if (inputLength % (2 * NTHREADS) != 0)
+  //  dataLength = (inputLength / (2 * NTHREADS) + 1) * 2 * NTHREADS;
+  thrust::device_vector<float> data(dataLength); 
+  thrust::fill(data.begin(), data.begin() + inputLength, 1);
+  //thrust::fill(data.begin() + inputLength, data.end(), 0);
+  thrust::device_vector<float> blr(NTHREADS * 2);
+
+  thrust::fill(blr.begin(), blr.end(), 0);
+
+  psrdada_cpp::effelsberg::edd::array_sum<<<NBLOCKS, NTHREADS, NTHREADS* sizeof(float)>>>(thrust::raw_pointer_cast(data.data()), data.size(), thrust::raw_pointer_cast(blr.data()));
+  psrdada_cpp::effelsberg::edd::array_sum<<<1, NTHREADS, NTHREADS* sizeof(float)>>>(thrust::raw_pointer_cast(blr.data()), blr.size(), thrust::raw_pointer_cast(blr.data()));
+
+  EXPECT_EQ(size_t(blr[0]), inputLength);
+}
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

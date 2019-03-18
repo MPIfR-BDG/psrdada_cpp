@@ -11,6 +11,8 @@
 #include "thrust/device_vector.h"
 #include "cufft.h"
 
+#include "cublas_v2.h"
+
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
@@ -122,6 +124,8 @@ private:
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G1;
   thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
 
+  thrust::device_vector<UnpackedVoltageType> _baseLineN;
+
   DoublePinnedHostBuffer<IntegratedPowerType> _host_power_db;
 
   cudaStream_t _h2d_stream;
@@ -135,9 +139,9 @@ private:
    *
    * @detail     The resulting gaps are filled with zeros in the other stream.
    *
-   * @param      GO Input data. Data is set to zero if corresponding
+   * @param      GO Input data. Data is set to the baseline value if corresponding
    *             sideChannelData bit at bitpos os set.
-   * @param      G1 Data in this array is set to zero if corresponding
+   * @param      G1 Data in this array is set to the baseline value if corresponding
    *             sideChannelData bit at bitpos is not set.
    * @param      sideChannelData noOfSideChannels items per block of heapSize
    *             bytes in the input data.
@@ -149,11 +153,24 @@ private:
    *             data.
    * @param      selectedSideChannel No. of side channel item to be eveluated.
                  0 <= selectedSideChannel < noOfSideChannels.
-   *
    */
 __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
-                       size_t noOfSideChannels, size_t selectedSideChannel);
+                       size_t noOfSideChannels, size_t selectedSideChannel, const float *_baseLine);
+
+
+/**
+   * @brief      Sums all elements of an input array.
+   *
+   * @detail     The results is stored in an array with one value per launch
+   *             block. Full reuction thus requires two kernel launches.
+   *
+   * @param      in. Input array.
+   * @param      N. Size of input array.
+   * @param      out. Output array.
+   * */
+__global__ void array_sum(float *in, size_t N, float *out);
+
 
 
 } // edd
