@@ -63,7 +63,7 @@ void unpack_edd_12bit_to_float32(uint64_t const* __restrict__ in, float* __restr
         sout[12] = (float)((int64_t)((  0x0000FFF000000000 & val) << 16) >> 52);
         sout[13] = (float)((int64_t)((  0x0000000FFF000000 & val) << 28) >> 52);
         sout[14] = (float)((int64_t)((  0x0000000000FFF000 & val) << 40) >> 52);
-	sout[15] = (float)((int64_t)((  0x0000000000000FFF & val) << 52) >> 52);
+        sout[15] = (float)((int64_t)((  0x0000000000000FFF & val) << 52) >> 52);
         __syncthreads();
         int block_write_start = block_idx * EDD_NTHREADS_UNPACK * 16;
         for (int ii = threadIdx.x; ii < 16 * EDD_NTHREADS_UNPACK; ii += blockDim.x)
