@@ -9,6 +9,7 @@ set(psrdada_cpp_effelsberg_edd_src
     src/Unpacker.cu
     src/DetectorAccumulator.cu
     src/ScaledTransposeTFtoTFT.cu
+    src/VLBI.cu
     )
 
 cuda_add_library(${CMAKE_PROJECT_NAME}_effelsberg_edd ${psrdada_cpp_effelsberg_edd_src})
@@ -17,6 +18,10 @@ cuda_add_library(${CMAKE_PROJECT_NAME}_effelsberg_edd ${psrdada_cpp_effelsberg_e
 cuda_add_executable(fft_spectrometer src/fft_spectrometer_cli.cu)
 target_link_libraries(fft_spectrometer ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 install(TARGETS fft_spectrometer DESTINATION bin)
+
+cuda_add_executable(VLBI_prof src/VLBI_prof.cu)
+target_link_libraries(VLBI_prof ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
+install(TARGETS VLBI_prof DESTINATION bin)
 
 add_subdirectory(test)
 endif(ENABLE_CUDA)
