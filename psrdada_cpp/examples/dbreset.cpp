@@ -70,7 +70,7 @@ int main(int argc, char** argv)
          */
 
         MultiLog log("dbnull");
-        DadaClientBase client(key, log)
+        DadaClientBase client(key, log);
         client.hard_reset();
         /**
          * End of application code
