@@ -29,6 +29,10 @@ target_link_libraries (junkdb ${PSRDADA_CPP_LIBRARIES})
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
 
-install (TARGETS junkdb dbnull DESTINATION bin)
+#dbreset
+add_executable(dbreset examples/dbreset.cpp)
+target_link_libraries (dbreset ${PSRDADA_CPP_LIBRARIES})
+
+install (TARGETS junkdb dbnull dbreset DESTINATION bin)
 
 add_subdirectory(meerkat)

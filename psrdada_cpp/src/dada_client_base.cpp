@@ -87,6 +87,11 @@ namespace psrdada_cpp {
 #endif //ENABLE_CUDA
     }
 
+    void hard_reset()
+    {
+        ipcbuf_hard_reset((ipcbuf_t *) _hdu->data_block);
+    }
+
     std::string const& DadaClientBase::id() const
     {
         return _id;

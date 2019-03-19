@@ -67,9 +67,14 @@ namespace psrdada_cpp {
         void reconnect();
 
         /**
-         * @brief     Pin memory with CUDA API
+         * @brief      Pin memory with CUDA API
          */
         void cuda_register_memory();
+
+        /**
+         * @breif      Hard reset DADA buffer (use with care)
+         */
+        void hard_reset();
 
         /**
          * @brief      Return a string identifier based on the buffer key and log name
