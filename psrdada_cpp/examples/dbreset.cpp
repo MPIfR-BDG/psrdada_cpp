@@ -68,10 +68,10 @@ int main(int argc, char** argv)
         /**
          * All the application code goes here
          */
-
         MultiLog log("dbnull");
-        DadaClientBase client(key, log);
-        client.hard_reset();
+        DadaReadClient client(key, log);
+        client.header_stream().purge();
+        client.data_stream().purge();
         /**
          * End of application code
          */

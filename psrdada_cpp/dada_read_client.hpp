@@ -52,6 +52,8 @@ namespace psrdada_cpp {
              * @brief      Check if we have read the last header block in buffer.
              */
             bool at_end() const;
+
+            void purge();
         };
 
         class DataStream
@@ -93,6 +95,8 @@ namespace psrdada_cpp {
              * @brief      Check if we have read the last data block in buffer.
              */
             bool at_end() const;
+
+            void purge();
 
             /**
              * @brief      Return the index of the currently open block
