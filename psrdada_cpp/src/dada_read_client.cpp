@@ -112,7 +112,7 @@ namespace psrdada_cpp {
     void DadaReadClient::HeaderStream::purge()
     {
         std::size_t nheader = ipcbuf_get_nfull((ipcbuf_t *) _hdu->header_block);
-        BOOST_LOG_TRIVIAL(debug) << this->id() << nheader << " header blocks are full";
+        BOOST_LOG_TRIVIAL(debug) << _parent.id() << nheader << " header blocks are full";
         for (std::size_t ii=0; ii < nheader; ++ii)
         {
             next();
@@ -183,7 +183,7 @@ namespace psrdada_cpp {
     void DadaReadClient::DataStream::purge()
     {
         std::size_t ndata = ipcbuf_get_nfull((ipcbuf_t *) _hdu->data_block);
-        BOOST_LOG_TRIVIAL(debug) << this->id() << ndata << " data blocks are full";
+        BOOST_LOG_TRIVIAL(debug) << _parent.id() << ndata << " data blocks are full";
         for (std::size_t ii=0; ii < ndata; ++ii)
         {
             next();
