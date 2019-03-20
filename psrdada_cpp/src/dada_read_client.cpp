@@ -189,9 +189,7 @@ namespace psrdada_cpp {
             next();
             release();
             if (at_end())
-            {
-                _parent.reconnect();
-            }
+                break;
         }
     }
 
