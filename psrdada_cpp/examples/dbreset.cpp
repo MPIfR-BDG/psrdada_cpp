@@ -1,5 +1,5 @@
 #include "psrdada_cpp/multilog.hpp"
-#include "psrdada_cpp/dada_client_base.hpp"
+#include "psrdada_cpp/dada_read_client.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 
 #include "boost/program_options.hpp"
