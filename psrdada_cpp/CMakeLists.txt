@@ -18,6 +18,26 @@ set(psrdada_cpp_src
     src/simple_file_writer.cpp
    )
 
+set(psrdada_cpp_inc
+    cli_utils.hpp
+    dada_client_base.hpp
+    dada_input_stream.hpp
+    dada_output_stream.hpp
+    dada_read_client.hpp
+    dada_junk_source.hpp
+    dada_null_sink.hpp
+    multilog.hpp
+    common.hpp
+    dada_write_client.hpp
+    raw_bytes.hpp
+    cuda_utils.hpp
+    simple_file_writer.hpp
+    sigprocheader.hpp
+    psrdadaheader.hpp
+    psrdada_to_sigproc_header.hpp
+    file_input_stream.hpp
+  )
+
 # -- the main library target
 add_library(${CMAKE_PROJECT_NAME} ${psrdada_cpp_src})
 
@@ -34,5 +54,10 @@ add_executable(dbreset examples/dbreset.cpp)
 target_link_libraries (dbreset ${PSRDADA_CPP_LIBRARIES})
 
 install (TARGETS junkdb dbnull dbreset DESTINATION bin)
+
+install (TARGETS ${CMAKE_PROJECT_NAME}
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
 
 add_subdirectory(meerkat)
