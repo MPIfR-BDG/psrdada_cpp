@@ -1,3 +1,4 @@
+
 #ifndef PSRDADA_CPP_SIGPROCHEADER_HPP
 #define PSRDADA_CPP_SIGPROCHEADER_HPP
 
@@ -18,12 +19,37 @@
 namespace psrdada_cpp
 {
 
+    struct FilHead {
+        std::string rawfile;
+        std::string source;
+
+        double az;                      // azimuth angle in deg
+        double dec;                     // source declination
+        double fch1;                    // frequency of the top channel in MHz
+        double foff;                    // channel bandwidth in MHz
+        double ra;                      // source right ascension
+        double rdm;                     // reference DM
+        double tsamp;                   // sampling time in seconds
+        double tstart;                  // observation start time in MJD format
+        double za;                      // zenith angle in deg
+
+        int datatype;                  // data type ID
+        int ibeam;                      // beam number
+        int machineid;
+        int nbeams;
+        int nbits;
+        int nchans;
+        int nifs;
+        int telescopeid;
+    };
+
 class SigprocHeader
 {
 public:
     SigprocHeader();
     ~SigprocHeader();
     void write_header(RawBytes& block,PsrDadaHeader ph);
+    void read_header(std::ifstream &infile, FilHead &header);
 
     std::size_t header_size() const;
 

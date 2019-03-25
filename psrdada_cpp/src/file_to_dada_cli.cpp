@@ -28,6 +28,7 @@ int main(int argc, char** argv)
         std::size_t headersize;
         std::size_t nbytes;
         std::string filename;
+        float streamtime;
         /** Define and parse the program options
  *         */
         namespace po = boost::program_options;
@@ -46,9 +47,9 @@ int main(int argc, char** argv)
             ("nbytes,n", po::value<std::size_t>(&nbytes)->required(),
              "Number of bytes to read in one DADA block")
             ("header_size,s", po::value<std::size_t>(&headersize)->required(),
-             "size of header to read");
-
-
+             "size of header to read")
+            ("time,t", po::value<float>(&streamtime) -> default_value(0.0f),
+            "number of seconds to stream the file for");
 
 /* Catch Error and program description */
          po::variables_map vm;
@@ -79,7 +80,7 @@ int main(int argc, char** argv)
 
         DadaOutputStream outstream(output_key, log);
 
-        FileInputStream<decltype(outstream)> input(filename, headersize, nbytes, outstream);
+        FileInputStream<decltype(outstream)> input(filename, headersize, nbytes, outstream, streamtime);
          
         input.start();
         

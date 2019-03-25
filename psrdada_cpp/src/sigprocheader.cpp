@@ -7,6 +7,7 @@
 
 namespace psrdada_cpp
 {
+
     SigprocHeader::SigprocHeader()
     :
     _header_size(0)
@@ -68,7 +69,50 @@ namespace psrdada_cpp
 	    return _header_size;
     }
 
+    void SigprocHeader::read_header(std::ifstream &infile, FilHead &header) {
+
+        std::string read_param;
+	    char field[60];
+
+	    int fieldlength;
+
+        while(true) {
+            infile.read((char *)&fieldlength, sizeof(int));
+            infile.read(field, fieldlength * sizeof(char));
+            field[fieldlength] = '\0';
+            read_param = field;
+
+            if (read_param == "HEADER_END") break;		// finish reading the header when its end is reached
+            else if (read_param == "rawdatafile") {
+                infile.read((char *)&fieldlength, sizeof(int));		// reads the length of the raw data file name
+                infile.read(field, fieldlength * sizeof(char));
+                field[fieldlength] = '\0';
+                header.rawfile = field;
+            }
+            else if (read_param == "source_name") {
+                infile.read((char *)&fieldlength, sizeof(int));
+                infile.read(field, fieldlength * sizeof(char));
+                field[fieldlength] = '\0';
+                header.source = field;
+            }
+            else if (read_param == "machine_id")	infile.read((char *)&header.machineid, sizeof(int));
+            else if (read_param == "telescope_id")	infile.read((char *)&header.telescopeid, sizeof(int));
+            else if (read_param == "src_raj")	infile.read((char *)&header.ra, sizeof(double));
+            else if (read_param == "src_dej")	infile.read((char *)&header.dec, sizeof(double));
+            else if (read_param == "az_start")	infile.read((char *)&header.az, sizeof(double));
+            else if (read_param == "za_start")	infile.read((char *)&header.za, sizeof(double));
+            else if (read_param == "data_type")	infile.read((char *)&header.datatype, sizeof(int));
+            else if (read_param == "refdm")		infile.read((char *)&header.rdm, sizeof(double));
+            else if (read_param == "nchans")	infile.read((char *)&header.nchans, sizeof(int));
+            else if (read_param == "fch1")		infile.read((char *)&header.fch1, sizeof(double));
+            else if (read_param == "foff")		infile.read((char *)&header.foff, sizeof(double));
+            else if (read_param == "nbeams")	infile.read((char *)&header.nbeams, sizeof(int));
+            else if (read_param == "ibeam")		infile.read((char *)&header.ibeam, sizeof(int));
+            else if (read_param == "nbits")		infile.read((char *)&header.nbits, sizeof(int));
+            else if (read_param == "tstart")	infile.read((char *)&header.tstart, sizeof(double));
+            else if (read_param == "tsamp")		infile.read((char *)&header.tsamp, sizeof(double));
+            else if (read_param == "nifs")		infile.read((char *)&header.nifs, sizeof(int));
+        }
+    }
 
 } // namespace psrdada_cpp
-
-        

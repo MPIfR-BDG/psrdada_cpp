@@ -7,8 +7,6 @@
  * @detail: A simple file input stream. Will go through one entire file.
  * Will assume there is some amount of header to the file.
  */
-
-
 namespace psrdada_cpp
 {
 
@@ -16,7 +14,7 @@ namespace psrdada_cpp
     class FileInputStream
     {
     public:
-        FileInputStream(std::string filename, std::size_t headersize, std::size_t nbytes, HandlerType& handler);
+        FileInputStream(std::string filename, std::size_t headersize, std::size_t nbytes, HandlerType& handler, float streamtime);
         ~FileInputStream();
         void start();
         void stop();
@@ -25,6 +23,7 @@ namespace psrdada_cpp
         std::size_t _headersize;
         std::size_t _nbytes;
         std::ifstream _filestream;
+        float _streamtime;
         HandlerType& _handler;
         bool _stop;
         bool _running;
