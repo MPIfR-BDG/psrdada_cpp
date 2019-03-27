@@ -24,7 +24,7 @@ namespace psrdada_cpp {
     private:
         std::ofstream _outfile;
         char* _header;
-        std::string _filename;
+        std::string _basefilename;
         std::size_t _filesize;
         std::uint32_t _filenum;
         std::size_t _wsize;

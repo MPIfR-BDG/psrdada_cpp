@@ -1,5 +1,5 @@
 #include "psrdada_cpp/meerkat/tuse/test/TransposeTest.h"
-#include "psrdada_cpp/meerkat/tuse/transpose_to_dada.h"
+#include "psrdada_cpp/meerkat/tuse/transpose_to_dada.hpp"
 
 namespace psrdada_cpp {
 namespace meerkat {

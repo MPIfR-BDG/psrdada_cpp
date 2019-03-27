@@ -10,10 +10,10 @@ namespace psrdada_cpp {
     FileInputStream<HandlerType>::FileInputStream(std::string fileName, std::size_t headersize, std::size_t nbytes, HandlerType& handler, float streamtime)
     : _headersize(headersize)
     , _nbytes(nbytes)
+    , _streamtime(streamtime)
     , _handler(handler)
     , _stop(false)
     , _running(false)
-    , _streamtime(streamtime)
     {
         const char *filename = fileName.c_str();
         _filestream.exceptions(std::ifstream::badbit);
@@ -48,13 +48,14 @@ namespace psrdada_cpp {
         _handler.init(header_block);
 
         SigprocHeader sigheader;
-        FilHead filheader = {};
+        FilHead filheader = {"","",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         _filestream.seekg(0, _filestream.beg);
         sigheader.read_header(_filestream, filheader);
 
         std::size_t filesize = 0;
         _filestream.seekg(0, _filestream.end);
-        filesize = _filestream.tellg() - _headersize;
+        std::size_t fullsize = _filestream.tellg();
+        filesize = fullsize - _headersize;
         _filestream.seekg(_headersize, _filestream.beg);
         float filetime = static_cast<float>(filesize / (filheader.nbits / 8) / filheader.nchans) * filheader.tsamp; 
 

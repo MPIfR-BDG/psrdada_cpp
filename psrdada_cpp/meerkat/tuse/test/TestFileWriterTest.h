@@ -1,7 +1,7 @@
 #ifndef PSRDADA_CPP_MEERKAT_TUSE_TESTFILEWRITERTEST_H
 #define PSRDADA_CPP_MEERKAT_TUSE_TESTFILEWRITERTEST_H
 
-#include "psrdada_cpp/meerkat/tuse/test_file_writer.hpp"
+#include "psrdada_cpp/test_file_writer.hpp"
 #include <gtest/gtest.h>
 
 namespace psrdada_cpp {

@@ -3,21 +3,23 @@
 namespace psrdada_cpp {
 
     TestFileWriter::TestFileWriter(std::string filename, std::size_t filesize)
-    : _filename(filename),
+    : _basefilename(filename),
       _filesize(filesize),
       _filenum(0),
       _wsize(0)
     {
-        _outfile.open(filename.append(std::to_string(_filenum)),std::ifstream::out | std::ifstream::binary);
+        _header = new char[4096];
+        auto newfilename = _basefilename;
+        _outfile.open(filename + std::to_string(_filenum) ,std::ifstream::out | std::ifstream::binary);
         ++_filenum;
         if (_outfile.is_open())
         {
-            BOOST_LOG_TRIVIAL(debug) << "Opened file " << filename.append(std::to_string(_filenum));
+            BOOST_LOG_TRIVIAL(debug) << "Opened file " << newfilename.append(std::to_string(_filenum));
         }
         else
         {
             std::stringstream stream;
-            stream << "Could not open file " << filename;
+            stream << "Could not open file " << newfilename.append(std::to_string(_filenum));
             throw std::runtime_error(stream.str().c_str());
         }
     }
@@ -29,8 +31,8 @@ namespace psrdada_cpp {
 
     void TestFileWriter::init(RawBytes& block)
     {
-        std::memcpy(_header, block.ptr(), 4096);
         _outfile.write(block.ptr(), 4096);
+        std::memcpy(_header, block.ptr(), 4096);
     }
 
     bool TestFileWriter::operator()(RawBytes& block)
@@ -49,15 +51,17 @@ namespace psrdada_cpp {
             auto current_ptr = block.ptr() + left_size;
             _wsize = 0;
             _outfile.close();
-            _outfile.open(_filename.append(std::to_string(_filenum)),std::ifstream::out | std::ifstream::binary);
+            auto newfilename = _basefilename;
+            std::cout << "FileName:" << newfilename << "\n" ;
+            _outfile.open(newfilename + std::to_string(_filenum), std::ifstream::out | std::ifstream::binary);
             if (_outfile.is_open())
             {
-                BOOST_LOG_TRIVIAL(debug) << "Opened file " << _filename.append(std::to_string(_filenum));
+                BOOST_LOG_TRIVIAL(debug) << "Opened file " << newfilename.append(std::to_string(_filenum));
             }
             else
             {
                 std::stringstream stream;
-                stream << "Could not open file " << _filename;
+                stream << "Could not open file " << newfilename.append(std::to_string(_filenum));
                 throw std::runtime_error(stream.str().c_str());
                 return true;
             }

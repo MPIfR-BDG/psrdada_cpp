@@ -27,4 +27,5 @@ target_link_libraries (dada_dbevent ${PSRDADA_CPP_MEERKAT_TUSE_LIBRARIES})
 
 install (TARGETS transpose_to_null_cli transpose_to_file_cli transpose_to_dada_cli DESTINATION bin)
 install(FILES transpose_to_dada.hpp DESTINATION include/psrdada_cpp/meerkat/tuse)
+
 add_subdirectory(test)
