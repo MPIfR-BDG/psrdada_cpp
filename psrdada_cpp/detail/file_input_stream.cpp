@@ -52,46 +52,50 @@ namespace psrdada_cpp {
         _filestream.seekg(0, _filestream.beg);
         sigheader.read_header(_filestream, filheader);
 
+        if ((_nbytes / filheader.nbits / 8) % filheader.nchans != 0) {
+            throw std::logic_error("Number of samples to stream to a block has to be a multiple of the number of channels");
+        }
+
         std::size_t filesize = 0;
         _filestream.seekg(0, _filestream.end);
-        filesize = _filestream.tellg() - _headersize;
+        filesize = static_cast<std::size_t>(_filestream.tellg()) - _headersize;
         _filestream.seekg(_headersize, _filestream.beg);
-        float filetime = static_cast<float>(filesize / (filheader.nbits / 8) / filheader.nchans) * filheader.tsamp; 
+        float blocktime = static_cast<float>(_nbytes / (filheader.nbits / 8) / filheader.nchans) * filheader.tsamp;
 
         std::chrono::time_point<std::chrono::steady_clock> streamstart;
         float streamed = 0.0f;
         int streamcount = 0;
         // Continue to stream data until the end
         streamstart = std::chrono::steady_clock::now();
-        while (!_stop)
-        {
+        while (!_stop) {
             BOOST_LOG_TRIVIAL(info) << "Reading data from the file";
+            BOOST_LOG_TRIVIAL(info) << "Streaming " << _nbytes << "B every " << blocktime << "s (" << static_cast<float>(_nbytes) / 1024.0f / 1024.0f << "MiBps"; 
             // Read data from file here
             RawBytes data_block(data_ptr, _nbytes, 0, false);
             while (!_stop)
-            {
-                if (_filestream.eof())
-                {
-                    streamed += filetime;
-                    streamcount++;
-                    BOOST_LOG_TRIVIAL(info) << "Reached end of file";
-                    if (streamed >= _streamtime) {
-                    BOOST_LOG_TRIVIAL(info) << "Closing the stream";
-                    BOOST_LOG_TRIVIAL(info) << "Streamed a total of " << streamed << "s in " << streamcount << " iterations";
-                        _filestream.close();
-                        break;
-                    }
-                    BOOST_LOG_TRIVIAL(info) << "Repeating the file again";
+            { 
+                if ((static_cast<std::size_t>(_filestream.tellg()) + _nbytes) > filesize) {
+                    BOOST_LOG_TRIVIAL(info) << "Will read beyond the end of file";
+                    BOOST_LOG_TRIVIAL(info) << "Going to the start of the file again";
                     _filestream.clear();
                     _filestream.seekg(_headersize, _filestream.beg);
-                    // TODO: Implement a better, proper streaming behaviour
-                    std::this_thread::sleep_until(streamstart + std::chrono::seconds(static_cast<int>(streamcount * filetime)));
                 }
+
                 _filestream.read(data_ptr, _nbytes);
                 data_block.used_bytes(data_block.total_bytes());
                 _handler(data_block);
+
+                streamed += blocktime;
+                streamcount++;
+                if (streamed >= _streamtime) {
+                    BOOST_LOG_TRIVIAL(info) << "Closing the stream";
+                    BOOST_LOG_TRIVIAL(info) << "Streamed a total of " << streamed << "s in " << streamcount << " iterations";
+                    _filestream.close();
+                    _stop = true;
+                    break;
+                }
+                std::this_thread::sleep_until(streamstart + std::chrono::milliseconds(static_cast<int>(streamcount * blocktime * 1000.0f)));
             }
-            _stop = true;
             data_block.~RawBytes();
         }
         _running = false;
