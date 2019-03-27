@@ -22,24 +22,27 @@ DelayManager::DelayManager(PipelineConfig const& config, cudaStream_t stream)
     if (_delay_buffer_fd == -1)
     {
         throw std::runtime_error(std::string(
-            "Failed to open delay buffer shared memory: "
-            ) + std::strerror(errno));
+            "Failed to open delay buffer shared memory (")
+            + _config.delay_buffer_shm() + "): "
+            + std::strerror(errno));
     }
     BOOST_LOG_TRIVIAL(debug) << "Opening delay buffer mutex semaphore";
     _delay_mutex_sem = sem_open(_config.delay_buffer_mutex().c_str(), O_EXCL);
     if (_delay_mutex_sem == SEM_FAILED)
     {
         throw std::runtime_error(std::string(
-            "Failed to open delay buffer mutex semaphore: "
-            ) + std::strerror(errno));
+            "Failed to open delay buffer mutex semaphore (")
+            + _config.delay_buffer_mutex() + "): "
+            + std::strerror(errno));
     }
     BOOST_LOG_TRIVIAL(debug) << "Opening delay buffer counting semaphore";
     _delay_count_sem = sem_open(_config.delay_buffer_sem().c_str(), O_EXCL);
     if (_delay_count_sem == SEM_FAILED)
     {
         throw std::runtime_error(std::string(
-            "Failed to open delay buffer counting semaphore: "
-            ) + std::strerror(errno));
+            "Failed to open delay buffer counting semaphore (")
+            + _config.delay_buffer_sem() + "): "
+            + std::strerror(errno));
     }
 
     // Here we run fstat on the shared memory buffer to check that it is the right dimensions
