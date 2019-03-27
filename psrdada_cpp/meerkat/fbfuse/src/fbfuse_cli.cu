@@ -61,9 +61,9 @@ int main(int argc, char** argv)
             ->required()
             ->notifier([&config](std::string key)
                 {
-                    config.delay_buffer_shm(key + "_shm");
+                    config.delay_buffer_shm(key);
                     config.delay_buffer_mutex(key + "_mutex");
-                    config.delay_buffer_sem(key + "_sem");
+                    config.delay_buffer_sem(key + "_count");
                 }),
            "The root of the POSIX key for the delay buffer shared memory and semaphores")
         ("bandwidth", po::value<float>()
