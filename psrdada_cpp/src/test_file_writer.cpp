@@ -31,8 +31,9 @@ namespace psrdada_cpp {
 
     void TestFileWriter::init(RawBytes& block)
     {
-        _outfile.write(block.ptr(), 4096);
-        std::memcpy(_header, block.ptr(), 4096);
+    /* Find where the HEADER_END is */
+        _outfile.write(block.ptr(), block.used_bytes());
+        std::memcpy(_header, block.ptr(), block.used_bytes());
     }
 
     bool TestFileWriter::operator()(RawBytes& block)
@@ -66,7 +67,7 @@ namespace psrdada_cpp {
                 return true;
             }
             ++_filenum;
-            _outfile.write(_header,4096);
+            _outfile.write(_header, block.used_bytes());
             _outfile.write(current_ptr,block.total_bytes() - left_size);
             block.used_bytes(block.total_bytes());
             _wsize += block.total_bytes() - left_size;

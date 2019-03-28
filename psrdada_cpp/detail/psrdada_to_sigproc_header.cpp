@@ -20,10 +20,10 @@ namespace psrdada_cpp {
     template <class HandlerType>
     void PsrDadaToSigprocHeader<HandlerType>::init(RawBytes& block)
     {
-	SigprocHeader h;
+        SigprocHeader h;
         PsrDadaHeader ph;
         ph.from_bytes(block);
-	std::memset(block.ptr(), 0, block.total_bytes());
+        std::memset(block.ptr(), 0, block.total_bytes());
         h.write_header(block,ph);
         block.used_bytes(block.total_bytes());
         _handler.init(block);

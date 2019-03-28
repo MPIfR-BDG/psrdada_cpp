@@ -21,6 +21,11 @@ target_link_libraries (transpose_to_file_cli ${PSRDADA_CPP_MEERKAT_TUSE_LIBRARIE
 add_executable(transpose_to_null_cli src/transpose_to_null_cli.cpp)
 target_link_libraries (transpose_to_null_cli ${PSRDADA_CPP_MEERKAT_TUSE_LIBRARIES})
 
+#transpose_to_mult_files_cli
+add_executable(transpose_to_mult_files_cli src/transpose_to_mult_files_cli.cpp)
+target_link_libraries (transpose_to_mult_files_cli ${PSRDADA_CPP_MEERKAT_TUSE_LIBRARIES})
+
+
 #dada_dbevent
 add_executable(dada_dbevent src/dada_dbevent.cpp)
 target_link_libraries (dada_dbevent ${PSRDADA_CPP_MEERKAT_TUSE_LIBRARIES})
