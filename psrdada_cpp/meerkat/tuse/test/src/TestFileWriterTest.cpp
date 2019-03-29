@@ -45,7 +45,9 @@ TEST_F(TestFileWriterTest, test_filesize)
 
     // Setup RawBytes to write
     char* hdr_ptr = new char[4096];
-    RawBytes header(hdr_ptr, 4096, 4096, false); 
+    RawBytes header(hdr_ptr, 4096, 4096, false);
+    const char* hdrstr = "HEADER_START and HEADER_END";
+    std::memcpy(hdr_ptr, hdrstr,27); 
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
     // Write data to the buffer
@@ -89,7 +91,7 @@ TEST_F(TestFileWriterTest, test_filesize)
         fstream.seekg(0, std::ios::end);
         int filSize = fstream.tellg();
         fstream.close();
-        ASSERT_EQ(filSize, 19456);
+        ASSERT_EQ(filSize, 15387);
     }    
  
 }
