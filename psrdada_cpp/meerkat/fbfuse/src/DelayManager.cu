@@ -188,7 +188,7 @@ DelayManager::DelayVectorType const& DelayManager::delays()
     return _delays;
 }
 
-static void DelayManager::request_delay_model_update(std::string const& address, double epoch) const
+void DelayManager::request_delay_model_update(std::string const& address, double epoch)
 {
     BOOST_LOG_TRIVIAL(debug) << "Requesting delay model update @ " << address;
     uint8_t retval[1];
@@ -201,7 +201,7 @@ static void DelayManager::request_delay_model_update(std::string const& address,
     BOOST_LOG_TRIVIAL(debug) << "Sending epoch: " << epoch;
     std::size_t bytes_sent = socket.send(boost::asio::buffer(sendval));
     BOOST_LOG_TRIVIAL(debug) << "Awaiting respose from delay engine";
-    std::size_t bytes_received = socket.receive(boost::asio::buffer(retval))
+    std::size_t bytes_received = socket.receive(boost::asio::buffer(retval));
     if (retval[0] == 1)
     {
         BOOST_LOG_TRIVIAL(debug) << "Delay model update was successful";

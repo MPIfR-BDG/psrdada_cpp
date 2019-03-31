@@ -67,7 +67,7 @@ std::string const& PipelineConfig::delay_engine_socket() const
 
 void PipelineConfig::delay_engine_socket(std::string const& addr)
 {
-    _delay_engine_socket = addr
+    _delay_engine_socket = addr;
     _offline_mode = true;
 }
 
@@ -178,6 +178,11 @@ void PipelineConfig::bandwidth(float bw)
 {
     _bw = bw;
     _channel_frequencies_stale = true;
+}
+
+bool PipelineConfig::offline_mode() const
+{
+    return _offline_mode;
 }
 
 std::vector<float> const& PipelineConfig::channel_frequencies() const

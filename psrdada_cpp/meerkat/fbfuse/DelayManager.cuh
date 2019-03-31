@@ -73,7 +73,7 @@ public:
      *
      * @param[in]  epoch  The epoch at which the delays should be calculated
      */
-    static void request_delay_model_update(std::string const& address, double epoch) const;
+    static void request_delay_model_update(std::string const& address, double epoch);
 
 private:
     bool update_available();
