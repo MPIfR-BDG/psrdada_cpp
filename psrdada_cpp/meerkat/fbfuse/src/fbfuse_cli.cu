@@ -66,6 +66,15 @@ int main(int argc, char** argv)
                     config.delay_buffer_sem(key + "_count");
                 }),
            "The root of the POSIX key for the delay buffer shared memory and semaphores")
+        ("delay_engine_socket", po::value<std::string>()
+            ->notifier([&config](std::string addr)
+                {
+                    config.delay_engine_socket(addr);
+                }),
+           "The address for the control socket of the delay engine. Setting this parameter"
+           " enables 'offline' processing mode where explicit requests are made to the delay"
+           " engine for new delay models. This reduces performance compared with the free-running"
+           " 'online' mode (which is the default)")
         ("bandwidth", po::value<float>()
             ->required()
             ->notifier([&config](float value)

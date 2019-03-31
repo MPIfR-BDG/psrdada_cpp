@@ -59,6 +59,22 @@ public:
      */
     double duration() const;
 
+    /**
+     * @brief      Request an update to the delay model
+     *
+     * @detail     This method will attempt to connect to a UNIX domain socket
+     *             managed by the DelayBufferController instance in mpikat. This
+     *             is usually found at /tmp/fbfuse_control.sock. The communication
+     *             protocol over the socket is as follows:
+     *             1. Connect the socket
+     *             2. Send the epoch for which the delays are required as an 8-byte double
+     *             3. Receive a uint8_t value indicating whether the update was successful
+     *                0 = fail, 1 = success.
+     *
+     * @param[in]  epoch  The epoch at which the delays should be calculated
+     */
+    static void request_delay_model_update(std::string const& address, double epoch) const;
+
 private:
     bool update_available();
 

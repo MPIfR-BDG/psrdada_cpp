@@ -9,6 +9,7 @@ PipelineConfig::PipelineConfig()
     : _delay_buffer_shm("fbfuse_delays_shm")
     , _delay_buffer_mutex("fbfuse_delays_mutex")
     , _delay_buffer_sem("fbfuse_buffer_counter")
+    , _delay_engine_socket("/tmp/fbfuse_control.sock")
     , _input_dada_key(0xdada)
     , _cb_dada_key(0xcaca)
     , _ib_dada_key(0xeaea)
@@ -19,6 +20,7 @@ PipelineConfig::PipelineConfig()
     , _cb_power_offset(0.0f)
     , _ib_power_scaling(0.0f)
     , _ib_power_offset(0.0f)
+    , _offline_mode(false)
 {
     input_level(_input_level);
 }
@@ -56,6 +58,17 @@ std::string const& PipelineConfig::delay_buffer_sem() const
 void PipelineConfig::delay_buffer_sem(std::string const& key)
 {
     _delay_buffer_sem = key;
+}
+
+std::string const& PipelineConfig::delay_engine_socket() const
+{
+    return _delay_engine_socket;
+}
+
+void PipelineConfig::delay_engine_socket(std::string const& addr)
+{
+    _delay_engine_socket = addr
+    _offline_mode = true;
 }
 
 key_t PipelineConfig::input_dada_key() const

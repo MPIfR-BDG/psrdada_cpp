@@ -158,6 +158,37 @@ void Pipeline::process(VoltageVectorType const& taftp_vec,
     PowerVectorType& tbtf_vec, PowerVectorType& tf_vec)
 {
     BOOST_LOG_TRIVIAL(debug) << "Executing coherent beamforming pipeline";
+    //Check if delay model is up-to-date.
+    double const block_start = _unix_timestamp;
+    double const block_end = _unix_timestamp + _sample_clock_tick_per_block / _sample_clock;
+    if ((block_start > _delay_manager->epoch())
+        && (block_end < _delay_manager->epoch() + _delay_manager->duration()))
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Delay model is valid for current block";
+    }
+    else
+    {
+        if (_config.offline_mode())
+        {
+            // In offline mode we connect to the delay engine and
+            // directly request an update
+            try
+            {
+                DelayManager::request_delay_model_update(
+                    _config.delay_engine_socket(), _unix_timestamp);
+            }
+            catch (const std::exception& e)
+            {
+                BOOST_LOG_TRIVIAL(error) << "Unable to update delay model with error: "
+                                         << e.what();
+                throw;
+            }
+        }
+        else
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Delay model is out-of-date for current block";
+        }
+    }
     BOOST_LOG_TRIVIAL(debug) << "Checking for delay updates";
     auto const& delays = _delay_manager->delays();
     BOOST_LOG_TRIVIAL(debug) << "Calculating weights at unix time: " << _unix_timestamp;

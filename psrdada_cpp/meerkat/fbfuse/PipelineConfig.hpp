@@ -71,6 +71,27 @@ public:
     void delay_buffer_sem(std::string const&);
 
     /**
+     * @brief      Get the UNIX domain socket address for the
+     *             DelayBufferController in mpikat.
+     *
+     * @detail     In 'offline' mode the pipeline will connect
+     *             to this socket to request updates to the delay
+     *             model.
+     */
+    std::string const& delay_engine_socket() const;
+
+
+    /**
+     * @brief      Set the UNIX domain socket address for the
+     *             DelayBufferController in mpikat.
+     *
+     * @detail     In 'offline' mode the pipeline will connect
+     *             to this socket to request updates to the delay
+     *             model.
+     */
+    void delay_engine_socket(std::string const&);
+
+    /**
      * @brief      Get the DADA key for the input buffer
      */
     key_t input_dada_key() const;
@@ -312,6 +333,16 @@ public:
      */
     std::size_t nsamples_per_heap() const {return FBFUSE_NSAMPLES_PER_HEAP;}
 
+    /**
+     * @brief      Return whether the pipeline is in offline mode or not.
+     *
+     * @detail     In offline mode the pipeline will make explcit requests
+     *             for delay updates from the delay engine (an instance of
+     *             DelayBufferController from mpikat). This flag is automatically
+     *             set whenever the delay_engine_socket is specified.
+     */
+    bool offline_mode() const;
+
 private:
     void calculate_channel_frequencies() const;
     void update_power_offsets_and_scalings();
@@ -320,6 +351,7 @@ private:
     std::string _delay_buffer_shm;
     std::string _delay_buffer_mutex;
     std::string _delay_buffer_sem;
+    std::string _delay_engine_socket;
     key_t _input_dada_key;
     key_t _cb_dada_key;
     key_t _ib_dada_key;
@@ -333,6 +365,7 @@ private:
     float _cb_power_offset;
     float _ib_power_scaling;
     float _ib_power_offset;
+    bool _offline_mode;
 };
 
 } //namespace fbfuse

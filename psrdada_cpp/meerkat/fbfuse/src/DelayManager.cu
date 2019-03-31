@@ -1,5 +1,6 @@
 #include "psrdada_cpp/meerkat/fbfuse/DelayManager.cuh"
 #include "psrdada_cpp/cuda_utils.hpp"
+#include <boost/asio.hpp>
 #include <sys/mman.h>
 #include <sys/stat.h>        /* For mode constants */
 #include <fcntl.h>           /* For O_* constants */
@@ -185,6 +186,32 @@ DelayManager::DelayVectorType const& DelayManager::delays()
         }
     }
     return _delays;
+}
+
+static void DelayManager::request_delay_model_update(std::string const& address, double epoch) const
+{
+    BOOST_LOG_TRIVIAL(debug) << "Requesting delay model update @ " << address;
+    uint8_t retval[1];
+    double sendval[] = {epoch};
+    boost::asio::io_service io_service;
+    boost::asio::local::stream_protocol::endpoint ep(address);
+    boost::asio::local::stream_protocol::socket socket(io_service);
+    BOOST_LOG_TRIVIAL(debug) << "Connecting to socket";
+    socket.connect(ep);
+    BOOST_LOG_TRIVIAL(debug) << "Sending epoch: " << epoch;
+    std::size_t bytes_sent = socket.send(boost::asio::buffer(sendval));
+    BOOST_LOG_TRIVIAL(debug) << "Awaiting respose from delay engine";
+    std::size_t bytes_received = socket.receive(boost::asio::buffer(retval))
+    if (retval[0] == 1)
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Delay model update was successful";
+    }
+    else
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Delay model update failed, "
+            << "please check logs from mpikat for cause.";
+    }
+    socket.close();
 }
 
 double DelayManager::epoch() const
