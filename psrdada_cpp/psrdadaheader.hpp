@@ -52,7 +52,7 @@ public:
     /**
      * @ All getters for Sigproc header
      */
-    std::uint32_t bw();
+    double bw();
 
     double freq();
 
@@ -77,7 +77,7 @@ public:
     /**
      * @brief: All the setters
      */
-    void set_bw(std::uint32_t bw);
+    void set_bw(double bw);
 
     void set_freq(double freq);
 
@@ -110,7 +110,7 @@ private:
      * @brief All standard PSRDADA header parameters (can add/subtract
      * if needed)
      */
-    std::uint32_t _bw;
+    double _bw;
     double _freq;
     std::uint32_t _nchans;
     std::uint32_t _ndim;

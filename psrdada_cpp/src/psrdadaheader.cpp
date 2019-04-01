@@ -50,7 +50,7 @@ std::string PsrDadaHeader::get_value(std::string name,std::stringstream& header)
     }
 }
 
-std::uint32_t PsrDadaHeader::bw()
+double PsrDadaHeader::bw()
 {
     return _bw;
 }
@@ -105,7 +105,7 @@ double PsrDadaHeader::tstart()
     return _mjd;
 }
 
-void PsrDadaHeader::set_bw(std::uint32_t bw)
+void PsrDadaHeader::set_bw(double bw)
 {
     _bw = bw;
 }
