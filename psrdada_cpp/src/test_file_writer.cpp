@@ -35,6 +35,7 @@ namespace psrdada_cpp {
         const char* ptr = block.ptr();
         std::string header = std::string(ptr);
         auto npos = header.find("HEADER_END");
+        std::cout << "NPOS:" << npos << "\n";
         auto hdrsize = npos + 10;
         _outfile.write(block.ptr(), hdrsize);
         std::memcpy(_header, block.ptr(), hdrsize);
