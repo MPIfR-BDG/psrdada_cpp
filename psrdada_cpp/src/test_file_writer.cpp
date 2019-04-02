@@ -35,10 +35,12 @@ namespace psrdada_cpp {
         const char* ptr = block.ptr();
         std::string header = std::string(ptr);
         auto npos = header.find("HEADER_END");
-        std::cout << "NPOS:" << npos << "\n";
         auto hdrsize = npos + 10;
+        BOOST_LOG_TRIVIAL(debug) << "NPOS:" << npos;
+        BOOST_LOG_TRIVIAL(debug) << "header size:" << hdrsize;
         _outfile.write(block.ptr(), hdrsize);
         std::memcpy(_header, block.ptr(), hdrsize);
+        block.used_bytes(block.total_bytes());
     }
 
     bool TestFileWriter::operator()(RawBytes& block)
