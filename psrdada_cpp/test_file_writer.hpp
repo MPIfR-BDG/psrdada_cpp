@@ -3,7 +3,7 @@
 
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/common.hpp"
-#include "psrdada_cpp/psrdada_to_sigproc_header.hpp"
+#include "psrdada_cpp/sigprocheader.hpp"
 #include <fstream>
 #include <iomanip>
 
@@ -22,11 +22,13 @@ namespace psrdada_cpp {
         ~TestFileWriter();
         void init(RawBytes&);
         bool operator()(RawBytes&);
+        void header(SigprocHeader& header);
 
     private:
         std::ofstream _outfile;
         char* _header;
         std::string _basefilename;
+        std::unique_ptr<SigprocHeader> _shptr;
         std::size_t _filesize;
         std::uint32_t _filenum;
         std::size_t _wsize;

@@ -95,13 +95,20 @@ int main(int argc, char** argv)
           std::string filename = "beam" + std::to_string(ii) + ".fil";
           files.emplace_back(std::make_shared<TestFileWriter>(filename, filesize));
         }
-        meerkat::tuse::TransposeToDada<TestFileWriter> transpose(nbeams,std::move(files));
+        meerkat::tuse::TransposeToDada<TestFileWriter> transpose(nbeams,files);
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
         transpose.set_nfreq(nfreq);
         transpose.set_ngroups(ngroups);
         transpose.set_nbeams(nbeams);
         PsrDadaToSigprocHeader<decltype(transpose)> ptos(transpose);
+
+        for (ii=0; ii < nbeams; ++ii)
+        {
+            (*files[ii]).header(ptos.header());
+        }
+
+
         MultiLog log1("instream");
         DadaInputStream<decltype(ptos)> input(input_key,log1,ptos);
         input.start();

@@ -57,7 +57,7 @@ namespace psrdada_cpp
         header_write<std::uint32_t>(ptr,"nifs",1);
         header_write<std::uint32_t>(ptr,"nchans",ph.nchans());
         header_write<double>(ptr,"fch1", ph.freq() + ph.bw()/2.0);
-        header_write<double>(ptr,"foff",-1.0*abs(ph.bw()/ph.nchans()));
+        header_write<double>(ptr,"foff",-1.0*(ph.bw()/(float)ph.nchans()));
         header_write<double>(ptr,"tstart",ph.tstart());
         header_write<double>(ptr,"tsamp",ph.tsamp());
         header_write(ptr,"HEADER_END");

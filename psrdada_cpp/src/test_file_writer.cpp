@@ -4,6 +4,7 @@ namespace psrdada_cpp {
 
     TestFileWriter::TestFileWriter(std::string filename, std::size_t filesize)
     : _basefilename(filename),
+      _shptr(nullptr),
       _filesize(filesize),
       _filenum(0),
       _wsize(0)
@@ -32,19 +33,9 @@ namespace psrdada_cpp {
     void TestFileWriter::init(RawBytes& block)
     {
     /* Find where the HEADER_END is */
-        std::memcpy(_header, block.ptr(), 4096);
-        char *npos = strstr(_header, "HEADER_END");       
-        if (npos == nullptr)
-        {
-            std::stringstream stream;
-            stream << "Cannot find Header string";
-            throw std::runtime_error(stream.str().c_str());
-        }
-        auto hdrsize = (const char*)_header - (const char*)npos + 10;
-        _outfile.write(block.ptr(), hdrsize);
+        std::memcpy(_header, block.ptr(), _shptr->header_size());
+        _outfile.write(block.ptr(), _shptr->header_size());
         block.used_bytes(block.total_bytes());
-        /*_outfile.write(block.ptr(), 4096);
-        std::memcpy(_header, block.ptr(), 4096);*/
     }
 
     bool TestFileWriter::operator()(RawBytes& block)
@@ -77,23 +68,18 @@ namespace psrdada_cpp {
                 throw std::runtime_error(stream.str().c_str());
                 return true;
             }
-            char *npos = strstr(_header, "HEADER_END");
-             if (npos == nullptr)
-             {
-                 std::stringstream stream;
-                 stream << "Cannot find Header string";
-                 throw std::runtime_error(stream.str().c_str());
-             }
-            auto hdrsize = (const char*)_header - (const char*)npos + 10;
             ++_filenum;
-            _outfile.write(_header, hdrsize);
+            _outfile.write(_header, _shptr->header_size());
             _outfile.write(current_ptr,block.total_bytes() - left_size);
             block.used_bytes(block.total_bytes());
             _wsize += block.total_bytes() - left_size;
         }
         return false;
+    }
 
-
+    void TestFileWriter::header(SigprocHeader& header)
+    {
+        _shptr.reset(&header);
     }
 
 } //psrdada_cpp

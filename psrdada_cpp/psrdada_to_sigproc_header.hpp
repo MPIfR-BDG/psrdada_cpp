@@ -3,6 +3,7 @@
 
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/sigprocheader.hpp"
 
 namespace psrdada_cpp {
 
@@ -37,20 +38,18 @@ public:
     bool operator()(RawBytes& block);
 
     /**
-     * @brief      Get the header size of the the SIGPROC header size to pass
-     *             to the handler if needed
+     * @brief      Set the SIGPROC header
      */
-    std::size_t headersize();
+    void header(SigprocHeader header);
 
     /**
-     * @brief      Set the SIGPROC header size
+     * @brief      Get the SIGPROC header
      */
-    void headersize(std::size_t headersize);
-
+    SigprocHeader& header();
 
 private:
     HandlerType _handler;
-    std::size_t _headersize;
+    SigprocHeader _sh;
 
 };
 
