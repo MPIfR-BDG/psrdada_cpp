@@ -3,6 +3,7 @@
 
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/psrdada_to_sigproc_header.hpp"
 #include <fstream>
 #include <iomanip>
 
@@ -16,6 +17,7 @@ namespace psrdada_cpp {
     {
     public:
         explicit TestFileWriter(std::string filename, std::size_t filesize);
+
         TestFileWriter(TestFileWriter const&) = delete;
         ~TestFileWriter();
         void init(RawBytes&);

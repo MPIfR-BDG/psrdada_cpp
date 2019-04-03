@@ -25,6 +25,7 @@ namespace psrdada_cpp {
         ph.from_bytes(block);
         std::memset(block.ptr(), 0, block.total_bytes());
         h.write_header(block,ph);
+        headersize(h.header_size());
         block.used_bytes(block.total_bytes());
         _handler.init(block);
     }
@@ -32,8 +33,20 @@ namespace psrdada_cpp {
     template <class HandlerType>
     bool PsrDadaToSigprocHeader<HandlerType>::operator()(RawBytes& block)
     {
-	_handler(block);
+        _handler(block);
         return false;
+    }
+
+    template <class HandlerType>
+    std::size_t PsrDadaToSigprocHeader<HandlerType>::headersize()
+    {
+        return _headersize;
+    }
+
+    template <class HandlerType>
+    void PsrDadaToSigprocHeader<HandlerType>::headersize(std::size_t headersize)
+    {
+        _headersize = headersize;
     }
  
 

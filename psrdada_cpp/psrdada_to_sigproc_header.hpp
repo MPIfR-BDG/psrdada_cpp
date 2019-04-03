@@ -36,9 +36,21 @@ public:
      */
     bool operator()(RawBytes& block);
 
+    /**
+     * @brief      Get the header size of the the SIGPROC header size to pass
+     *             to the handler if needed
+     */
+    std::size_t headersize();
+
+    /**
+     * @brief      Set the SIGPROC header size
+     */
+    void headersize(std::size_t headersize);
+
 
 private:
     HandlerType _handler;
+    std::size_t _headersize;
 
 };
 

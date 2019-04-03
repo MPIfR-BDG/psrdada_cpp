@@ -32,17 +32,20 @@ namespace psrdada_cpp {
     void TestFileWriter::init(RawBytes& block)
     {
     /* Find where the HEADER_END is */
-        /*const char* ptr = block.ptr();
-        std::string header = std::string(ptr);
-        auto npos = header.find("HEADER_END");
-        auto hdrsize = npos + 10;
-        BOOST_LOG_TRIVIAL(debug) << "NPOS:" << npos;
-        BOOST_LOG_TRIVIAL(debug) << "header size:" << hdrsize;
+        char* ptr = block.ptr();
+        char *npos = strstr(ptr, "HEADER_END");       
+        if (npos == nullptr)
+        {
+            std::stringstream stream;
+            stream << "Cannot find Header string";
+            throw std::runtime_error(stream.str().c_str());
+        }
+        auto hdrsize = (const char*)ptr - (const char*)npos + 10;
         _outfile.write(block.ptr(), hdrsize);
         std::memcpy(_header, block.ptr(), hdrsize);
-        block.used_bytes(block.total_bytes());*/
-        _outfile.write(block.ptr(), 4096);
-        std::memcpy(_header, block.ptr(), 4096);
+        block.used_bytes(block.total_bytes());
+        /*_outfile.write(block.ptr(), 4096);
+        std::memcpy(_header, block.ptr(), 4096);*/
     }
 
     bool TestFileWriter::operator()(RawBytes& block)
@@ -75,11 +78,16 @@ namespace psrdada_cpp {
                 throw std::runtime_error(stream.str().c_str());
                 return true;
             }
+            char *npos = strstr(_header, "HEADER_END");
+             if (npos == nullptr)
+             {
+                 std::stringstream stream;
+                 stream << "Cannot find Header string";
+                 throw std::runtime_error(stream.str().c_str());
+             }
+            auto hdrsize = (const char*)_header - (const char*)npos + 10;
             ++_filenum;
-            /*std::string header = std::string(_header);
-            auto npos = header.find("HEADER_END");
-            auto hdrsize = npos + 10;*/
-            _outfile.write(_header, 4096);
+            _outfile.write(_header, hdrsize);
             _outfile.write(current_ptr,block.total_bytes() - left_size);
             block.used_bytes(block.total_bytes());
             _wsize += block.total_bytes() - left_size;
