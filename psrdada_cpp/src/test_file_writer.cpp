@@ -32,17 +32,16 @@ namespace psrdada_cpp {
     void TestFileWriter::init(RawBytes& block)
     {
     /* Find where the HEADER_END is */
-        char* ptr = block.ptr();
-        char *npos = strstr(ptr, "HEADER_END");       
+        std::memcpy(_header, block.ptr(), 4096);
+        char *npos = strstr(_header, "HEADER_END");       
         if (npos == nullptr)
         {
             std::stringstream stream;
             stream << "Cannot find Header string";
             throw std::runtime_error(stream.str().c_str());
         }
-        auto hdrsize = (const char*)ptr - (const char*)npos + 10;
+        auto hdrsize = (const char*)_header - (const char*)npos + 10;
         _outfile.write(block.ptr(), hdrsize);
-        std::memcpy(_header, block.ptr(), hdrsize);
         block.used_bytes(block.total_bytes());
         /*_outfile.write(block.ptr(), 4096);
         std::memcpy(_header, block.ptr(), 4096);*/
