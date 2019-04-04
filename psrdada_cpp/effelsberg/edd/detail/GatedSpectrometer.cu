@@ -14,7 +14,7 @@ namespace edd {
 __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const int64_t* __restrict__ sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
                        size_t noOfSideChannels, size_t selectedSideChannel, const float* __restrict__ _baseLineN) {
-  float baseLine = *_baseLineN / N;
+  float baseLine = (*_baseLineN) / N;
   for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
        i += blockDim.x * gridDim.x) {
     const float w = G0[i] - baseLine;
@@ -33,12 +33,12 @@ __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const int
 
 
 __global__ void countBitSet(const int64_t *sideChannelData, size_t N, size_t
-    bitpos, size_t noOfSideChannels, size_t selectedSideChannel, unsigned int
+    bitpos, size_t noOfSideChannels, size_t selectedSideChannel, size_t
     *nBitsSet)
 {
   // really not optimized reduction, but here only trivial array sizes.
   int i = blockIdx.x * blockDim.x + threadIdx.x;
-  __shared__ int x[256];
+  __shared__ unsigned int x[256];
 
   if (i == 0)
     nBitsSet[0] = 0;
@@ -57,7 +57,7 @@ __global__ void countBitSet(const int64_t *sideChannelData, size_t N, size_t
   }
 
   if(threadIdx.x == 0)
-   atomicAdd(nBitsSet, x[threadIdx.x]);
+   nBitsSet[0] += x[threadIdx.x];
 }
 
 
@@ -214,7 +214,7 @@ void GatedSpectrometer<HandlerType>::process(
     thrust::device_vector<RawVoltageType> const &digitiser_raw,
     thrust::device_vector<int64_t> const &sideChannelData,
     thrust::device_vector<IntegratedPowerType> &detected_G0,
-    thrust::device_vector<IntegratedPowerType> &detected_G1, thrust::device_vector<unsigned int> &noOfBitSet) {
+    thrust::device_vector<IntegratedPowerType> &detected_G1, thrust::device_vector<size_t> &noOfBitSet) {
   BOOST_LOG_TRIVIAL(debug) << "Unpacking raw voltages";
   switch (_nbits) {
   case 8:
@@ -315,6 +315,7 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
 
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
   _host_power_db.swap();
+  std::swap(_noOfBitSetsInSideChannel_host[0], _noOfBitSetsInSideChannel_host[1]);
   CUDA_ERROR_CHECK(
       cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr()),
                       static_cast<void *>(_power_db_G0.b_ptr()),
@@ -327,17 +328,16 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
       _power_db_G1.size() * sizeof(IntegratedPowerType), cudaMemcpyDeviceToHost,
       _d2h_stream));
 
-  int R[1];
-  CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(R),
+  CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(&_noOfBitSetsInSideChannel_host[0]),
         static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
           1 * sizeof(unsigned int),cudaMemcpyDeviceToHost, _d2h_stream));
 
-  BOOST_LOG_TRIVIAL(info) << "NOOF BIT SET IN SIDE CHANNEL: " << R[0] << std::endl;
 
   if (_call_count == 3) {
     return false;
   }
 
+  BOOST_LOG_TRIVIAL(info) << "NOOF BIT SET IN SIDE CHANNEL: " << _noOfBitSetsInSideChannel_host[1] << std::endl;
   // Wrap _detected_host_previous in a RawBytes object here;
   RawBytes bytes(reinterpret_cast<char *>(_host_power_db.b_ptr()),
                  _host_power_db.size() * sizeof(IntegratedPowerType),

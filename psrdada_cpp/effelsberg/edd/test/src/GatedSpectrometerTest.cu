@@ -118,7 +118,7 @@ TEST(GatedSpectrometer, countBitSet) {
   const int64_t *sideCD =
       (int64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
 
-  thrust::device_vector<unsigned int> res(1);
+  thrust::device_vector<size_t> res(1);
 
   // test 1 side channel
   res[0] = 0;
