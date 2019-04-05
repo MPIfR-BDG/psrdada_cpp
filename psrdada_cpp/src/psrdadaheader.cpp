@@ -20,7 +20,7 @@ void PsrDadaHeader::from_bytes(RawBytes& block)
     std::copy(block.ptr(),block.ptr()+block.total_bytes(),buf.begin());
     std::stringstream header;
     header.rdbuf()->pubsetbuf(&buf[0],DADA_HDR_SIZE);
-    set_bw(atoi(get_value("BW ",header).c_str()));
+    set_bw(atof(get_value("BW ",header).c_str()));
     set_freq(atof(get_value("FREQ ",header).c_str()));
     set_nchans(atoi(get_value("NCHAN ",header).c_str()));
     set_nbits(atoi(get_value("NBIT ",header).c_str()));
