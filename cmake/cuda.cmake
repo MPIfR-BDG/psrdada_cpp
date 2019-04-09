@@ -4,6 +4,7 @@ if(ENABLE_CUDA)
   cmake_minimum_required(VERSION 2.8)
   find_package(CUDA REQUIRED)
   include_directories(${CUDA_TOOLKIT_INCLUDE})
+  add_definitions(-DENABLE_CUDA=1)
 
   # add sdk samples useful headerfiles like cuda_helpers.h
   if(CUDA_SMP_INC)
@@ -25,7 +26,7 @@ if(ENABLE_CUDA)
   #list(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_52,code=sm_52) # TitanX
   #list(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_50,code=sm_50) # Maxwell
   #list(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_37,code=sm_37) # K80
-   	
+
   list(APPEND CUDA_NVCC_FLAGS -O3 -use_fast_math -restrict)
 
   set(CMAKE_CXX_FLAGS "-DENABLE_CUDA ${CMAKE_CXX_FLAGS}")
