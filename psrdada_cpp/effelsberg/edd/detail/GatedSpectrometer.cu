@@ -337,7 +337,7 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
     return false;
   }
 
-  BOOST_LOG_TRIVIAL(info) << "NOOF BIT SET IN SIDE CHANNEL: " << _noOfBitSetsInSideChannel_host[1] << std::endl;
+  BOOST_LOG_TRIVIAL(info) << _call_count << ": No of bit set in side channel: " << _noOfBitSetsInSideChannel_host[1] << std::endl;
   // Wrap _detected_host_previous in a RawBytes object here;
   RawBytes bytes(reinterpret_cast<char *>(_host_power_db.b_ptr()),
                  _host_power_db.size() * sizeof(IntegratedPowerType),

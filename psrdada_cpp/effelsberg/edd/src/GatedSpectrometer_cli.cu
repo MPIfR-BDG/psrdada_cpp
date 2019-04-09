@@ -67,9 +67,9 @@ int main(int argc, char **argv) {
         "to");
 
     desc.add_options()("nsidechannelitems,s",
-                       po::value<size_t>()->default_value(0)->notifier(
+                       po::value<size_t>()->default_value(1)->notifier(
                            [&nSideChannels](size_t in) { nSideChannels = in; }),
-                       "Number of side channel items");
+                       "Number of side channel items ( s >= 1)");
     desc.add_options()(
         "selected_sidechannel,e",
         po::value<size_t>()->default_value(0)->notifier(
@@ -126,10 +126,16 @@ int main(int argc, char **argv) {
       }
 
       po::notify(vm);
-      if (vm .count("output_type") && (!(output_type == "dada" || output_type == "file") ))
+      if (vm.count("output_type") && (!(output_type == "dada" || output_type == "file") ))
       {
         throw po::validation_error(po::validation_error::invalid_option_value, "output_type", output_type);
       }
+
+      if (!(nSideChannels >= 1))
+      {
+        throw po::validation_error(po::validation_error::invalid_option_value, "Number of side channels must be 1 or larger!");
+      }
+
     } catch (po::error &e) {
       std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
       std::cerr << desc << std::endl;
