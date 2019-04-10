@@ -25,13 +25,56 @@ const size_t ERROR_UNHANDLED_EXCEPTION = 2;
 } // namespace
 
 
+template<typename T>
+void launchSpectrometer(std::string const &output_type, key_t input_key, std::string const &filename, size_t nSideChannels, size_t selectedSideChannel, size_t selectedBit,   size_t speadHeapSize, size_t fft_length, size_t naccumulate, unsigned int nbits,  float input_level,  float output_level)
+{
+   MultiLog log("edd::GatedSpectrometer");
+    DadaClientBase client(input_key, log);
+		//client.cuda_register_memory();
+    std::size_t buffer_bytes = client.data_buffer_size();
+
+
+
+    std::cout << "Running with output_type: " << output_type << std::endl;
+
+  if (output_type == "file")
+    {
+
+      SimpleFileWriter sink(filename);
+      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(
+          buffer_bytes, nSideChannels, selectedSideChannel, selectedBit,
+          speadHeapSize, fft_length, naccumulate, nbits, input_level,
+          output_level, sink);
+      DadaInputStream<decltype(spectrometer)> istream(input_key, log,
+                                                      spectrometer);
+      istream.start();
+    }
+    else if (output_type == "dada")
+    {
+      DadaOutputStream sink(string_to_key(filename), log);
+      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(
+          buffer_bytes, nSideChannels, selectedSideChannel, selectedBit,
+          speadHeapSize, fft_length, naccumulate, nbits, input_level,
+          output_level, sink);
+      DadaInputStream<decltype(spectrometer)> istream(input_key, log,
+      spectrometer);
+      istream.start();
+    }
+    else
+    {
+      throw std::runtime_error("Unknown oputput-type");
+    }
+
+
+}
+
 
 int main(int argc, char **argv) {
   try {
     key_t input_key;
     int fft_length;
     int naccumulate;
-    int nbits;
+    unsigned int nbits;
     size_t nSideChannels;
     size_t selectedSideChannel;
     size_t selectedBit;
@@ -44,7 +87,7 @@ int main(int argc, char **argv) {
     std::strftime(buffer, 32, "%Y-%m-%d-%H:%M:%S.bp", ptm);
     std::string filename(buffer);
     std::string output_type = "file";
-
+    unsigned int output_bit_depth;
     /** Define and parse the program options
     */
     namespace po = boost::program_options;
@@ -60,6 +103,10 @@ int main(int argc, char **argv) {
     desc.add_options()(
         "output_type", po::value<std::string>(&output_type)->default_value(output_type),
         "output type [dada, file]. Default is file."
+        );
+    desc.add_options()(
+        "output_bit_depth", po::value<unsigned int>(&output_bit_depth)->default_value(8),
+        "output_bit_depth [8, 32]. Default is 32."
         );
     desc.add_options()(
         "output_key,o", po::value<std::string>(&filename)->default_value(filename),
@@ -85,7 +132,7 @@ int main(int argc, char **argv) {
                        "size of the spead data heaps. The number of the "
                        "heaps in the dada block depends on the number of "
                        "side channel items.");
-    desc.add_options()("nbits,b", po::value<int>(&nbits)->required(),
+    desc.add_options()("nbits,b", po::value<unsigned int>(&nbits)->required(),
                        "The number of bits per sample in the "
                        "packetiser output (8 or 12)");
 
@@ -145,39 +192,24 @@ int main(int argc, char **argv) {
     /**
      * All the application code goes here
      */
-    MultiLog log("edd::GatedSpectrometer");
-    DadaClientBase client(input_key, log);
-		//client.cuda_register_memory();
-    std::size_t buffer_bytes = client.data_buffer_size();
+     if (output_bit_depth == 8)
+     {
+       launchSpectrometer<int8_t>(output_type, input_key, filename, nSideChannels, selectedSideChannel, selectedBit, speadHeapSize, 
+        fft_length, naccumulate,
+        nbits, input_level, output_level);
+     }
+     else if (output_bit_depth == 32)
+     {
+       launchSpectrometer<float>(output_type, input_key, filename, nSideChannels, selectedSideChannel, selectedBit, speadHeapSize, 
+        fft_length, naccumulate,
+        nbits, input_level, output_level);
+     }
+     else
+     {
+        throw po::validation_error(po::validation_error::invalid_option_value, "Output bit depth must be 8 or 32");
+     }
 
-    std::cout << "Running with output_type: " << output_type << std::endl;
-    if (output_type == "file")
-    {
 
-      SimpleFileWriter sink(filename);
-      effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(
-          buffer_bytes, nSideChannels, selectedSideChannel, selectedBit,
-          speadHeapSize, fft_length, naccumulate, nbits, input_level,
-          output_level, sink);
-      DadaInputStream<decltype(spectrometer)> istream(input_key, log,
-                                                      spectrometer);
-      istream.start();
-    }
-    else if (output_type == "dada")
-    {
-      DadaOutputStream sink(string_to_key(filename), log);
-      effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(
-          buffer_bytes, nSideChannels, selectedSideChannel, selectedBit,
-          speadHeapSize, fft_length, naccumulate, nbits, input_level,
-          output_level, sink);
-      DadaInputStream<decltype(spectrometer)> istream(input_key, log,
-      spectrometer);
-      istream.start();
-    }
-    else
-    {
-      throw std::runtime_error("Unknown oputput-type");
-    }
 
 
     /**

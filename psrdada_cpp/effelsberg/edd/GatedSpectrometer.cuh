@@ -30,12 +30,12 @@ namespace edd {
  bit set in side channel data.
 
  */
-template <class HandlerType> class GatedSpectrometer {
+template <class HandlerType, typename IntegratedPowerType> class GatedSpectrometer {
 public:
   typedef uint64_t RawVoltageType;
   typedef float UnpackedVoltageType;
   typedef float2 ChannelisedVoltageType;
-  typedef float IntegratedPowerType;
+//  typedef float IntegratedPowerType;
   //typedef int8_t IntegratedPowerType;
 
 public:

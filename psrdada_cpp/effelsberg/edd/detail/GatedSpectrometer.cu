@@ -103,8 +103,8 @@ __global__ void array_sum(float *in, size_t N, float *out) {
 }
 
 
-template <class HandlerType>
-GatedSpectrometer<HandlerType>::GatedSpectrometer(
+template <class HandlerType, typename IntegratedPowerType>
+GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
     std::size_t buffer_bytes, std::size_t nSideChannels,
     std::size_t selectedSideChannel, std::size_t selectedBit,
     std::size_t speadHeapSize, std::size_t fft_length, std::size_t naccumulate,
@@ -196,8 +196,8 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
 } // constructor
 
 
-template <class HandlerType>
-GatedSpectrometer<HandlerType>::~GatedSpectrometer() {
+template <class HandlerType, typename IntegratedPowerType>
+GatedSpectrometer<HandlerType, IntegratedPowerType>::~GatedSpectrometer() {
   BOOST_LOG_TRIVIAL(debug) << "Destroying GatedSpectrometer";
   if (!_fft_plan)
     cufftDestroy(_fft_plan);
@@ -207,15 +207,15 @@ GatedSpectrometer<HandlerType>::~GatedSpectrometer() {
 }
 
 
-template <class HandlerType>
-void GatedSpectrometer<HandlerType>::init(RawBytes &block) {
+template <class HandlerType, typename IntegratedPowerType>
+void GatedSpectrometer<HandlerType, IntegratedPowerType>::init(RawBytes &block) {
   BOOST_LOG_TRIVIAL(debug) << "GatedSpectrometer init called";
   _handler.init(block);
 }
 
 
-template <class HandlerType>
-void GatedSpectrometer<HandlerType>::process(
+template <class HandlerType, typename IntegratedPowerType>
+void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
     thrust::device_vector<RawVoltageType> const &digitiser_raw,
     thrust::device_vector<int64_t> const &sideChannelData,
     thrust::device_vector<IntegratedPowerType> &detected_G0,
@@ -270,8 +270,8 @@ void GatedSpectrometer<HandlerType>::process(
 } // process
 
 
-template <class HandlerType>
-bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
+template <class HandlerType, typename IntegratedPowerType>
+bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &block) {
   ++_call_count;
   BOOST_LOG_TRIVIAL(debug) << "GatedSpectrometer operator() called (count = "
                            << _call_count << ")";
