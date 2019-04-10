@@ -44,7 +44,7 @@ namespace psrdada_cpp
         header_write(ptr,"source_name",ph.source_name());
         // RA DEC 
         auto ra_val = ph.ra();
-        auto dec_val =ph.dec();
+        auto dec_val = ph.dec();
     	std::vector<std::string> ra_s;
 	    std::vector<std::string> dec_s;
         boost::split(ra_s,ra_val,boost::is_any_of(":"));
@@ -56,8 +56,8 @@ namespace psrdada_cpp
         header_write<std::uint32_t>(ptr,"nbits",ph.nbits());
         header_write<std::uint32_t>(ptr,"nifs",1);
         header_write<std::uint32_t>(ptr,"nchans",ph.nchans());
-        header_write<double>(ptr,"fch1", ph.freq() - (ph.bw()/2.0));
-        header_write<double>(ptr,"foff",(ph.bw()/(float)ph.nchans()));
+        header_write<double>(ptr,"fch1", ph.freq() - (ph.bw()/2.0) - (ph.bw()/(double)ph.nchans())/2.0);
+        header_write<double>(ptr,"foff",(ph.bw()/(double)ph.nchans()));
         header_write<double>(ptr,"tstart",ph.tstart());
         header_write<double>(ptr,"tsamp",ph.tsamp());
         header_write(ptr,"HEADER_END");
