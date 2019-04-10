@@ -62,7 +62,7 @@ void DetectorAccumulatorTester::detect_c_reference(
 }
 
 void DetectorAccumulatorTester::compare_against_host(
-    DetectorAccumulator::OutputType const& gpu_output,
+    DetectorAccumulator<int8_t>::OutputType const& gpu_output,
     OutputType const& host_output)
 {
     OutputType copy_from_gpu = gpu_output;
@@ -88,10 +88,10 @@ TEST_F(DetectorAccumulatorTester, noise_test)
         host_input[ii].x = distribution(generator);
 	host_input[ii].y = distribution(generator);
     }
-    DetectorAccumulator::InputType gpu_input = host_input;
-    DetectorAccumulator::OutputType gpu_output;
+    DetectorAccumulator<int8_t>::InputType gpu_input = host_input;
+    DetectorAccumulator<int8_t>::OutputType gpu_output;
     OutputType host_output;
-    DetectorAccumulator detector(nchans, tscrunch, scale, 0.0, _stream);
+    DetectorAccumulator<int8_t> detector(nchans, tscrunch, scale, 0.0, _stream);
     detector.detect(gpu_input, gpu_output);
     detect_c_reference(host_input, host_output, nchans, tscrunch, scale, 0.0);
     compare_against_host(gpu_output, host_output);

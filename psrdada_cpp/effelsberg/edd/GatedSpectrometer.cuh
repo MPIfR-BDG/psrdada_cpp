@@ -35,7 +35,8 @@ public:
   typedef uint64_t RawVoltageType;
   typedef float UnpackedVoltageType;
   typedef float2 ChannelisedVoltageType;
-  typedef int8_t IntegratedPowerType;
+  typedef float IntegratedPowerType;
+  //typedef int8_t IntegratedPowerType;
 
 public:
   /**
@@ -112,7 +113,7 @@ private:
   int _nchans;
   int _call_count;
   std::unique_ptr<Unpacker> _unpacker;
-  std::unique_ptr<DetectorAccumulator> _detector;
+  std::unique_ptr<DetectorAccumulator<IntegratedPowerType> > _detector;
 
   DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
   DoubleDeviceBuffer<IntegratedPowerType> _power_db_G0;

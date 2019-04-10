@@ -11,6 +11,11 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
+
+
+
+
+
 __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const int64_t* __restrict__ sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
                        size_t noOfSideChannels, size_t selectedSideChannel, const float* __restrict__ _baseLineN) {
@@ -186,7 +191,7 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
   CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
 
   _unpacker.reset(new Unpacker(_proc_stream));
-  _detector.reset(new DetectorAccumulator(_nchans, _naccumulate, scaling,
+  _detector.reset(new DetectorAccumulator<IntegratedPowerType>(_nchans, _naccumulate, scaling,
                                           offset, _proc_stream));
 } // constructor
 
@@ -260,6 +265,7 @@ void GatedSpectrometer<HandlerType>::process(
 
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   _detector->detect(_channelised_voltage, detected_G1);
+  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   BOOST_LOG_TRIVIAL(debug) << "Exit processing";
 } // process
 
@@ -313,25 +319,31 @@ bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
     return false;
   }
 
+  BOOST_LOG_TRIVIAL(debug) << "Copy Data back to device";
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
+  BOOST_LOG_TRIVIAL(debug) << "Swap host power";
   _host_power_db.swap();
+  BOOST_LOG_TRIVIAL(debug) << "swap no of bit channel";
   std::swap(_noOfBitSetsInSideChannel_host[0], _noOfBitSetsInSideChannel_host[1]);
+  BOOST_LOG_TRIVIAL(debug) << "Foo";
   CUDA_ERROR_CHECK(
       cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr()),
                       static_cast<void *>(_power_db_G0.b_ptr()),
                       _power_db_G0.size() * sizeof(IntegratedPowerType),
                       cudaMemcpyDeviceToHost, _d2h_stream));
+  BOOST_LOG_TRIVIAL(debug) << "Bar";
   CUDA_ERROR_CHECK(cudaMemcpyAsync(
       static_cast<void *>(_host_power_db.a_ptr() +
-                          (_power_db_G0.size() * sizeof(IntegratedPowerType))),
+                          (_power_db_G0.size())),           // as I am adding BEFORE the cast to void, I dont need the sizeof
       static_cast<void *>(_power_db_G1.b_ptr()),
       _power_db_G1.size() * sizeof(IntegratedPowerType), cudaMemcpyDeviceToHost,
       _d2h_stream));
 
-  CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(&_noOfBitSetsInSideChannel_host[0]),
-        static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
-          1 * sizeof(unsigned int),cudaMemcpyDeviceToHost, _d2h_stream));
+  //CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(&_noOfBitSetsInSideChannel_host[0]),
+  //      static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
+  //        1 * sizeof(size_t),cudaMemcpyDeviceToHost, _d2h_stream));
 
+  BOOST_LOG_TRIVIAL(debug) << "Copy Data back to device";
 
   if (_call_count == 3) {
     return false;

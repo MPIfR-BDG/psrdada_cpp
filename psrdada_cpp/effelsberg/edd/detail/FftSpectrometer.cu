@@ -63,7 +63,7 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_stream));
     CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
     _unpacker.reset(new Unpacker(_proc_stream));
-    _detector.reset(new DetectorAccumulator(_nchans, _naccumulate,
+    _detector.reset(new DetectorAccumulator<int8_t>(_nchans, _naccumulate,
         scaling, offset, _proc_stream));
 }
 
