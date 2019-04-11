@@ -25,9 +25,9 @@ namespace transpose{
             auto sug_size = input_data.total_bytes()/(nfreq * nchans * nsamples * nbeams);
             throw std::runtime_error(std::string("Incorrect size of the DADA block. Should be a multiple of the number of heap groups. Suggested size is:") + std::to_string(sug_size) + std::string("bytes")); 
         }
-        size_t tocopy = ngroups * nsamples * nfreq * nchans;
-        char *tmpindata = new char[tocopy / ngroups];
-        char *tmpoutdata = new char[tocopy];
+        const size_t tocopy = ngroups * nsamples * nfreq * nchans;
+        std::vector<char> tmpindata(tocopy / ngroups);
+        std::vector<char>tmpoutdata(tocopy);
         size_t skipgroup = nchans * nsamples * nfreq * nbeams;
         size_t skipbeam = beamnum * nchans * nsamples * nfreq;
         size_t skipband = nchans * nsamples;
@@ -35,21 +35,20 @@ namespace transpose{
         // actual transpose
         for (unsigned int igroup = 0; igroup < ngroups; ++igroup)
         {
-            memcpy(tmpindata, input_data.ptr() + skipbeam + igroup * skipgroup, tocopy / ngroups);
+            std::copy(input_data.ptr() + skipbeam + igroup * skipgroup, input_data.ptr() + skipbeam + igroup * skipgroup + tocopy / ngroups, tmpindata.begin());
 
             for (unsigned int isamp = 0; isamp < nsamples; ++isamp)
             {
                 for (unsigned int iband = 0; iband < nfreq; ++iband)
                 {
-                    memcpy(tmpoutdata + iband * nchans + isamp * skipallchans + igroup * tocopy/ngroups,
-                        tmpindata + iband * skipband + isamp * nchans,
-                        nchans * sizeof(char));
+                    std::copy(tmpindata.begin() + iband * skipband + isamp * nchans, tmpindata.begin() + iband * skipband + isamp * nchans + nchans, tmpoutdata.begin() + iband * nchans + isamp * skipallchans + igroup * tocopy/ngroups);
                 } // BAND LOOP
             } // SAMPLES LOOP
         } // GROUP LOOP
-        memcpy(transposed_data.ptr(), tmpoutdata, tocopy);
-        delete [] tmpoutdata;
-        delete [] tmpindata;
+
+        /*reverse data if needed */
+        std::reverse(tmpoutdata.begin(), tmpoutdata.end());
+        std::copy(tmpoutdata.begin(),tmpoutdata.end(), transposed_data.ptr());
     }
 } //transpose
 } //tuse
