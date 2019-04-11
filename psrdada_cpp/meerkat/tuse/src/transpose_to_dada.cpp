@@ -42,12 +42,14 @@ namespace transpose{
                 for (unsigned int iband = 0; iband < nfreq; ++iband)
                 {
                     std::copy(tmpindata.begin() + iband * skipband + isamp * nchans, tmpindata.begin() + iband * skipband + isamp * nchans + nchans, tmpoutdata.begin() + iband * nchans + isamp * skipallchans + igroup * tocopy/ngroups);
+
+                    /* Reverse the channel order */
+                    std::reverse(tmpindata.begin() + iband * skipband + isamp * nchans, tmpindata.begin() + iband * skipband + isamp * nchans + nchans);
+
                 } // BAND LOOP
             } // SAMPLES LOOP
         } // GROUP LOOP
 
-        /*reverse data if needed */
-        std::reverse(tmpoutdata.begin(), tmpoutdata.end());
         std::copy(tmpoutdata.begin(),tmpoutdata.end(), transposed_data.ptr());
     }
 } //transpose
