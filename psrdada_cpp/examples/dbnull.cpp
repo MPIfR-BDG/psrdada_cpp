@@ -1,5 +1,6 @@
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
+#include "psrdada_cpp/dada_read_client.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_null_sink.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
@@ -73,7 +74,8 @@ int main(int argc, char** argv)
 
         NullSink sink;
         MultiLog log("dbnull");
-        DadaInputStream<decltype(sink)> stream(key, log, sink);
+        DadaReadClient client(key, log);
+        DadaInputStream<decltype(sink)> stream(client, sink);
         stream.start();
         /**
          * End of application code

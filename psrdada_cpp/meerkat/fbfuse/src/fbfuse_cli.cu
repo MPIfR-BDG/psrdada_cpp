@@ -127,15 +127,13 @@ int main(int argc, char** argv)
         MultiLog log("fbfuse");
         DadaWriteClient cb_writer(config.cb_dada_key(), log);
         DadaWriteClient ib_writer(config.ib_dada_key(), log);
-        // Need to setup a base client to retrive the block size
-        // for the beamformer and register the host memory.
-        DadaClientBase client(config.input_dada_key(), log);
-        client.cuda_register_memory();
+        DadaReadClient input_reader(config.input_dada_key(), log);
+        input_reader.cuda_register_memory();
         cb_writer.cuda_register_memory();
         ib_writer.cuda_register_memory();
         meerkat::fbfuse::Pipeline pipeline(config, cb_writer, ib_writer,
-            client.data_buffer_size());
-        DadaInputStream<decltype(pipeline)> stream(config.input_dada_key(), log, pipeline);
+            input_reader.data_buffer_size());
+        DadaInputStream<decltype(pipeline)> stream(input_reader, pipeline);
         stream.start();
         /**
          * End of application code

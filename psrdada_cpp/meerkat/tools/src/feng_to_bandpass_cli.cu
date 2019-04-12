@@ -2,6 +2,7 @@
 #include "psrdada_cpp/cli_utils.hpp"
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
+#include "psrdada_cpp/dada_read_client.hpp"
 #include "psrdada_cpp/simple_file_writer.hpp"
 #include "psrdada_cpp/meerkat/tools/feng_to_bandpass.cuh"
 
@@ -82,9 +83,10 @@ int main(int argc, char** argv)
          * All the application code goes here
          */
         MultiLog log("feng2bp");
+        DadaReadClient reader(key, log);
         SimpleFileWriter outwriter(filename);
         meerkat::tools::FengToBandpass<SimpleFileWriter> feg2bp(nchannels, nantennas, outwriter);
-        DadaInputStream<decltype(feg2bp)> stream(key, log, feg2bp);
+        DadaInputStream<decltype(feg2bp)> stream(reader, feg2bp);
         stream.start();
         /**
          * End of application code
