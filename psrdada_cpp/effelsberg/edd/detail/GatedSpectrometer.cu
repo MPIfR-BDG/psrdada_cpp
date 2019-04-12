@@ -6,6 +6,8 @@
 #include <cuda_profiler_api.h>
 
 #include <iostream>
+#include <cstring>
+#include <sstream>
 
 namespace psrdada_cpp {
 namespace effelsberg {
@@ -119,12 +121,13 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
   assert(_naccumulate > 0); // Sanity check
   BOOST_LOG_TRIVIAL(info)
       << "Creating new GatedSpectrometer instance with parameters: \n"
-      << "  fft_length = " << _fft_length << "\n"
-      << "  naccumulate = " << _naccumulate << "\n"
-      << "  nSideChannels = " << _nSideChannels << "\n"
-      << "  speadHeapSize = " << _speadHeapSize << " byte\n"
-      << "  selectedSideChannel = " << _selectedSideChannel
-      << "  selectedBit = " << _selectedBit;
+      << "  fft_length           " << _fft_length << "\n"
+      << "  naccumulate          " << _naccumulate << "\n"
+      << "  nSideChannels        " << _nSideChannels << "\n"
+      << "  speadHeapSize        " << _speadHeapSize << " byte\n"
+      << "  selectedSideChannel  " << _selectedSideChannel << "\n"
+      << "  selectedBit          " << _selectedBit << "\n"
+      << "  output bit depth     " << sizeof(IntegratedPowerType) * 8;
 
   _sideChannelSize = nSideChannels * sizeof(int64_t);
   _totalHeapSize = _speadHeapSize + _sideChannelSize;
@@ -210,6 +213,29 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::~GatedSpectrometer() {
 template <class HandlerType, typename IntegratedPowerType>
 void GatedSpectrometer<HandlerType, IntegratedPowerType>::init(RawBytes &block) {
   BOOST_LOG_TRIVIAL(debug) << "GatedSpectrometer init called";
+  std::stringstream headerInfo;
+  headerInfo << "\n"
+      << "# Gated spectrometer parameters: \n"
+      << "fft_length               " << _fft_length << "\n"
+      << "nchannels                " << _fft_length << "\n"
+      << "naccumulate              " << _naccumulate << "\n"
+      << "selected_side_channel    " << _selectedSideChannel << "\n"
+      << "selected_bit             " << _selectedBit << "\n"
+      << "output_bit_depth         " << sizeof(IntegratedPowerType) * 8;
+
+  size_t bEnd = std::strlen(block.ptr());
+  if (bEnd + headerInfo.str().size() < block.total_bytes())
+  {
+    std::strcpy(block.ptr() + bEnd, headerInfo.str().c_str());
+  }
+  else
+  {
+    BOOST_LOG_TRIVIAL(warning) << "Header of size " << block.total_bytes()
+      << " bytes already contains " << bEnd
+      << "bytes. Cannot add gated spectrometer info of size "
+      << headerInfo.str().size() << " bytes.";
+  }
+
   _handler.init(block);
 }
 
