@@ -9,56 +9,56 @@ namespace effelsberg {
 namespace edd {
 namespace kernels {
 
-template<typename T>
+
+// template argument unused but needed as nvcc gets otherwise confused.
+template <typename T>
 __global__
 void detect_and_accumulate(float2 const* __restrict__ in, int8_t* __restrict__ out,
     int nchans, int nsamps, int naccumulate, float scale, float offset)
 {
-    for (int block_idx = blockIdx.x; block_idx < nsamps/naccumulate; block_idx += gridDim.x)
+    // grid stride loop over output array, if input,output, nchans and naccumulate are all nice powers of 2 
+    for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < nsamps * nchans / naccumulate); i += blockDim.x * gridDim.x)
     {
-        int read_offset = block_idx * naccumulate * nchans;
-        int write_offset = block_idx * nchans;
-        for (int chan_idx = threadIdx.x; chan_idx < nchans; chan_idx += blockDim.x)
-        {
-            float sum = 0.0f;
-            for (int ii=0; ii < naccumulate; ++ii)
-            {
-                float2 tmp = in[read_offset + chan_idx + ii*nchans];
-                float x = tmp.x * tmp.x;
-                float y = tmp.y * tmp.y;
-                sum += x + y;
-            }
-            out[write_offset + chan_idx] = (int8_t) ((sum - offset)/scale);
-        }
+      float sum = 0.0f;
+      size_t currentOutputSpectra = i / nchans;
+      size_t currentChannel = i % nchans;
+
+      for (size_t j = 0; j < naccumulate; j++)
+      {
+        float2 tmp = in[ j * nchans + currentOutputSpectra * nchans * naccumulate + currentChannel];
+        float x = tmp.x * tmp.x;
+        float y = tmp.y * tmp.y;
+        sum += x + y;
+      }
+      out[i] = (int8_t) ((sum - offset)/scale);
     }
+
 }
 
-template<typename T>
+
+template <typename T>
 __global__
 void detect_and_accumulate(float2 const* __restrict__ in, float* __restrict__ out,
     int nchans, int nsamps, int naccumulate, float scale, float offset)
 {
-    for (int block_idx = blockIdx.x; block_idx < nsamps/naccumulate; block_idx += gridDim.x)
+    for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < nsamps * nchans / naccumulate); i += blockDim.x * gridDim.x)
     {
-        int read_offset = block_idx * naccumulate * nchans;
-        int write_offset = block_idx * nchans;
-        for (int chan_idx = threadIdx.x; chan_idx < nchans; chan_idx += blockDim.x)
-        {
-            double sum = 0.0;
-            for (int ii=0; ii < naccumulate; ++ii)
-            {
-                float2 tmp = in[read_offset + chan_idx + ii*nchans];
-                double x = tmp.x * tmp.x;
-                double y = tmp.y * tmp.y;
-                sum += x + y;
-            }
-            out[write_offset + chan_idx] = (float) sum;
-        }
+      double sum = 0;
+      size_t currentOutputSpectra = i / nchans;
+      size_t currentChannel = i % nchans;
+
+      for (size_t j = 0; j < naccumulate; j++)
+      {
+        float2 tmp = in[ j * nchans + currentOutputSpectra * nchans * naccumulate + currentChannel];
+        float x = tmp.x * tmp.x;
+        float y = tmp.y * tmp.y;
+        sum += x + y;
+      }
+      out[i] = sum;
     }
 }
 
-
-}
+} // namespace kernels
 
 
 
