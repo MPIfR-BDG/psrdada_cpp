@@ -319,19 +319,14 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
     return false;
   }
 
-  BOOST_LOG_TRIVIAL(debug) << "Copy Data back to device";
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
-  BOOST_LOG_TRIVIAL(debug) << "Swap host power";
   _host_power_db.swap();
-  BOOST_LOG_TRIVIAL(debug) << "swap no of bit channel";
   std::swap(_noOfBitSetsInSideChannel_host[0], _noOfBitSetsInSideChannel_host[1]);
-  BOOST_LOG_TRIVIAL(debug) << "Foo";
   CUDA_ERROR_CHECK(
       cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr()),
                       static_cast<void *>(_power_db_G0.b_ptr()),
                       _power_db_G0.size() * sizeof(IntegratedPowerType),
                       cudaMemcpyDeviceToHost, _d2h_stream));
-  BOOST_LOG_TRIVIAL(debug) << "Bar";
   CUDA_ERROR_CHECK(cudaMemcpyAsync(
       static_cast<void *>(_host_power_db.a_ptr() +
                           (_power_db_G0.size())),           // as I am adding BEFORE the cast to void, I dont need the sizeof
@@ -339,9 +334,9 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
       _power_db_G1.size() * sizeof(IntegratedPowerType), cudaMemcpyDeviceToHost,
       _d2h_stream));
 
-  //CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(&_noOfBitSetsInSideChannel_host[0]),
-  //      static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
-  //        1 * sizeof(size_t),cudaMemcpyDeviceToHost, _d2h_stream));
+  CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(&_noOfBitSetsInSideChannel_host[0]),
+        static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
+          1 * sizeof(size_t),cudaMemcpyDeviceToHost, _d2h_stream));
 
   BOOST_LOG_TRIVIAL(debug) << "Copy Data back to device";
 
