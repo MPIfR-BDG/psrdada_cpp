@@ -16,18 +16,18 @@ __global__
 void detect_and_accumulate(float2 const* __restrict__ in, int8_t* __restrict__ out,
     int nchans, int nsamps, int naccumulate, float scale, float offset)
 {
-    // grid stride loop over output array, if input,output, nchans and naccumulate are all nice powers of 2 
+    // grid stride loop over output array to keep 
     for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < nsamps * nchans / naccumulate); i += blockDim.x * gridDim.x)
     {
-      float sum = 0.0f;
+      double sum = 0.0f;
       size_t currentOutputSpectra = i / nchans;
       size_t currentChannel = i % nchans;
 
       for (size_t j = 0; j < naccumulate; j++)
       {
         float2 tmp = in[ j * nchans + currentOutputSpectra * nchans * naccumulate + currentChannel];
-        float x = tmp.x * tmp.x;
-        float y = tmp.y * tmp.y;
+        double x = tmp.x * tmp.x;
+        double y = tmp.y * tmp.y;
         sum += x + y;
       }
       out[i] = (int8_t) ((sum - offset)/scale);
@@ -50,8 +50,8 @@ void detect_and_accumulate(float2 const* __restrict__ in, float* __restrict__ ou
       for (size_t j = 0; j < naccumulate; j++)
       {
         float2 tmp = in[ j * nchans + currentOutputSpectra * nchans * naccumulate + currentChannel];
-        float x = tmp.x * tmp.x;
-        float y = tmp.y * tmp.y;
+        double x = tmp.x * tmp.x;
+        double y = tmp.y * tmp.y;
         sum += x + y;
       }
       out[i] = sum;

@@ -47,7 +47,7 @@ void DetectorAccumulatorTester::detect_c_reference(
             output_sample_idx < nsamples_out;
             ++output_sample_idx)
         {
-            float value = 0.0f;
+            double value = 0.0f;
             for (int input_sample_offset=0;
                 input_sample_offset < tscrunch;
                 ++input_sample_offset)
