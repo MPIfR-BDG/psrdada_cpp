@@ -28,18 +28,13 @@ const size_t ERROR_UNHANDLED_EXCEPTION = 2;
 template<typename T>
 void launchSpectrometer(std::string const &output_type, key_t input_key, std::string const &filename, size_t nSideChannels, size_t selectedSideChannel, size_t selectedBit,   size_t speadHeapSize, size_t fft_length, size_t naccumulate, unsigned int nbits,  float input_level,  float output_level)
 {
-   MultiLog log("edd::GatedSpectrometer");
+    MultiLog log("edd::GatedSpectrometer");
     DadaClientBase client(input_key, log);
-		//client.cuda_register_memory();
     std::size_t buffer_bytes = client.data_buffer_size();
 
-
-
     std::cout << "Running with output_type: " << output_type << std::endl;
-
-  if (output_type == "file")
+    if (output_type == "file")
     {
-
       SimpleFileWriter sink(filename);
       effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(
           buffer_bytes, nSideChannels, selectedSideChannel, selectedBit,
@@ -64,9 +59,8 @@ void launchSpectrometer(std::string const &output_type, key_t input_key, std::st
     {
       throw std::runtime_error("Unknown oputput-type");
     }
-
-
 }
+
 
 
 int main(int argc, char **argv) {
@@ -88,6 +82,7 @@ int main(int argc, char **argv) {
     std::string filename(buffer);
     std::string output_type = "file";
     unsigned int output_bit_depth;
+
     /** Define and parse the program options
     */
     namespace po = boost::program_options;
@@ -189,32 +184,23 @@ int main(int argc, char **argv) {
       return ERROR_IN_COMMAND_LINE;
     }
 
-    /**
-     * All the application code goes here
-     */
-     if (output_bit_depth == 8)
-     {
-       launchSpectrometer<int8_t>(output_type, input_key, filename, nSideChannels, selectedSideChannel, selectedBit, speadHeapSize, 
-        fft_length, naccumulate,
-        nbits, input_level, output_level);
-     }
-     else if (output_bit_depth == 32)
-     {
-       launchSpectrometer<float>(output_type, input_key, filename, nSideChannels, selectedSideChannel, selectedBit, speadHeapSize, 
-        fft_length, naccumulate,
-        nbits, input_level, output_level);
-     }
-     else
-     {
-        throw po::validation_error(po::validation_error::invalid_option_value, "Output bit depth must be 8 or 32");
-     }
+    if (output_bit_depth == 8)
+    {
+      launchSpectrometer<int8_t>(output_type, input_key, filename,
+          nSideChannels, selectedSideChannel, selectedBit, speadHeapSize,
+       fft_length, naccumulate, nbits, input_level, output_level);
+    }
+    else if (output_bit_depth == 32)
+    {
+      launchSpectrometer<float>(output_type, input_key, filename,
+          nSideChannels, selectedSideChannel, selectedBit, speadHeapSize,
+       fft_length, naccumulate, nbits, input_level, output_level);
+    }
+    else
+    {
+       throw po::validation_error(po::validation_error::invalid_option_value, "Output bit depth must be 8 or 32");
+    }
 
-
-
-
-    /**
-     * End of application code
-     */
   } catch (std::exception &e) {
     std::cerr << "Unhandled Exception reached the top of main: " << e.what()
               << ", application will now exit" << std::endl;
