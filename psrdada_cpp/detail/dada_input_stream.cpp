@@ -27,25 +27,21 @@ namespace psrdada_cpp {
             throw std::runtime_error("Stream is already running");
         }
         _running = true;
+        BOOST_LOG_TRIVIAL(info) << "Fetching header";
+        auto& header_stream = _client.header_stream();
+        auto& header_block = header_stream.next();
+        _handler.init(header_block);
+        header_stream.release();
+        auto& data_stream = _client.data_stream();
         while (!_stop && !handler_stop_request)
         {
-            BOOST_LOG_TRIVIAL(info) << "Fetching header";
-            auto& header_stream = _client.header_stream();
-            auto& header_block = header_stream.next();
-            _handler.init(header_block);
-            header_stream.release();
-            auto& data_stream = _client.data_stream();
-            while (!_stop && !handler_stop_request)
+            if (data_stream.at_end())
             {
-                if (data_stream.at_end())
-                {
-                    BOOST_LOG_TRIVIAL(info) << "Reached end of data";
-                    break;
-                }
-                handler_stop_request = _handler(data_stream.next());
-                data_stream.release();
+                BOOST_LOG_TRIVIAL(info) << "Reached end of data";
+                break;
             }
-            _client.reconnect();
+            handler_stop_request = _handler(data_stream.next());
+            data_stream.release();
         }
         _running = false;
     }
