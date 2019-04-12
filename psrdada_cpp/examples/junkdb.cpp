@@ -28,6 +28,7 @@ int main(int argc, char** argv)
     {
         std::size_t nbytes = 0;
         key_t key;
+        std::string header;
         /** Define and parse the program options
         */
         namespace po = boost::program_options;
@@ -44,6 +45,9 @@ int main(int argc, char** argv)
                     key = string_to_key(in);
                 }),
             "The shared memory key for the dada buffer to connect to (hex string)")
+        ("header", po::value<std::string>(&header)
+            ->default_value(""),
+            "Optional header file to be inserted into the DADA header buffer")
         ("log_level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)
@@ -77,7 +81,7 @@ int main(int argc, char** argv)
         MultiLog log("junkdb");
         DadaOutputStream out_stream(key, log);
         junk_source<decltype(out_stream)>(
-            out_stream, out_stream.client().header_buffer_size(),
+            out_stream, out_stream.client().header_buffer_size(), header,
             out_stream.client().data_buffer_size(), nbytes);
 
         /**
