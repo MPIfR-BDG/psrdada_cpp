@@ -82,7 +82,7 @@ TEST_F(PipelineTester, simple_run_test)
     DadaReadClient cb_read_client(_config.cb_dada_key(), log);
     DadaReadClient ib_read_client(_config.ib_dada_key(), log);
     DadaInputStream<NullSink> cb_consumer(cb_read_client, null_sink);
-    DadaInputStream<NullSink> ib_consumer(ib_read_client, log, null_sink);
+    DadaInputStream<NullSink> ib_consumer(ib_read_client, null_sink);
 
     std::thread cb_consumer_thread( [&](){
         try {
