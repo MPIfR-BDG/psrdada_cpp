@@ -19,7 +19,6 @@ namespace kernel {
  * @param[in]  total_nantennas  The total number of antennas (e.g. T[A]FTP)
  * @param[in]  used_nantennas   The number of antennas in the split subset
  * @param[in]  start_antenna    The index of the first antenna in the split subset
- * @param[in]  nchans           The number of frequency channels (e.g. TA[F]TP)
  * @param[in]  ntimestamps      The number of timestamps (outer T dimension, e.g. [T]AFTP)
  */
 __global__
@@ -29,7 +28,6 @@ void split_transpose_k(
     int total_nantennas,
     int used_nantennas,
     int start_antenna,
-    int nchans,
     int ntimestamps);
 
 } //namespace kernel

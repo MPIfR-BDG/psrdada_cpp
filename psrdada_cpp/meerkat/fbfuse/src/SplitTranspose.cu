@@ -15,14 +15,13 @@ void split_transpose_k(
     int total_nantennas,
     int used_nantennas,
     int start_antenna,
-    int nchans,
     int ntimestamps)
 {
     __shared__ char2 transpose_buffer[FBFUSE_ST_MAX_ANTENNAS][FBFUSE_NSAMPLES_PER_HEAP][FBFUSE_NPOL];
 
     //TAFTP (input dimensions)
     const int tp = FBFUSE_NSAMPLES_PER_HEAP * FBFUSE_NPOL;
-    const int ftp = nchans * tp;
+    const int ftp = FBFUSE_NCHANS * tp;
     const int aftp = total_nantennas * ftp;
 
     //FTPA
@@ -31,8 +30,11 @@ void split_transpose_k(
     int nantennas_sets = ceilf(((float) used_nantennas) / FBFUSE_ST_MAX_ANTENNAS);
     for (int timestamp_idx = blockIdx.x; timestamp_idx < ntimestamps; timestamp_idx += gridDim.x)
     {
-        for (int chan_idx = blockIdx.y; chan_idx < nchans; chan_idx += gridDim.y)
+        int time_offset = timestamp_idx * aftp;
+        for (int chan_idx = blockIdx.y; chan_idx < FBFUSE_NCHANS; chan_idx += gridDim.y)
         {
+            int chan_offset = time_offset + chan_idx * tp;
+            int chan_offset_out = chan_idx * tpa;
             for (int antenna_set_idx = 0; antenna_set_idx < nantennas_sets; ++antenna_set_idx)
             {
                 int remaining_antennas = min(used_nantennas - antenna_set_idx * FBFUSE_ST_MAX_ANTENNAS, FBFUSE_ST_MAX_ANTENNAS);
@@ -40,25 +42,28 @@ void split_transpose_k(
                 for (int antenna_idx = threadIdx.y; antenna_idx < remaining_antennas; antenna_idx += blockDim.y)
                 {
                     int input_antenna_idx = antenna_set_idx * FBFUSE_ST_MAX_ANTENNAS + antenna_idx + start_antenna;
+                    int antenna_offset = chan_offset + input_antenna_idx * ftp;
                     for (int samppol_idx = threadIdx.x; samppol_idx < (FBFUSE_NSAMPLES_PER_HEAP * FBFUSE_NPOL); samppol_idx += blockDim.x)
                     {
                         int pol_idx = samppol_idx%FBFUSE_NPOL;
                         int samp_idx = samppol_idx/FBFUSE_NPOL;
-                        int input_idx = timestamp_idx * aftp + input_antenna_idx * ftp + chan_idx * tp + samp_idx * FBFUSE_NPOL + pol_idx;
+                        int input_idx = antenna_offset + samp_idx * FBFUSE_NPOL + pol_idx;
                         transpose_buffer[antenna_idx][samp_idx][pol_idx] = input[input_idx];
                     }
                 }
                 __syncthreads();
                 for (int pol_idx = 0; pol_idx < FBFUSE_NPOL; ++pol_idx)
                 {
+                    int pol_offset = chan_offset_out + pol_idx * used_nantennas;
                     for (int samp_idx = threadIdx.y; samp_idx < FBFUSE_NSAMPLES_PER_HEAP; samp_idx += blockDim.y)
                     {
                         int output_sample_idx = samp_idx + timestamp_idx * FBFUSE_NSAMPLES_PER_HEAP;
+                        int sample_offset = pol_offset + output_sample_idx * pa;
                         for (int antenna_idx = threadIdx.x; antenna_idx < remaining_antennas; antenna_idx += blockDim.x)
                         {
                             int output_antenna_idx = antenna_set_idx * FBFUSE_ST_MAX_ANTENNAS + antenna_idx;
                             //FTPA
-                            int output_idx = chan_idx * tpa + output_sample_idx * pa + pol_idx * used_nantennas + output_antenna_idx;
+                            int output_idx = sample_offset + output_antenna_idx;
                             output[output_idx] = transpose_buffer[antenna_idx][samp_idx][pol_idx];
                         }
                     }
@@ -118,7 +123,7 @@ void SplitTranspose::transpose(VoltageType const& taftp_voltages,
     BOOST_LOG_TRIVIAL(debug) << "Launching split transpose kernel";
     kernels::split_transpose_k<<< grid, block, 0, stream>>>(input_ptr, output_ptr,
         _config.total_nantennas(), _config.cb_nantennas(),
-        _config.cb_antenna_offset(), _config.nchans(),
+        _config.cb_antenna_offset(),
         nheap_groups);
     //Not sure if this should be here, will check later
     CUDA_ERROR_CHECK(cudaStreamSynchronize(stream));
