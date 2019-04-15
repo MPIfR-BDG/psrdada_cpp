@@ -180,12 +180,10 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
   _channelised_voltage.resize(_nchans * batch);
   BOOST_LOG_TRIVIAL(debug) << "  Channelised voltages size: "
                            << _channelised_voltage.size();
-  _power_db_G0.resize(_nchans * batch / _naccumulate);
-  _power_db_G1.resize(_nchans * batch / _naccumulate);
-  BOOST_LOG_TRIVIAL(debug) << "  Powers size: " << _power_db_G0.size() << ", "
-                           << _power_db_G1.size();
+  _power_db.resize(_nchans * batch / _naccumulate * 2);  // hold on and off spectra to simplify output
+  BOOST_LOG_TRIVIAL(debug) << "  Powers size: " << _power_db.size() / 2; 
   // on the host both power are stored in the same data buffer
-  _host_power_db.resize( _power_db_G0.size() + _power_db_G1 .size());
+  _host_power_db.resize( _power_db.size());
   _noOfBitSetsInSideChannel.resize(1);
 
   CUDA_ERROR_CHECK(cudaStreamCreate(&_h2d_stream));
@@ -244,8 +242,7 @@ template <class HandlerType, typename IntegratedPowerType>
 void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
     thrust::device_vector<RawVoltageType> const &digitiser_raw,
     thrust::device_vector<int64_t> const &sideChannelData,
-    thrust::device_vector<IntegratedPowerType> &detected_G0,
-    thrust::device_vector<IntegratedPowerType> &detected_G1, thrust::device_vector<size_t> &noOfBitSet) {
+    thrust::device_vector<IntegratedPowerType> &detected, thrust::device_vector<size_t> &noOfBitSet) {
   BOOST_LOG_TRIVIAL(debug) << "Unpacking raw voltages";
   switch (_nbits) {
   case 8:
@@ -282,7 +279,7 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
       thrust::raw_pointer_cast(_channelised_voltage.data());
   CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal *)_unpacked_voltage_ptr,
                                  (cufftComplex *)_channelised_voltage_ptr));
-  _detector->detect(_channelised_voltage, detected_G0);
+  _detector->detect(_channelised_voltage, detected, 2, 0);
 
   BOOST_LOG_TRIVIAL(debug) << "Performing FFT 2";
   _unpacked_voltage_ptr = thrust::raw_pointer_cast(_unpacked_voltage_G1.data());
@@ -290,7 +287,7 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
                                  (cufftComplex *)_channelised_voltage_ptr));
 
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-  _detector->detect(_channelised_voltage, detected_G1);
+  _detector->detect(_channelised_voltage, detected, 2, 1);
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   BOOST_LOG_TRIVIAL(debug) << "Exit processing";
 } // process
@@ -331,12 +328,10 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
   }
 
   // Synchronize all streams
-  _power_db_G0.swap();
-  _power_db_G1.swap();
+  _power_db.swap();
   _noOfBitSetsInSideChannel.swap();
 
-  process(_raw_voltage_db.b(), _sideChannelData_db.b(), _power_db_G0.a(),
-          _power_db_G1.a(), _noOfBitSetsInSideChannel.a());
+  process(_raw_voltage_db.b(), _sideChannelData_db.b(), _power_db.a(), _noOfBitSetsInSideChannel.a());
 
   // signal that data block has been processed
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
@@ -350,15 +345,15 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
   std::swap(_noOfBitSetsInSideChannel_host[0], _noOfBitSetsInSideChannel_host[1]);
   CUDA_ERROR_CHECK(
       cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr()),
-                      static_cast<void *>(_power_db_G0.b_ptr()),
-                      _power_db_G0.size() * sizeof(IntegratedPowerType),
+                      static_cast<void *>(_power_db.b_ptr()),
+                      _power_db.size() * sizeof(IntegratedPowerType),
                       cudaMemcpyDeviceToHost, _d2h_stream));
-  CUDA_ERROR_CHECK(cudaMemcpyAsync(
-      static_cast<void *>(_host_power_db.a_ptr() +
-                          (_power_db_G0.size())),           // as I am adding BEFORE the cast to void, I dont need the sizeof
-      static_cast<void *>(_power_db_G1.b_ptr()),
-      _power_db_G1.size() * sizeof(IntegratedPowerType), cudaMemcpyDeviceToHost,
-      _d2h_stream));
+//  CUDA_ERROR_CHECK(cudaMemcpyAsync(
+//        static_cast<void *>(_host_power_db.a_ptr() +
+//                          (_power_db_G0.size())),           // as I am adding BEFORE the cast to void, I dont need the sizeof
+//      static_cast<void *>(_power_db_G1.b_ptr()),
+//      _power_db_G1.size() * sizeof(IntegratedPowerType), cudaMemcpyDeviceToHost,
+//      _d2h_stream));
 
   CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(&_noOfBitSetsInSideChannel_host[0]),
         static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),

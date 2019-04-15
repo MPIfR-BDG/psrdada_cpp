@@ -14,7 +14,7 @@ namespace kernels {
 template <typename T>
 __global__
 void detect_and_accumulate(float2 const* __restrict__ in, int8_t* __restrict__ out,
-    int nchans, int nsamps, int naccumulate, float scale, float offset)
+    int nchans, int nsamps, int naccumulate, float scale, float offset, int stride, int out_offset)
 {
     // grid stride loop over output array to keep 
     for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < nsamps * nchans / naccumulate); i += blockDim.x * gridDim.x)
@@ -30,7 +30,8 @@ void detect_and_accumulate(float2 const* __restrict__ in, int8_t* __restrict__ o
         double y = tmp.y * tmp.y;
         sum += x + y;
       }
-      out[i] = (int8_t) ((sum - offset)/scale);
+      size_t toff = out_offset * nchans + currentOutputSpectra * nchans; 
+      out[toff + i] = (int8_t) ((sum - offset)/scale);
     }
 
 }
@@ -39,7 +40,7 @@ void detect_and_accumulate(float2 const* __restrict__ in, int8_t* __restrict__ o
 template <typename T>
 __global__
 void detect_and_accumulate(float2 const* __restrict__ in, float* __restrict__ out,
-    int nchans, int nsamps, int naccumulate, float scale, float offset)
+    int nchans, int nsamps, int naccumulate, float scale, float offset, int stride, int out_offset)
 {
     for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < nsamps * nchans / naccumulate); i += blockDim.x * gridDim.x)
     {
@@ -54,7 +55,8 @@ void detect_and_accumulate(float2 const* __restrict__ in, float* __restrict__ ou
         double y = tmp.y * tmp.y;
         sum += x + y;
       }
-      out[i] = sum;
+      size_t toff = out_offset * nchans + currentOutputSpectra * nchans * stride;
+      out[i + toff] = sum;
     }
 }
 
@@ -90,15 +92,17 @@ public:
 
   }
 
-  void detect(InputType const& input, OutputType& output)
+  // stride sets an offset of _nChans * stride to the detection in the output
+  // to allow multiple spectra in one output
+  void detect(InputType const& input, OutputType& output, int stride = 0, int stoff = 0)
   {
       assert(input.size() % (_nchans * _tscrunch) == 0 /* Input is not a multiple of _nchans * _tscrunch*/);
-      output.resize(input.size()/_tscrunch);
+      //output.resize(input.size()/_tscrunch);
       int nsamps = input.size() / _nchans;
       float2 const* input_ptr = thrust::raw_pointer_cast(input.data());
       T * output_ptr = thrust::raw_pointer_cast(output.data());
       kernels::detect_and_accumulate<T> <<<1024, 1024, 0, _stream>>>(
-          input_ptr, output_ptr, _nchans, nsamps, _tscrunch, _scale, _offset);
+          input_ptr, output_ptr, _nchans, nsamps, _tscrunch, _scale, _offset, stride, stoff);
   }
 
 
