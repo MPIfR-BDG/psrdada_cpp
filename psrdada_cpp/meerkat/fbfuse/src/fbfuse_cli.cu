@@ -133,7 +133,7 @@ int main(int argc, char** argv)
         meerkat::fbfuse::Pipeline pipeline(config, cb_writer, ib_writer,
             client.data_buffer_size());
         DadaInputStream<decltype(pipeline)> stream(config.input_dada_key(), log, pipeline);
-        stream.client()->cuda_register_memory();
+        stream.client().cuda_register_memory();
         stream.start();
         /**
          * End of application code

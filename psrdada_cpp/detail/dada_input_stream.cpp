@@ -22,9 +22,9 @@ namespace psrdada_cpp {
     }
 
     template <class HandlerType>
-    std::unique_ptr<DadaReadClient>& DadaInputStream<HandlerType>::client()
+    DadaReadClient& DadaInputStream<HandlerType>::client()
     {
-        return _client;
+        return *_client;
     }
 
     template <class HandlerType>
