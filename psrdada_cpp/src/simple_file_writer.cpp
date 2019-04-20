@@ -27,6 +27,11 @@ namespace psrdada_cpp {
         _outfile.write(block.ptr(), 4096);
     }
 
+    void SimpleFileWriter::init(RawBytes& block, std::size_t size)
+    {
+        _outfile.write(block.ptr(), size);
+    }
+
     bool SimpleFileWriter::operator()(RawBytes& block)
     {
         _outfile.write(block.ptr(), block.used_bytes());

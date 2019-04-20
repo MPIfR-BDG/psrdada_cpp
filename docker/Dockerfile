@@ -75,7 +75,7 @@ ENV PACKAGES $PSRDADA_BUILD
 WORKDIR $PSRHOME
 RUN git clone https://github.com/ewanbarr/psrdada_cpp.git && \
     cd psrdada_cpp/ &&\
-    git checkout fbfuse &&\
+    git checkout transpose &&\
     git submodule init &&\
     git submodule update &&\
     mkdir build/ &&\

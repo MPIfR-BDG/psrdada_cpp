@@ -15,6 +15,7 @@ namespace psrdada_cpp {
         SimpleFileWriter(SimpleFileWriter const&) = delete;
         ~SimpleFileWriter();
         void init(RawBytes&);
+        void init(RawBytes&, std::size_t);
         bool operator()(RawBytes&);
 
     private:
