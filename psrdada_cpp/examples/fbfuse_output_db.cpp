@@ -35,7 +35,7 @@ public:
     bool operator()(RawBytes& block);
 
     void beam_num_start(std::uint8_t beam_num_start);
-	
+
     void beam_num_end(std::uint8_t beam_num_end);
 
 private:
@@ -99,7 +99,7 @@ bool FakeBeams<HandlerType>::operator()(RawBytes& block)
     _handler(block);
     return false;
 }
-	
+
 
 
 int main(int argc, char** argv)
@@ -109,11 +109,12 @@ int main(int argc, char** argv)
         std::size_t nbytes = 0;
         key_t key;
         std::time_t sync_epoch;
+        std::string header;
         double period;
         std::size_t ts_per_block;
-	std::uint8_t beam_num_start;
-	std::uint8_t beam_num_end;
-	std::size_t write_size;
+        std::uint8_t beam_num_start;
+        std::uint8_t beam_num_end;
+        std::size_t write_size;
         /** Define and parse the program options
         */
         namespace po = boost::program_options;
@@ -130,6 +131,9 @@ int main(int argc, char** argv)
                     key = string_to_key(in);
                 }),
             "The shared memory key for the dada buffer to connect to (hex string)")
+        ("header", po::value<std::string>(&header)
+            ->default_value(""),
+            "Optional header file to be inserted into the DADA header buffer")
         ("sync_epoch,s", po::value<std::size_t>()
             ->default_value(0)
             ->notifier([&sync_epoch](std::size_t in)
@@ -143,15 +147,15 @@ int main(int argc, char** argv)
         ("ts_per_block,t", po::value<std::size_t>(&ts_per_block)
             ->default_value(8192*128),
             "The increment in timestamp between consecutive blocks")
-	("beam_start,b", po::value<std::uint8_t>(&beam_num_start)
+        ("beam_start,b", po::value<std::uint8_t>(&beam_num_start)
             ->default_value(1),
             "Starting beam id for the heap")
-	("beam_end,e", po::value<std::uint8_t>(&beam_num_end)
+        ("beam_end,e", po::value<std::uint8_t>(&beam_num_end)
             ->default_value(1),
             "Last beam id for the heap")
-	("write_size, w", po::value<std::size_t>(&write_size)
-	    ->default_value(0),
-	    "bytes to write per cycle. Should be equal to the heap size.")
+        ("write_size, w", po::value<std::size_t>(&write_size)
+            ->default_value(0),
+            "bytes to write per cycle. Should be equal to the heap size.")
         ("log_level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)
@@ -189,7 +193,7 @@ int main(int argc, char** argv)
 	fakebeams.beam_num_end(beam_num_end);
         sync_source<decltype(fakebeams)>(
             fakebeams, out_stream.client().header_buffer_size(),
-            out_stream.client().data_buffer_size(), nbytes,
+            header, out_stream.client().data_buffer_size(), nbytes,
             sync_epoch, period, ts_per_block);
 
         /**
