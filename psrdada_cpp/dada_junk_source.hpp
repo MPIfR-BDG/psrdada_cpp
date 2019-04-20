@@ -4,10 +4,7 @@
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/common.hpp"
 #include <vector>
-<<<<<<< HEAD
-=======
 #include <cstdlib>
->>>>>>> transpose
 #include <fstream>
 
 namespace psrdada_cpp
@@ -17,11 +14,10 @@ namespace psrdada_cpp
         std::size_t header_size,
         std::string const& header_fname,
         std::size_t nbytes_per_write,
-        std::size_t total_bytes,
-	std::string header_file)
+        std::size_t total_bytes)
     {
-        std::vector<char> junk_header(header_size);
-        std::vector<char> junk_block(nbytes_per_write);
+        std::vector<char> junk_header(header_size, 0);
+        std::vector<char> junk_block(nbytes_per_write, 0);
         RawBytes header(junk_header.data(), header_size, header_size, false);
         if (header_fname != "")
         {
@@ -35,7 +31,6 @@ namespace psrdada_cpp
         }
         handler.init(header);
         std::size_t bytes_written = 0;
-	std::vector<char> junk_block(nbytes_per_write,0);
 	srand(0);
 	for (std::uint32_t ii=0; ii < nbytes_per_write; ++ii)
 	{
