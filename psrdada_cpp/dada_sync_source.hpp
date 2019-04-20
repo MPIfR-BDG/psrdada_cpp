@@ -6,6 +6,7 @@
 #include "ascii_header.h"
 #include <vector>
 #include <chrono>
+#include <string>
 #include <iomanip>        // std::put_time
 #include <thread>         // std::this_thread::sleep_until
 #include <chrono>         // std::chrono::system_clock
@@ -17,6 +18,7 @@ namespace psrdada_cpp
     template <class Handler>
     void sync_source(Handler& handler,
         std::size_t header_size,
+        std::string const& header_fname,
         std::size_t nbytes_per_write,
         std::size_t total_bytes,
         std::time_t sync_epoch,
@@ -26,8 +28,17 @@ namespace psrdada_cpp
         std::vector<char> sync_header(header_size, 0);
         std::vector<char> sync_block(nbytes_per_write, 1);
         RawBytes header(sync_header.data(), header_size, header_size, false);
+        if (header_fname != "")
+        {
+            std::ifstream headerfile (header_fname);
+            if (!headerfile.is_open())
+            {
+                throw std::runtime_error("Unable to open header file");
+            }
+            headerfile.read(header.ptr(), header.total_bytes());
+            headerfile.close();
+        }
         RawBytes data(sync_block.data(), nbytes_per_write, nbytes_per_write, false);
-
         std::size_t sample_clock_start;
         auto sync_epoch_tp = std::chrono::system_clock::from_time_t(sync_epoch);
         auto curr_epoch_tp =  std::chrono::system_clock::now();
@@ -52,7 +63,7 @@ namespace psrdada_cpp
         ascii_header_set(sync_header.data(), "SAMPLE_CLOCK_START", "%ld", sample_clock_start);
         handler.init(header);
         std::size_t bytes_written = 0;
- 
+
         bool infinite = (total_bytes == 0);
         while (true)
         {

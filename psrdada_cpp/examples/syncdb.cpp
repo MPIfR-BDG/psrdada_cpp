@@ -28,6 +28,7 @@ int main(int argc, char** argv)
     {
         std::size_t nbytes = 0;
         key_t key;
+        std::string header;
         std::time_t sync_epoch;
         double period;
         std::size_t ts_per_block;
@@ -47,6 +48,9 @@ int main(int argc, char** argv)
                     key = string_to_key(in);
                 }),
             "The shared memory key for the dada buffer to connect to (hex string)")
+        ("header", po::value<std::string>(&header)
+            ->default_value(""),
+            "Optional header file to be inserted into the DADA header buffer")
         ("sync_epoch,s", po::value<std::size_t>()
             ->default_value(0)
             ->notifier([&sync_epoch](std::size_t in)
@@ -94,7 +98,7 @@ int main(int argc, char** argv)
         DadaOutputStream out_stream(key, log);
         sync_source<decltype(out_stream)>(
             out_stream, out_stream.client().header_buffer_size(),
-            out_stream.client().data_buffer_size(), nbytes,
+            header, out_stream.client().data_buffer_size(), nbytes,
             sync_epoch, period, ts_per_block);
 
         /**
