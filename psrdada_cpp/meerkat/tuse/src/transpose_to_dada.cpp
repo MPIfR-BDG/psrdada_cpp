@@ -22,8 +22,8 @@ namespace transpose{
         // make copies of arrays to be transposed
         if (input_data.total_bytes() % (nfreq * nchans * nsamples * nbeams) != 0)
         {
-            auto sug_size = input_data.total_bytes()/(nfreq * nchans * nsamples * nbeams);
-            throw std::runtime_error(std::string("Incorrect size of the DADA block. Should be a multiple of the number of heap groups. Suggested size is:") + std::to_string(sug_size) + std::string("bytes")); 
+            auto sug_size = nfreq * nchans * nsamples * nbeams * ngroups;
+            throw std::runtime_error(std::string("Incorrect size of the DADA block. Should be a multiple of heap group size. Suggested size is:") + std::to_string(sug_size) + std::string("bytes")); 
         }
         const size_t tocopy = ngroups * nsamples * nfreq * nchans;
         std::vector<char> tmpindata(tocopy / ngroups);
