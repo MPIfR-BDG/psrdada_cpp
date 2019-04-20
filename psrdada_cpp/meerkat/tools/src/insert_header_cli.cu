@@ -99,11 +99,10 @@ int main(int argc, char** argv)
          * All the application code goes here
          */
         MultiLog log("header_inserter");
-        DadaReadClient reader(input_key, log);
         DadaOutputStream ostream(output_key, log);
         meerkat::tools::FengHeaderInserter<decltype(ostream)> header_inserter(
             ostream, obs_id, cfreq, bw, nchannels, sync_epoch);
-        DadaInputStream<decltype(header_inserter)> istream(reader, header_inserter);
+        DadaInputStream<decltype(header_inserter)> istream(input_key, log, header_inserter);
         istream.start();
         /**
          * End of application code

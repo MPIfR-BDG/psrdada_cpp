@@ -2,7 +2,9 @@
 #define PSRDADA_CPP_DADA_INPUT_STREAM_HPP
 
 #include "psrdada_cpp/dada_read_client.hpp"
+#include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/common.hpp"
+#include <memory>
 
 namespace psrdada_cpp
 {
@@ -11,16 +13,18 @@ namespace psrdada_cpp
     class DadaInputStream
     {
     public:
-        DadaInputStream(DadaReadClient& client, HandlerType& handler);
+        DadaInputStream(key_t key, MultiLog& log, HandlerType& handler);
         ~DadaInputStream();
         void start();
         void stop();
 
     private:
-        DadaReadClient& _client;
+        key_t _key;
+        MultiLog& _log;
         HandlerType& _handler;
-        bool _stop;
-        bool _running;
+        _stop(false)
+        _running(false)
+        std::unique_ptr<DadaReadClient> _client;
     };
 } //psrdada_cpp
 

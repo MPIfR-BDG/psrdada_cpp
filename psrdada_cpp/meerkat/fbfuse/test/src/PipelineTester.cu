@@ -79,10 +79,8 @@ TEST_F(PipelineTester, simple_run_test)
     //Set up null sinks on all buffers
     NullSink null_sink;
 
-    DadaReadClient cb_read_client(_config.cb_dada_key(), log);
-    DadaReadClient ib_read_client(_config.ib_dada_key(), log);
-    DadaInputStream<NullSink> cb_consumer(cb_read_client, null_sink);
-    DadaInputStream<NullSink> ib_consumer(ib_read_client, null_sink);
+    DadaInputStream<NullSink> cb_consumer(_config.cb_dada_key(), log, null_sink);
+    DadaInputStream<NullSink> ib_consumer(_config.ib_dada_key(), log, null_sink);
 
     std::thread cb_consumer_thread( [&](){
         try {

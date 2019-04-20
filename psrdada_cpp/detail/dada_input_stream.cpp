@@ -4,18 +4,27 @@ namespace psrdada_cpp {
 
     template <class HandlerType>
     DadaInputStream<HandlerType>::DadaInputStream(
-        DadaReadClient& client,
+        key_t key,
+        MultiLog& log,
         HandlerType& handler)
-    : _client(client)
+    : _key(key)
+    , _log(log)
     , _handler(handler)
     , _stop(false)
     , _running(false)
     {
+        _client.reset(new DadaReadClient(_key, _log));
     }
 
     template <class HandlerType>
     DadaInputStream<HandlerType>::~DadaInputStream()
     {
+    }
+
+    template <class HandlerType>
+    std::unique_ptr<DadaReadClient>& DadaInputStream<HandlerType>::client()
+    {
+        return _client;
     }
 
     template <class HandlerType>
@@ -28,11 +37,11 @@ namespace psrdada_cpp {
         }
         _running = true;
         BOOST_LOG_TRIVIAL(info) << "Fetching header";
-        auto& header_stream = _client.header_stream();
+        auto& header_stream = _client->header_stream();
         auto& header_block = header_stream.next();
         _handler.init(header_block);
         header_stream.release();
-        auto& data_stream = _client.data_stream();
+        auto& data_stream = _client->data_stream();
         while (!_stop && !handler_stop_request)
         {
             if (data_stream.at_end())

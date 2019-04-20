@@ -83,10 +83,9 @@ int main(int argc, char** argv)
          * All the application code goes here
          */
         MultiLog log("feng2bp");
-        DadaReadClient reader(key, log);
         SimpleFileWriter outwriter(filename);
         meerkat::tools::FengToBandpass<SimpleFileWriter> feg2bp(nchannels, nantennas, outwriter);
-        DadaInputStream<decltype(feg2bp)> stream(reader, feg2bp);
+        DadaInputStream<decltype(feg2bp)> stream(key, log, feg2bp);
         stream.start();
         /**
          * End of application code

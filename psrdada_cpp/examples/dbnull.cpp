@@ -74,8 +74,7 @@ int main(int argc, char** argv)
 
         NullSink sink;
         MultiLog log("dbnull");
-        DadaReadClient client(key, log);
-        DadaInputStream<decltype(sink)> stream(client, sink);
+        DadaInputStream<decltype(sink)> stream(key, log, sink);
         stream.start();
         /**
          * End of application code
