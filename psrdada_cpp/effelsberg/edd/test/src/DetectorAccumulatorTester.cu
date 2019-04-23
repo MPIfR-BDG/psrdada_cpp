@@ -90,10 +90,12 @@ TEST_F(DetectorAccumulatorTester, noise_test)
     }
     DetectorAccumulator<int8_t>::InputType gpu_input = host_input;
     DetectorAccumulator<int8_t>::OutputType gpu_output;
+    gpu_output.resize(gpu_input.size() / tscrunch );
     OutputType host_output;
     DetectorAccumulator<int8_t> detector(nchans, tscrunch, scale, 0.0, _stream);
     detector.detect(gpu_input, gpu_output);
     detect_c_reference(host_input, host_output, nchans, tscrunch, scale, 0.0);
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
     compare_against_host(gpu_output, host_output);
 }
 
