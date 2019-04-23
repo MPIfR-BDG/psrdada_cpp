@@ -31,6 +31,7 @@ int main(int argc, char** argv)
         std::string header;
         std::time_t sync_epoch;
         double period;
+        double offset;
         std::size_t ts_per_block;
         /** Define and parse the program options
         */
@@ -64,6 +65,9 @@ int main(int argc, char** argv)
         ("ts_per_block,t", po::value<std::size_t>(&ts_per_block)
             ->default_value(8192*128),
             "The increment in timestamp between consecutive blocks")
+        ("offset", po::value<double>(&offset)
+            ->default_value(0.0),
+            "Offset from the correct sync offset (used for testing latency responses)")
         ("log_level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)
@@ -99,7 +103,7 @@ int main(int argc, char** argv)
         sync_source<decltype(out_stream)>(
             out_stream, out_stream.client().header_buffer_size(),
             header, out_stream.client().data_buffer_size(), nbytes,
-            sync_epoch, period, ts_per_block);
+            sync_epoch, period, ts_per_block, offset);
 
         /**
          * End of application code
