@@ -106,6 +106,7 @@ private:
   std::size_t _nHeaps;
   std::size_t _gapSize;
   std::size_t _dataBlockBytes;
+  std::size_t _batch;
 
   HandlerType &_handler;
   cufftHandle _fft_plan;
@@ -126,7 +127,7 @@ private:
 
   thrust::device_vector<UnpackedVoltageType> _baseLineN;
 
-  DoublePinnedHostBuffer<IntegratedPowerType> _host_power_db;
+  DoublePinnedHostBuffer<char> _host_power_db;
 
   cudaStream_t _h2d_stream;
   cudaStream_t _proc_stream;

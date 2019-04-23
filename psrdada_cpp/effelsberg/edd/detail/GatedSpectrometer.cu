@@ -13,11 +13,6 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
-
-
-
-
-
 __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const int64_t* __restrict__ sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
                        size_t noOfSideChannels, size_t selectedSideChannel, const float* __restrict__ _baseLineN) {
@@ -117,8 +112,14 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
       _speadHeapSize(speadHeapSize), _fft_length(fft_length),
       _naccumulate(naccumulate), _nbits(nbits), _handler(handler), _fft_plan(0),
       _call_count(0) {
+
+  // Sanity checks
   assert(((_nbits == 12) || (_nbits == 8)));
-  assert(_naccumulate > 0); // Sanity check
+  assert(_naccumulate > 0);
+
+  // check for any device errors
+  CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+
   BOOST_LOG_TRIVIAL(info)
       << "Creating new GatedSpectrometer instance with parameters: \n"
       << "  fft_length           " << _fft_length << "\n"
@@ -139,13 +140,10 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
           nSideChannels));  // Sanity check of side channel value
   assert(selectedBit < 64); // Sanity check of selected bit
   BOOST_LOG_TRIVIAL(info) << "Resulting memory configuration: \n"
-                           << "  totalSizeOfHeap: " << _totalHeapSize
-                           << " byte\n"
-                           << "  number of heaps per buffer: " << _nHeaps
-                           << "\n"
+                           << "  totalSizeOfHeap: " << _totalHeapSize << " byte\n"
+                           << "  number of heaps per buffer: " << _nHeaps << "\n"
                            << "  resulting gap: " << _gapSize << " byte\n"
-                           << "  datablock size in buffer: " << _dataBlockBytes
-                           << " byte\n";
+                           << "  datablock size in buffer: " << _dataBlockBytes << " byte\n";
 
   std::size_t nsamps_per_buffer = _dataBlockBytes * 8 / nbits;
   std::size_t n64bit_words = _dataBlockBytes / sizeof(uint64_t);
@@ -182,9 +180,10 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
                            << _channelised_voltage.size();
   _power_db.resize(_nchans * batch / _naccumulate * 2);  // hold on and off spectra to simplify output
   BOOST_LOG_TRIVIAL(debug) << "  Powers size: " << _power_db.size() / 2; 
-  // on the host both power are stored in the same data buffer
-  _host_power_db.resize( _power_db.size());
-  _noOfBitSetsInSideChannel.resize(1);
+  // on the host both power are stored in the same data buffer together with
+  // the number of bit sets
+  _noOfBitSetsInSideChannel.resize( batch / _naccumulate);
+  _host_power_db.resize( _power_db.size() * sizeof(IntegratedPowerType) + 2 * sizeof(size_t) * _noOfBitSetsInSideChannel.size());
 
   CUDA_ERROR_CHECK(cudaStreamCreate(&_h2d_stream));
   CUDA_ERROR_CHECK(cudaStreamCreate(&_proc_stream));
@@ -266,11 +265,14 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
       _unpacked_voltage_G0.size(), _speadHeapSize, _selectedBit, _nSideChannels,
       _selectedSideChannel, thrust::raw_pointer_cast(_baseLineN.data()));
 
-  countBitSet<<<(sideChannelData.size()+255)/256, 256, 0,
-    _proc_stream>>>(thrust::raw_pointer_cast(sideChannelData.data()),
-        sideChannelData.size(), _selectedBit,
-        _nSideChannels, _selectedBit,
-        thrust::raw_pointer_cast(noOfBitSet.data()));
+  for (size_t i = 0; i < _noOfBitSetsInSideChannel.size(); i++)
+  { // ToDo: Should be in one kernel call
+    countBitSet<<<(sideChannelData.size()+255)/256, 256, 0,
+      _proc_stream>>>(thrust::raw_pointer_cast(sideChannelData.data() + i * sideChannelData.size() / _noOfBitSetsInSideChannel.size() ),
+          sideChannelData.size() / _noOfBitSetsInSideChannel.size(), _selectedBit,
+          _nSideChannels, _selectedBit,
+          thrust::raw_pointer_cast(noOfBitSet.data() + i));
+  }
 
   BOOST_LOG_TRIVIAL(debug) << "Performing FFT 1";
   UnpackedVoltageType *_unpacked_voltage_ptr =
@@ -307,6 +309,7 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
     return true;
   }
 
+  // Copy data to device
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
   _raw_voltage_db.swap();
   _sideChannelData_db.swap();
@@ -327,49 +330,66 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
     return false;
   }
 
-  // Synchronize all streams
+  //process data
   _power_db.swap();
   _noOfBitSetsInSideChannel.swap();
 
   process(_raw_voltage_db.b(), _sideChannelData_db.b(), _power_db.a(), _noOfBitSetsInSideChannel.a());
-
-  // signal that data block has been processed
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
 
   if (_call_count == 2) {
     return false;
   }
 
+  //copy data to host
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
   _host_power_db.swap();
   std::swap(_noOfBitSetsInSideChannel_host[0], _noOfBitSetsInSideChannel_host[1]);
-  CUDA_ERROR_CHECK(
-      cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr()),
-                      static_cast<void *>(_power_db.b_ptr()),
-                      _power_db.size() * sizeof(IntegratedPowerType),
-                      cudaMemcpyDeviceToHost, _d2h_stream));
-//  CUDA_ERROR_CHECK(cudaMemcpyAsync(
-//        static_cast<void *>(_host_power_db.a_ptr() +
-//                          (_power_db_G0.size())),           // as I am adding BEFORE the cast to void, I dont need the sizeof
-//      static_cast<void *>(_power_db_G1.b_ptr()),
-//      _power_db_G1.size() * sizeof(IntegratedPowerType), cudaMemcpyDeviceToHost,
-//      _d2h_stream));
 
-  CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(&_noOfBitSetsInSideChannel_host[0]),
-        static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr()),
-          1 * sizeof(size_t),cudaMemcpyDeviceToHost, _d2h_stream));
+  for (size_t i = 0; i < _noOfBitSetsInSideChannel.size(); i++)
+  {
+    size_t memOffset = 2 * i * (_nchans * sizeof(IntegratedPowerType) + sizeof(size_t));
+    // copy 2x channel data
+    CUDA_ERROR_CHECK(
+        cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr() + memOffset) ,
+                        static_cast<void *>(_power_db.b_ptr() + 2 * i * _nchans),
+                        2 * _nchans * sizeof(IntegratedPowerType),
+                        cudaMemcpyDeviceToHost, _d2h_stream));
+    // copy noOf bit set data
+    CUDA_ERROR_CHECK(
+        cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 2 * _nchans ),
+          static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr() + i ),
+            1 * sizeof(size_t),
+            cudaMemcpyDeviceToHost, _d2h_stream));
+}
 
-  BOOST_LOG_TRIVIAL(debug) << "Copy Data back to device";
+  BOOST_LOG_TRIVIAL(debug) << "Copy Data back to host";
 
   if (_call_count == 3) {
     return false;
   }
 
-  BOOST_LOG_TRIVIAL(info) << _call_count << ": No of bit set in side channel: " << _noOfBitSetsInSideChannel_host[1] << std::endl;
-  // Wrap _detected_host_previous in a RawBytes object here;
+  // calculate off value
+  BOOST_LOG_TRIVIAL(info) << "Buffer block: " << _call_count << " with " << _noOfBitSetsInSideChannel.size() << " output heaps:"; 
+  for (size_t i = 0; i < _noOfBitSetsInSideChannel.size(); i++)
+  {
+    size_t memOffset = 2 * i * (_nchans * sizeof(IntegratedPowerType) + sizeof(size_t));
+
+    size_t* on_values = reinterpret_cast<size_t*> (_host_power_db.b_ptr() + memOffset + 2 * _nchans * sizeof(IntegratedPowerType));
+    size_t* off_values = reinterpret_cast<size_t*> (_host_power_db.b_ptr() + memOffset + 2 * _nchans * sizeof(IntegratedPowerType) + sizeof(size_t));
+    *off_values =  _nHeaps - (*on_values);
+
+    BOOST_LOG_TRIVIAL(info) << "    " << i << ": No of bit set in side channel: " << *on_values << " / " << *off_values << std::endl;
+  }
+
+
+  // call handler
+
+
+  // Wrap in a RawBytes object here;
   RawBytes bytes(reinterpret_cast<char *>(_host_power_db.b_ptr()),
-                 _host_power_db.size() * sizeof(IntegratedPowerType),
-                 _host_power_db.size() * sizeof(IntegratedPowerType));
+                 _host_power_db.size(),
+                 _host_power_db.size());
   BOOST_LOG_TRIVIAL(debug) << "Calling handler";
   // The handler can't do anything asynchronously without a copy here
   // as it would be unsafe (given that it does not own the memory it
