@@ -206,8 +206,8 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
   BOOST_LOG_TRIVIAL(debug) << "  Powers size: " << _power_db.size() / 2;
 
   _noOfBitSetsInSideChannel.resize( batch / (_naccumulate / nBlocks));
-  thrust::fill( _noOfBitSetsInSideChannel.a().begin(), _noOfBitSetsInSideChannel.a().end(), 0.);
-  thrust::fill( _noOfBitSetsInSideChannel.b().begin(), _noOfBitSetsInSideChannel.b().end(), 0.);
+  thrust::fill(_noOfBitSetsInSideChannel.a().begin(), _noOfBitSetsInSideChannel.a().end(), 0.);
+  thrust::fill(_noOfBitSetsInSideChannel.b().begin(), _noOfBitSetsInSideChannel.b().end(), 0.);
 
   // on the host both power are stored in the same data buffer together with
   // the number of bit sets
@@ -316,7 +316,6 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
   CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal *)_unpacked_voltage_ptr,
                                  (cufftComplex *)_channelised_voltage_ptr));
 
-  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   _detector->detect(_channelised_voltage, detected, 2, 1);
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   BOOST_LOG_TRIVIAL(debug) << "Exit processing";
@@ -332,7 +331,7 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
     BOOST_LOG_TRIVIAL(error) << "Unexpected Buffer Size - Got "
                              << block.used_bytes() << " byte, expected "
                              << _buffer_bytes << " byte)";
-    cudaDeviceSynchronize();
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     cudaProfilerStop();
     return true;
   }
@@ -369,8 +368,8 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
     _power_db.swap();
     _noOfBitSetsInSideChannel.swap();
     // move to specific stream!
-    thrust::fill(_power_db.a().begin(), _power_db.a().end(), 0.);
-    thrust::fill( _noOfBitSetsInSideChannel.a().begin(), _noOfBitSetsInSideChannel.a().end(), 0.);
+    thrust::fill(thrust::cuda::par.on(_proc_stream),_power_db.a().begin(), _power_db.a().end(), 0.);
+    thrust::fill(thrust::cuda::par.on(_proc_stream), _noOfBitSetsInSideChannel.a().begin(), _noOfBitSetsInSideChannel.a().end(), 0.);
   }
 
   process(_raw_voltage_db.b(), _sideChannelData_db.b(), _power_db.a(), _noOfBitSetsInSideChannel.a());
