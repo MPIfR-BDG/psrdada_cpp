@@ -107,6 +107,8 @@ private:
   std::size_t _gapSize;
   std::size_t _dataBlockBytes;
   std::size_t _batch;
+  std::size_t _nsamps_per_output_spectra;
+  std::size_t _nsamps_per_buffer;
 
   HandlerType &_handler;
   cufftHandle _fft_plan;
@@ -115,19 +117,20 @@ private:
   std::unique_ptr<Unpacker> _unpacker;
   std::unique_ptr<DetectorAccumulator<IntegratedPowerType> > _detector;
 
+  // Input data
   DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
-  DoubleDeviceBuffer<IntegratedPowerType> _power_db;
   DoubleDeviceBuffer<int64_t> _sideChannelData_db;
-  DoubleDeviceBuffer<size_t> _noOfBitSetsInSideChannel;
-  size_t _noOfBitSetsInSideChannel_host [2];
 
+  // Output data
+  DoubleDeviceBuffer<IntegratedPowerType> _power_db;
+  DoubleDeviceBuffer<size_t> _noOfBitSetsInSideChannel;
+  DoublePinnedHostBuffer<char> _host_power_db;
+
+  // Intermediate process steps
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G0;
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G1;
   thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
-
   thrust::device_vector<UnpackedVoltageType> _baseLineN;
-
-  DoublePinnedHostBuffer<char> _host_power_db;
 
   cudaStream_t _h2d_stream;
   cudaStream_t _proc_stream;

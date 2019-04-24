@@ -31,7 +31,7 @@ void detect_and_accumulate(float2 const* __restrict__ in, int8_t* __restrict__ o
         sum += x + y;
       }
       size_t toff = out_offset * nchans + currentOutputSpectra * nchans *stride; 
-      out[toff + i] = (int8_t) ((sum - offset)/scale);
+      out[toff + i] += (int8_t) ((sum - offset)/scale);
     }
 
 }
@@ -56,7 +56,7 @@ void detect_and_accumulate(float2 const* __restrict__ in, float* __restrict__ ou
         sum += x + y;
       }
       size_t toff = out_offset * nchans + currentOutputSpectra * nchans * stride;
-      out[i + toff] = sum;
+      out[i + toff] += sum;
     }
 }
 
