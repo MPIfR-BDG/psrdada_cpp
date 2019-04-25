@@ -50,6 +50,9 @@ namespace transpose{
             } // SAMPLES LOOP
         } // GROUP LOOP
 
+
+        // Convert to unsigned (add 128.0)
+        std::transform(tmpoutdata.begin(), tmpoutdata.end(), tmpoutdata.begin(), std::bind2nd(std::plus<char>(),128));
         std::copy(tmpoutdata.begin(),tmpoutdata.end(), transposed_data.ptr());
     }
 } //transpose
