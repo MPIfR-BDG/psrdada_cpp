@@ -1,76 +1,55 @@
 #include "gtest/gtest.h"
 
-#include "psrdada_cpp/cuda_utils.hpp"
-#include <random>
+#include <time.h>
+#include <stdlib.h>
+
 #include "psrdada_cpp/effelsberg/edd/VLBI.cuh"
+
+#include "psrdada_cpp/cuda_utils.hpp"
 #include "thrust/extrema.h"
 
 TEST(VLBITest, 2_bit_pack_test)
 {
     std::size_t n = 1024;
     thrust::device_vector<float>  input(n);
-    thrust::device_vector<uint32_t>  output(n);
-    {
-      thrust::fill(input.begin(), input.end(), 0);
-      thrust::fill(output.begin(), output.end(), 5);
-
-      psrdada_cpp::effelsberg::edd::pack_2bit(input, output, 0, 3);
-
-      EXPECT_EQ(output.size(), input.size() / 16);
-      thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> minmax;
-      minmax = thrust::minmax_element(output.begin(), output.end());
-      EXPECT_EQ(0, *minmax.first);
-      EXPECT_EQ(0, *minmax.second);
-    }
+    thrust::device_vector<uint32_t>  output(n / 16);
 
     {
-      thrust::fill(input.begin(), input.end(), 1);
+      float minV = -2;
+      float maxV = 2;
+
+      srand (time(NULL));
+      for (int i =0; i < input.size(); i++)
+      {
+        input[i] = ((float(rand()) / RAND_MAX) - 0.5) * 2.5 * (maxV-minV) + maxV + minV;
+      }
+
       thrust::fill(output.begin(), output.end(), 5);
+      psrdada_cpp::effelsberg::edd::pack_2bit(input, output, minV, maxV);
 
-      psrdada_cpp::effelsberg::edd::pack_2bit(input, output, 0, 3);
-      thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> minmax;
-      minmax = thrust::minmax_element(output.begin(), output.end());
+      float step = (maxV - minV) / 3;
+      float L2 = minV + step;
+      float L3 = minV + 2 * step;
+      float L4 = minV + 3 * step;
 
-      EXPECT_EQ((uint32_t)0b0101010101010101010101010101010101010101, *minmax.first);
-      EXPECT_EQ((uint32_t)0b0101010101010101010101010101010101010101, *minmax.second);
+      for(int i = 0; i < input.size() / 16; i++)
+      {
+          uint64_t of = output[i];
+          for (size_t j =0; j< 16; j++)
+          {
+            int a = ((of >> (j *2)) & 3);
+            int k = i * 16 + j;
+            if (input[k] >= L4)
+              EXPECT_EQ(a, 3);
+            else if (input[k] >= L3)
+              EXPECT_EQ(a, 2);
+            else if (input[k] >= L2)
+              EXPECT_EQ(a, 1);
+            else
+              EXPECT_EQ(a, 0);
+          }
+      }
     }
-
-    {
-      thrust::fill(input.begin(), input.end(), 2);
-      thrust::fill(output.begin(), output.end(), 5);
-
-      psrdada_cpp::effelsberg::edd::pack_2bit(input, output, 0, 3);
-      thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> minmax;
-      minmax = thrust::minmax_element(output.begin(), output.end());
-
-      EXPECT_EQ((uint32_t)0b1010101010101010101010101010101010101010, *minmax.first);
-      EXPECT_EQ((uint32_t)0b1010101010101010101010101010101010101010, *minmax.second);
-    }
-
-    {
-      thrust::fill(input.begin(), input.end(), 3);
-      thrust::fill(output.begin(), output.end(), 5);
-
-      psrdada_cpp::effelsberg::edd::pack_2bit(input, output, 0, 3);
-      thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> minmax;
-      minmax = thrust::minmax_element(output.begin(), output.end());
-
-      EXPECT_EQ((uint32_t)0b1111111111111111111111111111111111111111, *minmax.first);
-      EXPECT_EQ((uint32_t)0b1111111111111111111111111111111111111111, *minmax.second);
-    }
-
-    {
-      thrust::fill(input.begin(), input.end(), 4);
-      thrust::fill(output.begin(), output.end(), 5);
-
-      psrdada_cpp::effelsberg::edd::pack_2bit(input, output, 0, 3);
-      thrust::pair<thrust::device_vector<uint32_t>::iterator, thrust::device_vector<uint32_t>::iterator> minmax;
-      minmax = thrust::minmax_element(output.begin(), output.end());
-
-      EXPECT_EQ((uint32_t)0b1111111111111111111111111111111111111111, *minmax.first);
-      EXPECT_EQ((uint32_t)0b1111111111111111111111111111111111111111, *minmax.second);
-    }
-
 }
 
 //int main(int argc, char **argv) {

@@ -12,7 +12,7 @@ namespace kernels {
 
 
 __global__
-void pack_edd_float32_to_2bit(float const* __restrict__ in, uint32_t* __restrict__ out, size_t n, float minV, float maxV)
+void pack_edd_float32_to_2bit(const float * __restrict__ in, uint32_t* __restrict__ out, size_t n, float minV, float maxV)
 {
 
     __shared__ uint32_t tmp_in[EDD_NTHREADS_PACK];
@@ -20,14 +20,13 @@ void pack_edd_float32_to_2bit(float const* __restrict__ in, uint32_t* __restrict
     //__shared__ volatile uint8_t tmp_out[EDD_NTHREADS_PACK / 4];
 
     const float s = (maxV - minV) / 3.;
-    int odx = blockIdx.x * blockDim.x / NPACK + threadIdx.x;
     for (size_t idx = blockIdx.x * blockDim.x + threadIdx.x; idx < n ; idx += gridDim.x * blockDim.x)
     {
         const float delta = (in[idx] - minV);
         tmp_in[threadIdx.x] = 0;
-        tmp_in[threadIdx.x] += (delta >= 1 * s);
-        tmp_in[threadIdx.x] += (delta >= 2 * s);
-        tmp_in[threadIdx.x] += (delta >= 3 * s);
+        tmp_in[threadIdx.x] += (delta > 1 * s);
+        tmp_in[threadIdx.x] += (delta > 2 * s);
+        tmp_in[threadIdx.x] += (delta > 3 * s);
         __syncthreads();
 
         // can be improved by distributing work on more threads in tree
@@ -36,16 +35,38 @@ void pack_edd_float32_to_2bit(float const* __restrict__ in, uint32_t* __restrict
         {
           for (size_t i = 1; i < NPACK; i++)
           {
-            tmp_in[threadIdx.x] |= tmp_in[threadIdx.x * NPACK + i] << i*2;
+            tmp_in[threadIdx.x * NPACK] += (tmp_in[threadIdx.x * NPACK + i] << (i*2));
           }
-          //out[odx] = tmp_out;
-          out[odx] = tmp_in[threadIdx.x];
+          out[(idx - threadIdx.x) / NPACK + threadIdx.x] = tmp_in[threadIdx.x *NPACK];
         }
-        odx += gridDim.x * blockDim.x / NPACK;
 
         __syncthreads();
     }
 }
+
+
+//__global__ void pack_edd_float32_to_2bit(const float* __restrict__ input, uint32_t* __restrict__ output, size_t inputSize, float minV, float maxV)
+//{
+//  float l = (maxV - minV) / 3;
+//  for (size_t i = blockIdx.x * blockDim.x + 16 * threadIdx.x; (i < inputSize);
+//       i += blockDim.x * gridDim.x * 16)
+//  {
+//    uint32_t out = 0;
+//    for (size_t j =0; j < 16; j++)
+//    {
+//      //out = out << 2;
+//
+//      const float inp = input[i + j];
+//      const uint32_t tmp = (inp > minV + l) + (inp > minV + 2 * l) + (inp > minV + 3 * l);
+//      out += (tmp << (2 * j));
+//      //input[i + j] = i + j;
+//    }
+//
+//    output[i / 16] = out; 
+//  }
+//}
+
+
 
 } //namespace kernels
 
