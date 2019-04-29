@@ -47,7 +47,7 @@ void DetectorAccumulatorTester::detect_c_reference(
             output_sample_idx < nsamples_out;
             ++output_sample_idx)
         {
-            float value = 0.0f;
+            double value = 0.0f;
             for (int input_sample_offset=0;
                 input_sample_offset < tscrunch;
                 ++input_sample_offset)
@@ -62,7 +62,7 @@ void DetectorAccumulatorTester::detect_c_reference(
 }
 
 void DetectorAccumulatorTester::compare_against_host(
-    DetectorAccumulator::OutputType const& gpu_output,
+    DetectorAccumulator<int8_t>::OutputType const& gpu_output,
     OutputType const& host_output)
 {
     OutputType copy_from_gpu = gpu_output;
@@ -88,12 +88,14 @@ TEST_F(DetectorAccumulatorTester, noise_test)
         host_input[ii].x = distribution(generator);
 	host_input[ii].y = distribution(generator);
     }
-    DetectorAccumulator::InputType gpu_input = host_input;
-    DetectorAccumulator::OutputType gpu_output;
+    DetectorAccumulator<int8_t>::InputType gpu_input = host_input;
+    DetectorAccumulator<int8_t>::OutputType gpu_output;
+    gpu_output.resize(gpu_input.size() / tscrunch );
     OutputType host_output;
-    DetectorAccumulator detector(nchans, tscrunch, scale, 0.0, _stream);
+    DetectorAccumulator<int8_t> detector(nchans, tscrunch, scale, 0.0, _stream);
     detector.detect(gpu_input, gpu_output);
     detect_c_reference(host_input, host_output, nchans, tscrunch, scale, 0.0);
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
     compare_against_host(gpu_output, host_output);
 }
 

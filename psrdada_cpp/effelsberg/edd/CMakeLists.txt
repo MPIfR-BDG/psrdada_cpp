@@ -23,5 +23,10 @@ cuda_add_executable(VLBI_prof src/VLBI_prof.cu)
 target_link_libraries(VLBI_prof ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 install(TARGETS VLBI_prof DESTINATION bin)
 
+#Gated FFT spectrometer interface
+cuda_add_executable(gated_spectrometer src/GatedSpectrometer_cli.cu)
+target_link_libraries(gated_spectrometer ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} -lcublas)
+install(TARGETS gated_spectrometer DESTINATION bin)
+
 add_subdirectory(test)
 endif(ENABLE_CUDA)

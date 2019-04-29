@@ -69,6 +69,7 @@ install (TARGETS ${CMAKE_PROJECT_NAME}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 install(FILES ${psrdada_cpp_inc} DESTINATION include/psrdada_cpp)
+install(DIRECTORY detail DESTINATION include/psrdada_cpp)
 
 add_subdirectory(meerkat)
 add_subdirectory(effelsberg)

@@ -218,7 +218,7 @@ TEST_F(UnpackerTester, 12_bit_unpack_test)
     std::default_random_engine generator;
     std::uniform_int_distribution<int> distribution(1,1<<31);
     InputType host_input(n);
-    for (int ii = 0; ii < n; ++ii)
+    for (size_t ii = 0; ii < n; ++ii)
     {
         host_input[ii] = distribution(generator);
     }
@@ -237,7 +237,7 @@ TEST_F(UnpackerTester, 8_bit_unpack_test)
     std::default_random_engine generator;
     std::uniform_int_distribution<int> distribution(1,1<<31);
     InputType host_input(n);
-    for (int ii = 0; ii < n; ++ii)
+    for (size_t ii = 0; ii < n; ++ii)
     {
         host_input[ii] = distribution(generator);
     }

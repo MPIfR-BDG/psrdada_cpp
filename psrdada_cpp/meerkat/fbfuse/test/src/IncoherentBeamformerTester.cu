@@ -115,10 +115,10 @@ void IncoherentBeamformerTester::compare_against_host(
         _config.nsamples_per_heap(),
         _config.ib_power_scaling(),
         _config.ib_power_offset());
-    for (int ii = 0; ii < tf_powers_host.size(); ++ii)
+    for (size_t ii = 0; ii < tf_powers_host.size(); ++ii)
     {
         ASSERT_TRUE(std::abs(static_cast<int>(tf_powers_host[ii]) - tf_powers_cuda[ii]) <= 1);
-    } 
+    }
 }
 
 TEST_F(IncoherentBeamformerTester, ib_representative_noise_test)
@@ -133,7 +133,7 @@ TEST_F(IncoherentBeamformerTester, ib_representative_noise_test)
     std::size_t input_size = (ntimestamps * _config.ib_nantennas()
         * _config.nchans() * _config.nsamples_per_heap() * _config.npol());
     HostVoltageVectorType taftp_voltages_host(input_size);
-    for (int ii = 0; ii < taftp_voltages_host.size(); ++ii)
+    for (size_t ii = 0; ii < taftp_voltages_host.size(); ++ii)
     {
         taftp_voltages_host[ii].x = static_cast<int8_t>(std::lround(normal_dist(generator)));
         taftp_voltages_host[ii].y = static_cast<int8_t>(std::lround(normal_dist(generator)));

@@ -35,7 +35,7 @@ protected:
         float offset);
 
     void compare_against_host(
-        DetectorAccumulator::OutputType const& gpu_output,
+        DetectorAccumulator<int8_t>::OutputType const& gpu_output,
         OutputType const& host_output);
 
 protected:
