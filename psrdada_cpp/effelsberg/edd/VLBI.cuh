@@ -1,7 +1,13 @@
 #ifndef PSRDADA_CPP_EFFELSBERG_EDD_VLBI_CUH
 #define PSRDADA_CPP_EFFELSBERG_EDD_VLBI_CUH
 
-#include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/effelsberg/edd/Unpacker.cuh"
+#include "psrdada_cpp/raw_bytes.hpp"
+#include "psrdada_cpp/cuda_utils.hpp"
+#include "psrdada_cpp/double_device_buffer.cuh"
+#include "psrdada_cpp/double_host_buffer.cuh"
+
+
 #include <thrust/device_vector.h>
 
 
@@ -12,16 +18,164 @@ namespace kernels {
 
 
 
+
 __global__
-void pack_edd_float32_to_2bit(float* __restrict__ in, uint32_t * __restrict__ out,  size_t n);
+void pack_edd_float32_to_2bit(const float* __restrict__ in, uint32_t * __restrict__ out,  size_t n);
 
 } //namespace kernels
 
-void pack_2bit(thrust::device_vector<float> const& input, thrust::device_vector<uint32_t>& output, float minV, float maxV, cudaStream_t _stream = 0);
+void pack_2bit(thrust::device_vector<float> const& input, thrust::device_vector<uint8_t>& output, float minV, float maxV, cudaStream_t _stream = 0);
+
+
+// some helper functions to dealm with bit encoding of the header
+// ToDo: Find better place in utility collection
+
+/// Create bit mask with ones between first and lastBit (inclusive) and zeros
+/// otherwise;
+uint32_t bitMask(uint32_t firstBit, uint32_t lastBit);
+
+/// Squeeze a value into the specified bitrange of the target. Throws runtime
+/// error if too large.
+void setBitsWithValue(uint32_t &target, uint32_t firstBit, uint32_t lastBit, uint32_t value);
+
+/// Get numerical value from the specified bits in the target.
+uint32_t getBitsValue(const uint32_t &target, uint32_t firstBit, uint32_t lastBit);
+
+
+const size_t vlbiHeaderSize = 8 * 32 / 8; // bytes [8 words a 32 bit]
+
+/// class VDIFHeader stores a VDIF compliant header block with conveniant
+/// setters and getters. See https://vlbi.org/vlbi-standards/vdif/
+/// specification 1.1.1 from June 2014 for details.
+class VDIFHeader
+{
+	private:
+	  uint32_t data[8];
+
+	public:
+		VDIFHeader();
+
+    // return pointer to the data block for low level manipulation
+		uint32_t* getData();
+
+		void setInvalid();
+		void setValid();
+		bool isValid();
+
+		void setSecondsFromReferenceEpoch(uint32_t value);
+		uint32_t getSecondsFromReferenceEpoch();
+
+		void setReferenceEpoch(uint32_t value);
+		uint32_t getReferenceEpoch();
+
+		void setDataFrameNumber(uint32_t value);
+		uint32_t getDataFrameNumber();
+
+		void setDataFrameLength(uint32_t value);
+		uint32_t getDataFrameLength();
+
+    uint32_t getVersionNumber();
+
+		void setNumberOfChannels(uint32_t value);
+		uint32_t getNumberOfChannels();
+
+		bool isRealDataType();
+		bool isComplexDataType();
+		void setComplexDataType();
+		void setRealDataType();
+
+	  void setBitsPerSample(uint32_t value);
+		uint32_t getBitsPerSample();
+
+	  void setThreadId(uint32_t value);
+		uint32_t getThreadId();
+
+	  void setStationId(uint32_t value);
+		uint32_t getStationId();
+};
+
+
+/**
+ @class VLBI
+ @brief Convert data to 2bit data in VDIF format.
+ */
+template <class HandlerType> class VLBI{
+public:
+  typedef uint64_t RawVoltageType;
+
+public:
+  /**
+   * @brief      Constructor
+   *
+   * @param      buffer_bytes A RawBytes object wrapping a DADA header buffer
+   * @param      speadHeapSize Size of the spead heap block.
+   * @param      input_bitDepth Bit depth of the sampled signal.
+   * @param      outputBlockSize size of the output VDIF payload in bytes.
+   * @param      handler Output handler
+   *
+   */
+  VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
+                    std::size_t speadHeapSize,
+                    std::size_t outputBlockSize,
+                    HandlerType &handler);
+  ~VLBI();
+
+  /**
+   * @brief      A callback to be called on connection
+   *             to a ring buffer.
+   *
+   * @detail     The first available header block in the
+   *             in the ring buffer is provided as an argument.
+   *             It is here that header parameters could be read
+   *             if desired.
+   *
+   * @param      block  A RawBytes object wrapping a DADA header buffer
+   */
+  void init(RawBytes &block);
+
+  /**
+   * @brief      A callback to be called on acqusition of a new
+   *             data block.
+   *
+   * @param      block  A RawBytes object wrapping a DADA data buffer output
+   *             are the integrated specttra with/without bit set.
+   */
+  bool operator()(RawBytes &block);
+
+private:
+  std::size_t _buffer_bytes;
+  std::size_t _input_bitDepth;
+  std::size_t _output_bitDepth;
+  std::size_t _speadHeapSize;
+  std::size_t _outputBlockSize;
+
+  HandlerType &_handler;
+  int _call_count;
+  std::unique_ptr<Unpacker> _unpacker;
+
+  // Input data
+  DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
+
+  // process tmp
+  thrust::device_vector<float> _unpacked_voltage;
+
+  // Output data
+  DoubleDeviceBuffer<uint8_t> _packed_voltage;
+  DoublePinnedHostBuffer<uint8_t> _outputBuffer;
+
+  VDIFHeader _vdifHeader;
+  thrust::host_vector<uint8_t, thrust::system::cuda::experimental::pinned_allocator<uint8_t>> _spillOver;
+
+  cudaStream_t _h2d_stream;
+  cudaStream_t _proc_stream;
+  cudaStream_t _d2h_stream;
+};
+
 
 } //namespace edd
 } //namespace effelsberg
 } //namespace psrdada_cpp
+#include "psrdada_cpp/effelsberg/edd/detail/VLBI.cu"
 
 #endif // PSRDADA_CPP_EFFELSBERG_EDD_VLBI_CUH
 

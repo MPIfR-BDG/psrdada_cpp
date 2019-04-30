@@ -28,5 +28,11 @@ cuda_add_executable(gated_spectrometer src/GatedSpectrometer_cli.cu)
 target_link_libraries(gated_spectrometer ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} -lcublas)
 install(TARGETS gated_spectrometer DESTINATION bin)
 
+
+cuda_add_executable(VLBI src/VLBI_cli.cu)
+target_link_libraries(VLBI ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} -lcublas)
+install(TARGETS VLBI DESTINATION bin)
+
+
 add_subdirectory(test)
 endif(ENABLE_CUDA)

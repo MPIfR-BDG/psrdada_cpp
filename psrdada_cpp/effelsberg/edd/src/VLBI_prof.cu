@@ -23,7 +23,7 @@ int main()
 
   const size_t n = 1024 * 1024 * 1024 / 4;
     thrust::device_vector<float>  input(n);
-    thrust::device_vector<uint32_t>  output(n);
+    thrust::device_vector<uint8_t>  output(n * 4);
   
     thrust::fill(input.begin(), input.end(), .5);
     thrust::fill(output.begin(), output.end(), 5);
