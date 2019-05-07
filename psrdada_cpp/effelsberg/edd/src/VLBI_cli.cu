@@ -103,13 +103,22 @@ int main(int argc, char **argv) {
     DadaClientBase client(input_key, log);
     std::size_t buffer_bytes = client.data_buffer_size();
 
+    // ToDo: Options to set values
+    effelsberg::edd::VDIFHeader vdifHeader;
+    vdifHeader.setThreadId(0);
+    vdifHeader.setStationId(0);
+    vdifHeader.setReferenceEpoch(123);
+    vdifHeader.setSecondsFromReferenceEpoch(42); // for first block
+    double sampleRate = 2.6E9;
+
+
     std::cout << "Running with output_type: " << output_type << std::endl;
     if (output_type == "file")
     {
       SimpleFileWriter sink(filename);
       effelsberg::edd::VLBI<decltype(sink)> vlbi(
           buffer_bytes, nbits,
-          speadHeapSize, 5000, sink);
+          speadHeapSize, sampleRate, vdifHeader, sink);
 
       DadaInputStream<decltype(vlbi)> istream(input_key, log, vlbi);
       istream.start();
@@ -119,7 +128,7 @@ int main(int argc, char **argv) {
       DadaOutputStream sink(string_to_key(filename), log);
       effelsberg::edd::VLBI<decltype(sink)> vlbi(
           buffer_bytes, nbits,
-          speadHeapSize, 5000, sink);
+          speadHeapSize, sampleRate, vdifHeader, sink);
       DadaInputStream<decltype(vlbi)> istream(input_key, log, vlbi);
       istream.start();
     }

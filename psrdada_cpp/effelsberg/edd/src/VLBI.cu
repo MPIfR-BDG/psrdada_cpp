@@ -165,7 +165,7 @@ void VDIFHeader::setValid()
   setBitsWithValue(data[0], 31, 31, 0);
 }
 
-bool VDIFHeader::isValid()
+bool VDIFHeader::isValid() const
 {
   return (getBitsValue(data[0], 31, 31) == 0);
 }
@@ -175,7 +175,7 @@ void VDIFHeader::setSecondsFromReferenceEpoch(uint32_t value)
   setBitsWithValue(data[0], 0, 29, value);
 }
 
-uint32_t VDIFHeader::getSecondsFromReferenceEpoch()
+uint32_t VDIFHeader::getSecondsFromReferenceEpoch() const
 {
   return getBitsValue(data[0], 0, 29);
 }
@@ -185,7 +185,7 @@ void VDIFHeader::setReferenceEpoch(uint32_t value)
   setBitsWithValue(data[1], 24, 29, value);
 }
 
-uint32_t VDIFHeader::getReferenceEpoch()
+uint32_t VDIFHeader::getReferenceEpoch() const
 {
   return getBitsValue(data[1], 24, 29);
 }
@@ -195,7 +195,7 @@ void VDIFHeader::setDataFrameNumber(uint32_t value)
   setBitsWithValue(data[1], 0, 23, value);
 }
 
-uint32_t VDIFHeader::getDataFrameNumber()
+uint32_t VDIFHeader::getDataFrameNumber() const
 {
   return getBitsValue(data[1], 0, 23);
 }
@@ -205,12 +205,12 @@ void VDIFHeader::setDataFrameLength(uint32_t value)
   setBitsWithValue(data[2], 0, 23, value);
 }
 
-uint32_t VDIFHeader::getDataFrameLength()
+uint32_t VDIFHeader::getDataFrameLength() const
 {
   return getBitsValue(data[2], 0, 23);
 }
 
-uint32_t VDIFHeader::getVersionNumber()
+uint32_t VDIFHeader::getVersionNumber() const
 {
   return getBitsValue(data[2], 29, 31);
 }
@@ -220,17 +220,17 @@ void VDIFHeader::setNumberOfChannels(uint32_t value)
   setBitsWithValue(data[2], 24, 28, value);
 }
 
-uint32_t VDIFHeader::getNumberOfChannels()
+uint32_t VDIFHeader::getNumberOfChannels() const
 {
   return getBitsValue(data[2], 24, 28);
 }
 
-bool VDIFHeader::isRealDataType()
+bool VDIFHeader::isRealDataType() const
 {
   return (getBitsValue(data[3], 31, 31) == 0);
 }
 
-bool VDIFHeader::isComplexDataType()
+bool VDIFHeader::isComplexDataType() const
 {
   return (getBitsValue(data[3], 31, 31) == 1);
 }
@@ -250,7 +250,7 @@ void VDIFHeader::setBitsPerSample(uint32_t value)
   setBitsWithValue(data[3], 26, 30, value);
 }
 
-uint32_t VDIFHeader::getBitsPerSample()
+uint32_t VDIFHeader::getBitsPerSample() const
 {
   return getBitsValue(data[3], 26, 30);
 }
@@ -260,7 +260,7 @@ void VDIFHeader::setThreadId(uint32_t value)
   setBitsWithValue(data[3], 16, 25, value);
 }
 
-uint32_t VDIFHeader::getThreadId()
+uint32_t VDIFHeader::getThreadId() const
 {
   return getBitsValue(data[3], 16, 25);
 }
@@ -270,7 +270,7 @@ void VDIFHeader::setStationId(uint32_t value)
   setBitsWithValue(data[3], 0, 15, value);
 }
 
-uint32_t VDIFHeader::getStationId()
+uint32_t VDIFHeader::getStationId() const
 {
   return getBitsValue(data[3], 0, 15);
 }

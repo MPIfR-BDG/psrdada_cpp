@@ -60,38 +60,38 @@ class VDIFHeader
 
 		void setInvalid();
 		void setValid();
-		bool isValid();
+		bool isValid() const;
 
 		void setSecondsFromReferenceEpoch(uint32_t value);
-		uint32_t getSecondsFromReferenceEpoch();
+		uint32_t getSecondsFromReferenceEpoch() const;
 
 		void setReferenceEpoch(uint32_t value);
-		uint32_t getReferenceEpoch();
+		uint32_t getReferenceEpoch() const;
 
 		void setDataFrameNumber(uint32_t value);
-		uint32_t getDataFrameNumber();
+		uint32_t getDataFrameNumber() const;
 
 		void setDataFrameLength(uint32_t value);
-		uint32_t getDataFrameLength();
+		uint32_t getDataFrameLength() const;
 
-    uint32_t getVersionNumber();
+    uint32_t getVersionNumber() const;
 
 		void setNumberOfChannels(uint32_t value);
-		uint32_t getNumberOfChannels();
+		uint32_t getNumberOfChannels() const;
 
-		bool isRealDataType();
-		bool isComplexDataType();
+		bool isRealDataType() const;
+		bool isComplexDataType() const;
 		void setComplexDataType();
 		void setRealDataType();
 
 	  void setBitsPerSample(uint32_t value);
-		uint32_t getBitsPerSample();
+		uint32_t getBitsPerSample() const;
 
 	  void setThreadId(uint32_t value);
-		uint32_t getThreadId();
+		uint32_t getThreadId() const;
 
 	  void setStationId(uint32_t value);
-		uint32_t getStationId();
+		uint32_t getStationId() const;
 };
 
 
@@ -110,13 +110,14 @@ public:
    * @param      buffer_bytes A RawBytes object wrapping a DADA header buffer
    * @param      speadHeapSize Size of the spead heap block.
    * @param      input_bitDepth Bit depth of the sampled signal.
-   * @param      outputBlockSize size of the output VDIF payload in bytes.
+   * @param      VDIFHeader Header of the VDIF output to be sed. Must contain size of the output VDIF payload in bytes.
    * @param      handler Output handler
    *
    */
   VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
                     std::size_t speadHeapSize,
-                    std::size_t outputBlockSize,
+                    double sampleRate,
+                    const VDIFHeader &vdifHeader,
                     HandlerType &handler);
   ~VLBI();
 
@@ -148,6 +149,7 @@ private:
   std::size_t _output_bitDepth;
   std::size_t _speadHeapSize;
   std::size_t _outputBlockSize;
+  double _sampleRate;
 
   HandlerType &_handler;
   int _call_count;
