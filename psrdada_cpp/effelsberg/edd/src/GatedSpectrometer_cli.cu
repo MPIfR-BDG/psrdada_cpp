@@ -1,7 +1,6 @@
 #include "boost/program_options.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 #include "psrdada_cpp/common.hpp"
-#include "psrdada_cpp/dada_client_base.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_null_sink.hpp"
 #include "psrdada_cpp/dada_output_stream.hpp"
@@ -26,32 +25,32 @@ const size_t ERROR_UNHANDLED_EXCEPTION = 2;
 
 
 template<typename T>
-void launchSpectrometer(std::string const &output_type, key_t input_key, std::string const &filename, size_t nSideChannels, size_t selectedSideChannel, size_t selectedBit,   size_t speadHeapSize, size_t fft_length, size_t naccumulate, unsigned int nbits,  float input_level,  float output_level)
+void launchSpectrometer(const effelsberg::edd::DadaBufferLayout &dadaBufferLayout, const std::string &output_type, const std::string &filename, size_t selectedSideChannel, size_t selectedBit, size_t fft_length, size_t naccumulate, unsigned int nbits,  float input_level,  float output_level)
 {
-    MultiLog log("edd::GatedSpectrometer");
-    DadaClientBase client(input_key, log);
-    std::size_t buffer_bytes = client.data_buffer_size();
 
+    MultiLog log("DadaBufferLayout");
     std::cout << "Running with output_type: " << output_type << std::endl;
     if (output_type == "file")
     {
       SimpleFileWriter sink(filename);
-      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(
-          buffer_bytes, nSideChannels, selectedSideChannel, selectedBit,
-          speadHeapSize, fft_length, naccumulate, nbits, input_level,
+      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(dadaBufferLayout,
+          selectedSideChannel, selectedBit,
+          fft_length, naccumulate, nbits, input_level,
           output_level, sink);
-      DadaInputStream<decltype(spectrometer)> istream(input_key, log,
+
+      DadaInputStream<decltype(spectrometer)> istream(dadaBufferLayout.getInputkey(), log,
                                                       spectrometer);
       istream.start();
     }
     else if (output_type == "dada")
     {
       DadaOutputStream sink(string_to_key(filename), log);
-      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(
-          buffer_bytes, nSideChannels, selectedSideChannel, selectedBit,
-          speadHeapSize, fft_length, naccumulate, nbits, input_level,
+      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(dadaBufferLayout,
+          selectedSideChannel, selectedBit,
+          fft_length, naccumulate, nbits, input_level,
           output_level, sink);
-      DadaInputStream<decltype(spectrometer)> istream(input_key, log,
+
+      DadaInputStream<decltype(spectrometer)> istream(dadaBufferLayout.getInputkey(), log,
       spectrometer);
       istream.start();
     }
@@ -184,16 +183,18 @@ int main(int argc, char **argv) {
       return ERROR_IN_COMMAND_LINE;
     }
 
+    effelsberg::edd::DadaBufferLayout bufferLayout(input_key, speadHeapSize, nSideChannels);
+
     if (output_bit_depth == 8)
     {
-      launchSpectrometer<int8_t>(output_type, input_key, filename,
-          nSideChannels, selectedSideChannel, selectedBit, speadHeapSize,
+      launchSpectrometer<int8_t>(bufferLayout, output_type, filename,
+          selectedSideChannel, selectedBit,
        fft_length, naccumulate, nbits, input_level, output_level);
     }
     else if (output_bit_depth == 32)
     {
-      launchSpectrometer<float>(output_type, input_key, filename,
-          nSideChannels, selectedSideChannel, selectedBit, speadHeapSize,
+      launchSpectrometer<float>(bufferLayout, output_type, filename,
+          selectedSideChannel, selectedBit,
        fft_length, naccumulate, nbits, input_level, output_level);
     }
     else

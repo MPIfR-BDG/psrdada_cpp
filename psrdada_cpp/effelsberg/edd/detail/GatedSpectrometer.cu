@@ -104,14 +104,12 @@ __global__ void array_sum(float *in, size_t N, float *out) {
 
 template <class HandlerType, typename IntegratedPowerType>
 GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
-    std::size_t buffer_bytes, std::size_t nSideChannels,
-    std::size_t selectedSideChannel, std::size_t selectedBit,
-    std::size_t speadHeapSize, std::size_t fft_length, std::size_t naccumulate,
+    const DadaBufferLayout &dadaBufferLayout,
+    std::size_t selectedSideChannel, std::size_t selectedBit, std::size_t fft_length, std::size_t naccumulate,
     std::size_t nbits, float input_level, float output_level,
-    HandlerType &handler)
-    : _buffer_bytes(buffer_bytes), _nSideChannels(nSideChannels),
+    HandlerType &handler) : _dadaBufferLayout(dadaBufferLayout),
       _selectedSideChannel(selectedSideChannel), _selectedBit(selectedBit),
-      _speadHeapSize(speadHeapSize), _fft_length(fft_length),
+      _fft_length(fft_length),
       _naccumulate(naccumulate), _nbits(nbits), _handler(handler), _fft_plan(0),
       _call_count(0) {
 
@@ -126,29 +124,17 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
       << "Creating new GatedSpectrometer instance with parameters: \n"
       << "  fft_length           " << _fft_length << "\n"
       << "  naccumulate          " << _naccumulate << "\n"
-      << "  nSideChannels        " << _nSideChannels << "\n"
-      << "  speadHeapSize        " << _speadHeapSize << " byte\n"
+      << "  nSideChannels        " << _dadaBufferLayout.getNSideChannels() << "\n"
+      << "  speadHeapSize        " << _dadaBufferLayout.getHeapSize() << " byte\n"
       << "  selectedSideChannel  " << _selectedSideChannel << "\n"
       << "  selectedBit          " << _selectedBit << "\n"
       << "  output bit depth     " << sizeof(IntegratedPowerType) * 8;
 
-  _sideChannelSize = nSideChannels * sizeof(int64_t);
-  _totalHeapSize = _speadHeapSize + _sideChannelSize;
-  _nHeaps = buffer_bytes / _totalHeapSize;
-  _gapSize = (buffer_bytes - _nHeaps * _totalHeapSize);
-  _dataBlockBytes = _nHeaps * _speadHeapSize;
-
-  assert((nSideChannels == 0) ||
-         (selectedSideChannel <
-          nSideChannels));  // Sanity check of side channel value
+  assert((_dadaBufferLayout.getNSideChannels() == 0) ||
+         (selectedSideChannel < _dadaBufferLayout.getNSideChannels()));  // Sanity check of side channel value
   assert(selectedBit < 64); // Sanity check of selected bit
-  BOOST_LOG_TRIVIAL(info) << "Resulting memory configuration: \n"
-                           << "  totalSizeOfHeap: " << _totalHeapSize << " byte\n"
-                           << "  number of heaps per buffer: " << _nHeaps << "\n"
-                           << "  resulting gap: " << _gapSize << " byte\n"
-                           << "  datablock size in buffer: " << _dataBlockBytes << " byte\n";
 
-   _nsamps_per_buffer = _dataBlockBytes * 8 / nbits;
+   _nsamps_per_buffer = _dadaBufferLayout.sizeOfData() * 8 / nbits;
 
   _nsamps_per_output_spectra = fft_length * naccumulate;
   int nBlocks;
@@ -168,7 +154,6 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
   }
   BOOST_LOG_TRIVIAL(debug) << "Integrating  " << _nsamps_per_output_spectra << " samples from " << nBlocks << " into one spectra.";
 
-  std::size_t n64bit_words = _dataBlockBytes / sizeof(uint64_t);
   _nchans = _fft_length / 2 + 1;
   int batch = _nsamps_per_buffer / _fft_length;
   float dof = 2 * _naccumulate;
@@ -187,8 +172,8 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
   cufftSetStream(_fft_plan, _proc_stream);
 
   BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
-  _raw_voltage_db.resize(n64bit_words);
-  _sideChannelData_db.resize(_sideChannelSize * _nHeaps);
+  _raw_voltage_db.resize(_dadaBufferLayout.sizeOfData() / sizeof(uint64_t));
+  _sideChannelData_db.resize(_dadaBufferLayout.getNSideChannels() * _dadaBufferLayout.getNHeaps());
   BOOST_LOG_TRIVIAL(debug) << "  Input voltages size (in 64-bit words): "
                            << _raw_voltage_db.size();
   _unpacked_voltage_G0.resize(_nsamps_per_buffer);
@@ -290,7 +275,7 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
       thrust::raw_pointer_cast(_unpacked_voltage_G0.data()),
       thrust::raw_pointer_cast(_unpacked_voltage_G1.data()),
       thrust::raw_pointer_cast(sideChannelData.data()),
-      _unpacked_voltage_G0.size(), _speadHeapSize, _selectedBit, _nSideChannels,
+      _unpacked_voltage_G0.size(), _dadaBufferLayout.getHeapSize(), _selectedBit, _dadaBufferLayout.getNSideChannels(),
       _selectedSideChannel, thrust::raw_pointer_cast(_baseLineN.data()));
 
   for (size_t i = 0; i < _noOfBitSetsInSideChannel.size(); i++)
@@ -298,7 +283,7 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
     countBitSet<<<(sideChannelData.size()+255)/256, 256, 0,
       _proc_stream>>>(thrust::raw_pointer_cast(sideChannelData.data() + i * sideChannelData.size() / _noOfBitSetsInSideChannel.size() ),
           sideChannelData.size() / _noOfBitSetsInSideChannel.size(), _selectedBit,
-          _nSideChannels, _selectedBit,
+          _dadaBufferLayout.getNSideChannels(), _selectedBit,
           thrust::raw_pointer_cast(noOfBitSet.data() + i));
   }
 
@@ -327,10 +312,10 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
   ++_call_count;
   BOOST_LOG_TRIVIAL(debug) << "GatedSpectrometer operator() called (count = "
                            << _call_count << ")";
-  if (block.used_bytes() != _buffer_bytes) { /* Unexpected buffer size */
+  if (block.used_bytes() != _dadaBufferLayout.getBufferSize()) { /* Unexpected buffer size */
     BOOST_LOG_TRIVIAL(error) << "Unexpected Buffer Size - Got "
                              << block.used_bytes() << " byte, expected "
-                             << _buffer_bytes << " byte)";
+                             << _dadaBufferLayout.getBufferSize() << " byte)";
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     cudaProfilerStop();
     return true;
@@ -342,16 +327,16 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
   _sideChannelData_db.swap();
 
   BOOST_LOG_TRIVIAL(debug) << "   block.used_bytes() = " << block.used_bytes()
-                           << ", dataBlockBytes = " << _dataBlockBytes << "\n";
+                           << ", dataBlockBytes = " << _dadaBufferLayout.sizeOfData() << "\n";
 
   CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_raw_voltage_db.a_ptr()),
                                    static_cast<void *>(block.ptr()),
-                                   _dataBlockBytes, cudaMemcpyHostToDevice,
+                                   _dadaBufferLayout.sizeOfData() , cudaMemcpyHostToDevice,
                                    _h2d_stream));
   CUDA_ERROR_CHECK(cudaMemcpyAsync(
       static_cast<void *>(_sideChannelData_db.a_ptr()),
-      static_cast<void *>(block.ptr() + _dataBlockBytes + _gapSize),
-      _sideChannelSize * _nHeaps, cudaMemcpyHostToDevice, _h2d_stream));
+      static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap()),
+      _dadaBufferLayout.sizeOfSideChannelData(), cudaMemcpyHostToDevice, _h2d_stream));
 
   if (_call_count == 1) {
     return false;
@@ -414,7 +399,7 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
 
     size_t* on_values = reinterpret_cast<size_t*> (_host_power_db.b_ptr() + memOffset + 2 * _nchans * sizeof(IntegratedPowerType));
     size_t* off_values = reinterpret_cast<size_t*> (_host_power_db.b_ptr() + memOffset + 2 * _nchans * sizeof(IntegratedPowerType) + sizeof(size_t));
-    *off_values =  _nHeaps - (*on_values);
+    *off_values =  _dadaBufferLayout.getNHeaps() - (*on_values);
 
     BOOST_LOG_TRIVIAL(info) << "    " << i << ": No of bit set in side channel: " << *on_values << " / " << *off_values << std::endl;
   }

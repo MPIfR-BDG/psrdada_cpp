@@ -10,6 +10,7 @@ set(psrdada_cpp_effelsberg_edd_src
     src/DetectorAccumulator.cu
     src/ScaledTransposeTFtoTFT.cu
     src/VLBI.cu
+    src/DadaBufferLayout.cpp
     )
 
 cuda_add_library(${CMAKE_PROJECT_NAME}_effelsberg_edd ${psrdada_cpp_effelsberg_edd_src})

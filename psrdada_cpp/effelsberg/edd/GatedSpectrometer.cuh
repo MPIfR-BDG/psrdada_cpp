@@ -7,6 +7,7 @@
 #include "psrdada_cpp/double_device_buffer.cuh"
 #include "psrdada_cpp/double_host_buffer.cuh"
 #include "psrdada_cpp/effelsberg/edd/DetectorAccumulator.cuh"
+#include "psrdada_cpp/effelsberg/edd/DadaBufferLayout.hpp"
 
 #include "thrust/device_vector.h"
 #include "cufft.h"
@@ -56,9 +57,9 @@ public:
    * @param      handler Output handler
    *
    */
-  GatedSpectrometer(std::size_t buffer_bytes, std::size_t nSideChannels,
+  GatedSpectrometer(const DadaBufferLayout &bufferLayout,
                     std::size_t selectedSideChannel, std::size_t selectedBit,
-                    std::size_t speadHeapSize, std::size_t fft_length,
+                     std::size_t fft_length,
                     std::size_t naccumulate, std::size_t nbits,
                     float input_level, float output_level,
                     HandlerType &handler);
@@ -93,19 +94,12 @@ private:
                thrust::device_vector<size_t> &noOfBitSet);
 
 private:
-  std::size_t _buffer_bytes;
+  DadaBufferLayout _dadaBufferLayout;
   std::size_t _fft_length;
   std::size_t _naccumulate;
   std::size_t _nbits;
-  std::size_t _nSideChannels;
   std::size_t _selectedSideChannel;
   std::size_t _selectedBit;
-  std::size_t _speadHeapSize;
-  std::size_t _sideChannelSize;
-  std::size_t _totalHeapSize;
-  std::size_t _nHeaps;
-  std::size_t _gapSize;
-  std::size_t _dataBlockBytes;
   std::size_t _batch;
   std::size_t _nsamps_per_output_spectra;
   std::size_t _nsamps_per_buffer;
@@ -136,6 +130,7 @@ private:
   cudaStream_t _proc_stream;
   cudaStream_t _d2h_stream;
 };
+
 
 
 /**
