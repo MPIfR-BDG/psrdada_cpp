@@ -14,17 +14,6 @@
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
-namespace kernels {
-
-
-
-
-__global__
-void pack_edd_float32_to_2bit(const float* __restrict__ in, uint32_t * __restrict__ out,  size_t n);
-
-} //namespace kernels
-
-void pack_2bit(thrust::device_vector<float> const& input, thrust::device_vector<uint8_t>& output, float minV, float maxV, cudaStream_t _stream = 0);
 
 
 // some helper functions to dealm with bit encoding of the header
@@ -162,7 +151,7 @@ private:
   thrust::device_vector<float> _unpacked_voltage;
 
   // Output data
-  DoubleDeviceBuffer<uint8_t> _packed_voltage;
+  DoubleDeviceBuffer<uint32_t> _packed_voltage;
   DoublePinnedHostBuffer<uint8_t> _outputBuffer;
 
   VDIFHeader _vdifHeader;

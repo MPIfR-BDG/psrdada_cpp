@@ -1,4 +1,5 @@
 #include "psrdada_cpp/effelsberg/edd/VLBI.cuh"
+#include "psrdada_cpp/effelsberg/edd/Packer.cuh"
 
 //#include "psrdada_cpp/effelsberg/edd/GatedSpectrometer.cuh"
 #include "psrdada_cpp/cuda_utils.hpp"
@@ -45,7 +46,7 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
   BOOST_LOG_TRIVIAL(debug) << "  Input voltages size (in 64-bit words): "
                            << _raw_voltage_db.size();
 
-  _packed_voltage.resize(n64bit_words * 64 / input_bitDepth / 4);
+  _packed_voltage.resize(n64bit_words * 64 / input_bitDepth / 16);
 
   _spillOver.reserve(5000);
   BOOST_LOG_TRIVIAL(debug) << "  Output voltages size: "
@@ -140,7 +141,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
 
   float minV = -2;
   float maxV = 2;
-  pack_2bit(_unpacked_voltage, _packed_voltage.b(), minV, maxV, _proc_stream);
+  pack<2>(_unpacked_voltage, _packed_voltage.b(), minV, maxV, _proc_stream);
 
 
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
