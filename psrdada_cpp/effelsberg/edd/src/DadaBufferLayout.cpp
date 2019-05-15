@@ -12,7 +12,7 @@ DadaBufferLayout::DadaBufferLayout(key_t input_key, size_t heapSize, size_t nSid
 {
   MultiLog log("DadaBufferLayout");
   DadaClientBase client(input_key, log);
-  std::size_t _bufferSize = client.data_buffer_size();
+  _bufferSize = client.data_buffer_size();
 
   _sideChannelSize = nSideChannels * sizeof(int64_t);
    size_t totalHeapSize = _heapSize + _sideChannelSize;
@@ -59,7 +59,7 @@ size_t DadaBufferLayout::sizeOfGap() const
 
 size_t DadaBufferLayout::sizeOfSideChannelData() const
 {
-  return _sideChannelSize * _nHeaps * sizeof(uint64_t);
+  return _sideChannelSize * _nHeaps;
 }
 
 size_t DadaBufferLayout::getNHeaps() const
