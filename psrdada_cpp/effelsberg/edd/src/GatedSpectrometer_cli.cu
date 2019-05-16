@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
             [&selectedSideChannel](size_t in) { selectedSideChannel = in; }),
         "Side channel selected for evaluation.");
     desc.add_options()("selected_bit,B",
-                       po::value<size_t>()->default_value(63)->notifier(
+                       po::value<size_t>()->default_value(0)->notifier(
                            [&selectedBit](size_t in) { selectedBit = in; }),
                        "Side channel selected for evaluation.");
     desc.add_options()("speadheap_size",
