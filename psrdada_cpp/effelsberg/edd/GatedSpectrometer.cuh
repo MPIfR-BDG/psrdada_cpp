@@ -89,7 +89,7 @@ public:
 
 private:
   void process(thrust::device_vector<RawVoltageType> const &digitiser_raw,
-               thrust::device_vector<int64_t> const &sideChannelData,
+               thrust::device_vector<uint64_t> const &sideChannelData,
                thrust::device_vector<IntegratedPowerType> &detected,
                thrust::device_vector<size_t> &noOfBitSet);
 
@@ -103,6 +103,7 @@ private:
   std::size_t _batch;
   std::size_t _nsamps_per_output_spectra;
   std::size_t _nsamps_per_buffer;
+  std::size_t _nsamps_per_heap;
 
   HandlerType &_handler;
   cufftHandle _fft_plan;
@@ -113,7 +114,7 @@ private:
 
   // Input data
   DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
-  DoubleDeviceBuffer<int64_t> _sideChannelData_db;
+  DoubleDeviceBuffer<uint64_t> _sideChannelData_db;
 
   // Output data
   DoubleDeviceBuffer<IntegratedPowerType> _power_db;

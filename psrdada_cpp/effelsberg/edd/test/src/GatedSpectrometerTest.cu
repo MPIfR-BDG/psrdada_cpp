@@ -11,7 +11,7 @@ namespace {
 
 TEST(GatedSpectrometer, BitManipulationMacros) {
   for (int i = 0; i < 64; i++) {
-    int64_t v = 0;
+    uint64_t v = 0;
     SET_BIT(v, i);
 
     for (int j = 0; j < 64; j++) {
@@ -57,7 +57,7 @@ TEST(GatedSpectrometer, GatingKernel)
 
   thrust::device_vector<float> G0(blockSize * nBlocks);
   thrust::device_vector<float> G1(blockSize * nBlocks);
-  thrust::device_vector<int64_t> _sideChannelData(nBlocks);
+  thrust::device_vector<uint64_t> _sideChannelData(nBlocks);
   thrust::device_vector<float> baseLine(1);
 
   thrust::fill(G0.begin(), G0.end(), 42);
@@ -67,8 +67,8 @@ TEST(GatedSpectrometer, GatingKernel)
   // everything to G0
   {
     baseLine[0] = 0.;
-    const int64_t *sideCD =
-        (int64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
+    const uint64_t *sideCD =
+        (uint64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
     psrdada_cpp::effelsberg::edd::gating<<<1024, 1024>>>(
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
@@ -88,8 +88,8 @@ TEST(GatedSpectrometer, GatingKernel)
   {
     baseLine[0] = -5. * G0.size();
     thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 1L);
-    const int64_t *sideCD =
-        (int64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
+    const uint64_t *sideCD =
+        (uint64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
     psrdada_cpp::effelsberg::edd::gating<<<1024, 1024>>>(
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
@@ -108,24 +108,24 @@ TEST(GatedSpectrometer, GatingKernel)
 
 
 TEST(GatedSpectrometer, countBitSet) {
-  size_t nBlocks = 16;
-  thrust::device_vector<int64_t> _sideChannelData(nBlocks);
+  size_t nBlocks = 100000;
+  thrust::device_vector<uint64_t> _sideChannelData(nBlocks);
   thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0);
-  const int64_t *sideCD =
-      (int64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
+  const uint64_t *sideCD =
+      (uint64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
 
   thrust::device_vector<size_t> res(1);
 
   // test 1 side channel
   res[0] = 0;
   psrdada_cpp::effelsberg::edd::
-      countBitSet<<<(_sideChannelData.size() + 255) / 256, 256>>>(
+      countBitSet<<<1, 1024>>>(
     sideCD, nBlocks, 0, 1, 0, thrust::raw_pointer_cast(res.data()));
   EXPECT_EQ(res[0], 0u);
 
   res[0] = 0;
   thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 1L);
-  psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size() + 255) / 256, 256>>>(
+  psrdada_cpp::effelsberg::edd::countBitSet<<<1, 1024>>>(
     sideCD, nBlocks, 0, 1, 0, thrust::raw_pointer_cast(res.data()));
   EXPECT_EQ(res[0], nBlocks);
 
@@ -135,13 +135,13 @@ TEST(GatedSpectrometer, countBitSet) {
   thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0);
   for (size_t i = 2; i < _sideChannelData.size(); i += nSideChannels)
     _sideChannelData[i] = 1L;
-  psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size() + 255) / 256, 256>>>(
+  psrdada_cpp::effelsberg::edd::countBitSet<<<1, 1024>>>(
     sideCD, nBlocks, 0, nSideChannels, 3,
     thrust::raw_pointer_cast(res.data()));
   EXPECT_EQ(res[0], 0u);
 
   res[0] = 0;
-  psrdada_cpp::effelsberg::edd::countBitSet<<<(_sideChannelData.size() + 255) / 256, 256>>>(
+  psrdada_cpp::effelsberg::edd::countBitSet<<<1, 1024>>>(
     sideCD, nBlocks, 0, nSideChannels, 2,
     thrust::raw_pointer_cast(res.data()));
   EXPECT_EQ(res[0], nBlocks / nSideChannels);
