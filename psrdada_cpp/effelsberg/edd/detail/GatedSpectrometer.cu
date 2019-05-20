@@ -193,7 +193,7 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
   _noOfBitSetsInSideChannel.resize( batch / (_naccumulate / nBlocks));
   thrust::fill(_noOfBitSetsInSideChannel.a().begin(), _noOfBitSetsInSideChannel.a().end(), 0L);
   thrust::fill(_noOfBitSetsInSideChannel.b().begin(), _noOfBitSetsInSideChannel.b().end(), 0L);
-  BOOST_LOG_TRIVIAL(debug) << "  Bit set counrer size: " << _noOfBitSetsInSideChannel.size();
+  BOOST_LOG_TRIVIAL(debug) << "  Bit set counter size: " << _noOfBitSetsInSideChannel.size();
 
   // on the host both power are stored in the same data buffer together with
   // the number of bit sets
@@ -387,7 +387,6 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
           static_cast<void *>(_noOfBitSetsInSideChannel.b_ptr() + i ),
             1 * sizeof(size_t),
             cudaMemcpyDeviceToHost, _d2h_stream));
-    BOOST_LOG_TRIVIAL(info) << " TOBR NOF BITS SET: " << _noOfBitSetsInSideChannel.b()[i]; 
   }
 
   BOOST_LOG_TRIVIAL(debug) << "Copy Data back to host";
@@ -397,7 +396,7 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
   }
 
   // calculate off value
-  BOOST_LOG_TRIVIAL(info) << "Buffer block: " << _call_count << " with " << _noOfBitSetsInSideChannel.size() << " output heaps:";
+  BOOST_LOG_TRIVIAL(info) << "Buffer block: " << _call_count-3 << " with " << _noOfBitSetsInSideChannel.size() << "x2 output heaps:";
   for (size_t i = 0; i < _noOfBitSetsInSideChannel.size(); i++)
   {
     size_t memOffset = 2 * i * (_nchans * sizeof(IntegratedPowerType) + sizeof(size_t));

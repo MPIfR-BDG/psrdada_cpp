@@ -107,8 +107,8 @@ private:
 
   HandlerType &_handler;
   cufftHandle _fft_plan;
-  int _nchans;
-  int _call_count;
+  uint64_t _nchans;
+  uint64_t _call_count;
   std::unique_ptr<Unpacker> _unpacker;
   std::unique_ptr<DetectorAccumulator<IntegratedPowerType> > _detector;
 
