@@ -29,12 +29,12 @@ protected:
     void calc_weights_c_reference(
         thrust::host_vector<float2> const& delay_models,
         thrust::host_vector<char2>& weights,
-        std::vector<float> const& channel_frequencies,
+        std::vector<double> const& channel_frequencies,
         int nantennas,
         int nbeams,
         int nchans,
-        float tstart,
-        float tstep,
+        double tstart,
+        double tstep,
         int ntsteps);
 
     void compare_against_host(DelayVectorType const& delays,

@@ -3,7 +3,7 @@
 #include "psrdada_cpp/cuda_utils.hpp"
 #include "thrust/host_vector.h"
 
-#define TWOPI 6.283185307179586f
+#define TWOPI 6.283185307179586
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -38,15 +38,15 @@ void WeightsManagerTester::TearDown()
 void WeightsManagerTester::calc_weights_c_reference(
     thrust::host_vector<float2> const& delay_models,
     thrust::host_vector<char2>& weights,
-    std::vector<float> const& channel_frequencies,
+    std::vector<double> const& channel_frequencies,
     int nantennas,
     int nbeams,
     int nchans,
-    float tstart,
-    float tstep,
+    double tstart,
+    double tstep,
     int ntsteps)
 {
-    float2 weight;
+    double2 weight;
     char2 compressed_weight;
     for (int antenna_idx = 0; antenna_idx < nantennas; ++antenna_idx)
     {
@@ -55,14 +55,14 @@ void WeightsManagerTester::calc_weights_c_reference(
             float2 delay_model = delay_models[beam_idx * nantennas + antenna_idx];
             for (int chan_idx = 0; chan_idx < nchans; ++chan_idx)
             {
-                float frequency = channel_frequencies[chan_idx];
+                double frequency = channel_frequencies[chan_idx];
                 for (int time_idx = 0; time_idx < ntsteps; ++time_idx)
                 {
-                    float t = tstart + time_idx * tstep;
-                    float phase = (t * delay_model.x + delay_model.y) * frequency;
-                    sincosf(TWOPI * phase, &weight.y, &weight.x);
-                    compressed_weight.x = (char) round(weight.x * 127.0f);
-                    compressed_weight.y = (char) round(weight.y * 127.0f);
+                    double t = tstart + time_idx * tstep;
+                    double phase = (t * delay_model.x + delay_model.y) * frequency;
+                    sincos(TWOPI * phase, &weight.y, &weight.x);
+                    compressed_weight.x = (char) round(weight.x * 127.0);
+                    compressed_weight.y = (char) round(weight.y * 127.0);
                     int output_idx = nantennas * ( nbeams *
                         ( time_idx * nchans + chan_idx ) + beam_idx ) + antenna_idx;
                     weights[output_idx] = compressed_weight;
