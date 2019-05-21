@@ -56,8 +56,8 @@ void generate_weights_k(
             for (int antenna_idx = threadIdx.x; antenna_idx < nantennas; antenna_idx+=blockDim.x)
             {
                 float2 delay_model = delay_models[beam_idx * nantennas + antenna_idx]; // correct
-                double delay_rate = (double) delay_model.x;
-                double delay_offset = (double) delay_model.y;
+                double delay_offset = (double) delay_model.x;
+                double delay_rate = (double) delay_model.y;
                 int antenna_offset = beam_offset + antenna_idx;
                 for (int time_idx = threadIdx.y; time_idx < ntsteps; time_idx+=blockDim.y)
                 {
