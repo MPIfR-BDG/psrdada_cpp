@@ -167,7 +167,7 @@ void PipelineConfig::bandwidth(double bw)
     _channel_frequencies_stale = true;
 }
 
-std::vector<float> const& PipelineConfig::channel_frequencies() const
+std::vector<double> const& PipelineConfig::channel_frequencies() const
 {
     if (_channel_frequencies_stale)
     {

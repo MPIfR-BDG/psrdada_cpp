@@ -4,7 +4,7 @@
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <thrust/device_vector.h>
 
-#define TWOPI 6.283185307179586f
+#define TWOPI 6.283185307179586
 
 namespace psrdada_cpp {
 namespace meerkat {
@@ -67,7 +67,7 @@ void generate_weights_k(
                     //This is possible as the magnitude of the weight is 1
                     //If we ever have to implement scalar weightings, this
                     //must change.
-                    __sincosf(TWOPI * phase, &weight.y, &weight.x);
+                    sincos(TWOPI * phase, &weight.y, &weight.x);
                     compressed_weight.x = (char) __double2int_rn(weight.x * 127.0);
                     compressed_weight.y = (char) __double2int_rn(weight.y * 127.0);
                     int output_idx = time_idx * weights_per_time_step + antenna_offset;
