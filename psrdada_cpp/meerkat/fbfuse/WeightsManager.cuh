@@ -66,7 +66,7 @@ public:
      *
      * @return     A thrust device vector containing the generated weights
      */
-    WeightsVectorType const& weights(DelayVectorType const& delays, TimeType epoch);
+    WeightsVectorType const& weights(DelayVectorType const& delays, TimeType current_epoch, TimeType delay_epoch);
 
 private:
     PipelineConfig const& _config;

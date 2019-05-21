@@ -19,7 +19,8 @@ void generate_weights_k(
     int nantennas,
     int nbeams,
     int nchans,
-    double tstart,
+    double current_epoch,
+    double delay_epoch,
     double tstep,
     int ntsteps)
 {
@@ -62,7 +63,7 @@ void generate_weights_k(
                 for (int time_idx = threadIdx.y; time_idx < ntsteps; time_idx+=blockDim.y)
                 {
                     //Calculates epoch offset
-                    double t = tstart + time_idx * tstep;
+                    double t = (current_epoch - delay_epoch) + time_idx * tstep;
                     double phase = (t * delay_rate + delay_offset) * frequency;
                     //This is possible as the magnitude of the weight is 1
                     //If we ever have to implement scalar weightings, this
@@ -100,7 +101,7 @@ WeightsManager::~WeightsManager()
 }
 
 WeightsManager::WeightsVectorType const& WeightsManager::weights(
-    DelayVectorType const& delays, TimeType epoch)
+    DelayVectorType const& delays, TimeType current_epoch, TimeType delay_epoch)
 {
     // First we retrieve new delays if there are any.
     BOOST_LOG_TRIVIAL(debug) << "Requesting weights for epoch = " << epoch;
@@ -116,7 +117,8 @@ WeightsManager::WeightsVectorType const& WeightsManager::weights(
         _config.cb_nantennas(),
         _config.cb_nbeams(),
         _channel_frequencies.size(),
-        epoch, 0.0, 1);
+        current_epoch, delay_epoch,
+        0.0, 1);
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_stream));
     BOOST_LOG_TRIVIAL(debug) << "Weights successfully generated";
     return _weights;
