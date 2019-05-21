@@ -108,31 +108,31 @@ public:
      * @brief      Get the centre frequency for the subband to
      *             be processed by this instance.
      */
-    float centre_frequency() const;
+    double centre_frequency() const;
 
     /**
      * @brief      Set the centre frequency for the subband to
      *             be processed by this instance.
      */
-    void centre_frequency(float cfreq);
+    void centre_frequency(double cfreq);
 
     /**
      * @brief      Get the bandwidth of the subband to
      *             be processed by this instance.
      */
-    float bandwidth() const;
+    double bandwidth() const;
 
     /**
      * @brief      Set the bandwidth of the subband to
      *             be processed by this instance.
      */
-    void bandwidth(float bw);
+    void bandwidth(double bw);
 
     /**
      * @brief      Return the centre frequency of each channel in the
      *             subband to be processed.
      */
-    std::vector<float> const& channel_frequencies() const;
+    std::vector<double> const& channel_frequencies() const;
 
     // These are all just wrappers to provide programmatic access
     // to the compile time constants that we are forced to use for
