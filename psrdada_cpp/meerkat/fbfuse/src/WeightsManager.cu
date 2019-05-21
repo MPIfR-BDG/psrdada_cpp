@@ -15,12 +15,12 @@ __global__
 void generate_weights_k(
     float2 const * __restrict__ delay_models,
     char2 * __restrict__ weights,
-    float const * __restrict__ channel_frequencies,
+    double const * __restrict__ channel_frequencies,
     int nantennas,
     int nbeams,
     int nchans,
-    float tstart,
-    float tstep,
+    double tstart,
+    double tstep,
     int ntsteps)
 {
 
@@ -39,14 +39,14 @@ void generate_weights_k(
     const int weights_per_channel = weights_per_beam * nbeams;
     const int weights_per_time_step = weights_per_channel * nchans;
 
-    float2 weight;
+    double2 weight;
     char2 compressed_weight;
     //This isn't really needed as there will never be more than 64 antennas
     //However this makes this fucntion more flexible with smaller blocks
 
     for (int chan_idx = blockIdx.y; chan_idx < nchans; chan_idx += gridDim.y)
     {
-        float frequency = channel_frequencies[chan_idx];
+        double frequency = channel_frequencies[chan_idx];
         int chan_offset = chan_idx * weights_per_channel; // correct
 
         for (int beam_idx = blockIdx.x; beam_idx < nbeams; beam_idx += gridDim.x)
@@ -56,20 +56,20 @@ void generate_weights_k(
             for (int antenna_idx = threadIdx.x; antenna_idx < nantennas; antenna_idx+=blockDim.x)
             {
                 float2 delay_model = delay_models[beam_idx * nantennas + antenna_idx]; // correct
-
+                double delay_rate = (double) delay_model.x;
+                double delay_offset = (double) delay_model.y;
                 int antenna_offset = beam_offset + antenna_idx;
-
                 for (int time_idx = threadIdx.y; time_idx < ntsteps; time_idx+=blockDim.y)
                 {
                     //Calculates epoch offset
-                    float t = tstart + time_idx * tstep;
-                    float phase = (t * delay_model.x + delay_model.y) * frequency;
+                    double t = tstart + time_idx * tstep;
+                    double phase = (t * delay_rate + delay_offset) * frequency;
                     //This is possible as the magnitude of the weight is 1
                     //If we ever have to implement scalar weightings, this
                     //must change.
                     __sincosf(TWOPI * phase, &weight.y, &weight.x);
-                    compressed_weight.x = (char) __float2int_rn(weight.x * 127.0f);
-                    compressed_weight.y = (char) __float2int_rn(weight.y * 127.0f);
+                    compressed_weight.x = (char) __double2int_rn(weight.x * 127.0);
+                    compressed_weight.y = (char) __double2int_rn(weight.y * 127.0);
                     int output_idx = time_idx * weights_per_time_step + antenna_offset;
                     weights[output_idx] = compressed_weight;
                 }

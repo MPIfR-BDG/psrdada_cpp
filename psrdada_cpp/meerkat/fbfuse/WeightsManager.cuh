@@ -14,12 +14,12 @@ __global__
 void generate_weights_k(
     float2 const * __restrict__ delay_models,
     char2 * __restrict__ weights,
-    float const * __restrict__ channel_frequencies,
+    double const * __restrict__ channel_frequencies,
     int nantennas,
     int nbeams,
     int nchans,
-    float tstart,
-    float tstep,
+    double tstart,
+    double tstep,
     int ntsteps);
 
 } //namespace kernels
@@ -29,9 +29,9 @@ class WeightsManager
 public:
     typedef char2 WeightsType;
     typedef thrust::device_vector<WeightsType> WeightsVectorType;
-    typedef float FreqType;
+    typedef double FreqType;
     typedef thrust::device_vector<FreqType> FreqVectorType;
-    typedef float TimeType;
+    typedef double TimeType;
     typedef DelayManager::DelayVectorType DelayVectorType;
 
 public:

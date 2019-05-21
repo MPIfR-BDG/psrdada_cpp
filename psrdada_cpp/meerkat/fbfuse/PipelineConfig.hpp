@@ -323,9 +323,9 @@ private:
     key_t _input_dada_key;
     key_t _cb_dada_key;
     key_t _ib_dada_key;
-    float _cfreq;
-    float _bw;
-    mutable std::vector<float> _channel_frequencies;
+    double _cfreq;
+    double _bw;
+    mutable std::vector<double> _channel_frequencies;
     mutable bool _channel_frequencies_stale;
     float _input_level;
     float _output_level;
