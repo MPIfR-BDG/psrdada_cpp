@@ -66,16 +66,16 @@ int main(int argc, char** argv)
                     config.delay_buffer_sem(key + "_count");
                 }),
            "The root of the POSIX key for the delay buffer shared memory and semaphores")
-        ("bandwidth", po::value<float>()
+        ("bandwidth", po::value<double>()
             ->required()
-            ->notifier([&config](float value)
+            ->notifier([&config](double value)
                 {
                     config.bandwidth(value);
                 }),
            "The bandwidth (Hz) of the subband this instance will process")
-        ("cfreq", po::value<float>()
+        ("cfreq", po::value<double>()
             ->required()
-            ->notifier([&config](float value)
+            ->notifier([&config](double value)
                 {
                     config.centre_frequency(value);
                 }),
