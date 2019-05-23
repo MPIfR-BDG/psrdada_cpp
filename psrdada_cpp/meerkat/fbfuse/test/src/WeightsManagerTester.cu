@@ -42,7 +42,8 @@ void WeightsManagerTester::calc_weights_c_reference(
     int nantennas,
     int nbeams,
     int nchans,
-    double tstart,
+    double current_epoch,
+    double delay_epoch,
     double tstep,
     int ntsteps)
 {
@@ -58,8 +59,8 @@ void WeightsManagerTester::calc_weights_c_reference(
                 double frequency = channel_frequencies[chan_idx];
                 for (int time_idx = 0; time_idx < ntsteps; ++time_idx)
                 {
-                    double t = tstart + time_idx * tstep;
-                    double phase = (t * delay_model.x + delay_model.y) * frequency;
+                    double t = (current_epoch - delay_epoch) + time_idx * tstep;
+                    double phase = (t * delay_model.y + delay_model.x) * frequency;
                     sincos(TWOPI * phase, &weight.y, &weight.x);
                     compressed_weight.x = (char) round(weight.x * 127.0);
                     compressed_weight.y = (char) round(weight.y * 127.0);
@@ -75,7 +76,8 @@ void WeightsManagerTester::calc_weights_c_reference(
 void WeightsManagerTester::compare_against_host(
     DelayVectorType const& delays,
     WeightsVectorType const& weights,
-    TimeType epoch)
+    TimeType current_epoch,
+    TimeType delay_epoch)
 {
     // Implicit device to host copies
     thrust::host_vector<float2> host_delays = delays;
@@ -84,7 +86,7 @@ void WeightsManagerTester::compare_against_host(
     calc_weights_c_reference(host_delays, c_weights,
         _config.channel_frequencies(), _config.cb_nantennas(),
         _config.cb_nbeams(), _config.channel_frequencies().size(),
-        epoch, 0.0, 1);
+        current_epoch, delay_epoch, 0.0, 1);
     for (int ii = 0; ii < cuda_weights.size(); ++ii)
     {
         ASSERT_EQ(c_weights[ii].x, cuda_weights[ii].x);
@@ -99,10 +101,11 @@ TEST_F(WeightsManagerTester, test_zero_value)
     WeightsManager weights_manager(_config, _stream);
     // This is a thrust::device_vector<float2>
     DelayVectorType delays(delays_size, {0.0, 0.0});
-    TimeType epoch = 0.0;
+    TimeType current_epoch = 10.0;
+    TimeType delay_epoch = 9.0;
     // First try everything with only zeros
-    auto const& weights = weights_manager.weights(delays, epoch);
-    compare_against_host(delays, weights, epoch);
+    auto const& weights = weights_manager.weights(delays, current_epoch, delay_epoch);
+    compare_against_host(delays, weights, current_epoch, delay_epoch);
 }
 
 TEST_F(WeightsManagerTester, test_real_value)
@@ -112,10 +115,11 @@ TEST_F(WeightsManagerTester, test_real_value)
     WeightsManager weights_manager(_config, _stream);
     // This is a thrust::device_vector<float2>
     DelayVectorType delays(delays_size, {1e-11f, 1e-10f});
-    TimeType epoch = 10.0;
+    TimeType current_epoch = 10.0;
+    TimeType delay_epoch = 9.0;
     // First try everything with only zeros
-    auto const& weights = weights_manager.weights(delays, epoch);
-    compare_against_host(delays, weights, epoch);
+    auto const& weights = weights_manager.weights(delays, current_epoch, delay_epoch);
+    compare_against_host(delays, weights, current_epoch, delay_epoch);
 }
 
 } //namespace test

@@ -104,7 +104,7 @@ WeightsManager::WeightsVectorType const& WeightsManager::weights(
     DelayVectorType const& delays, TimeType current_epoch, TimeType delay_epoch)
 {
     // First we retrieve new delays if there are any.
-    BOOST_LOG_TRIVIAL(debug) << "Requesting weights for epoch = " << epoch;
+    BOOST_LOG_TRIVIAL(debug) << "Requesting weights for epoch = " << current_epoch;
     DelayManager::DelayType const* delays_ptr = thrust::raw_pointer_cast(delays.data());
     WeightsType* weights_ptr = thrust::raw_pointer_cast(_weights.data());
     FreqType const* frequencies_ptr = thrust::raw_pointer_cast(_channel_frequencies.data());

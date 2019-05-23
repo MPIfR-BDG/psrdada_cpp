@@ -33,13 +33,14 @@ protected:
         int nantennas,
         int nbeams,
         int nchans,
-        double tstart,
+        double current_epoch,
+        double delay_epoch,
         double tstep,
         int ntsteps);
 
     void compare_against_host(DelayVectorType const& delays,
         WeightsVectorType const& weights,
-        TimeType epoch);
+        TimeType current_epoch, TimeType delay_epoch);
 
 protected:
     PipelineConfig _config;
