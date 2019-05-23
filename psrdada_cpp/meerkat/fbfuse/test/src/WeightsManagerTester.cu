@@ -100,7 +100,7 @@ TEST_F(WeightsManagerTester, test_zero_value)
     std::size_t delays_size = FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS;
     WeightsManager weights_manager(_config, _stream);
     // This is a thrust::device_vector<float2>
-    DelayVectorType delays(delays_size, {0.0, 0.0});
+    DelayVectorType delays(delays_size, {0.0f, 0.0f});
     TimeType current_epoch = 10.0;
     TimeType delay_epoch = 9.0;
     // First try everything with only zeros
@@ -115,6 +115,25 @@ TEST_F(WeightsManagerTester, test_real_value)
     WeightsManager weights_manager(_config, _stream);
     // This is a thrust::device_vector<float2>
     DelayVectorType delays(delays_size, {1e-11f, 1e-10f});
+    TimeType current_epoch = 10.0;
+    TimeType delay_epoch = 9.0;
+    // First try everything with only zeros
+    auto const& weights = weights_manager.weights(delays, current_epoch, delay_epoch);
+    compare_against_host(delays, weights, current_epoch, delay_epoch);
+}
+
+TEST_F(WeightsManagerTester, test_real_values)
+{
+    // This is always the size of the delay array
+    std::size_t delays_size = FBFUSE_CB_NBEAMS * FBFUSE_CB_NANTENNAS;
+    WeightsManager weights_manager(_config, _stream);
+    // This is a thrust::device_vector<float2>
+    DelayVectorType delays(delays_size, {0.0f, 0.0f});
+    for (int ii=0; ii<delays_size; ++ii)
+    {
+        delays[ii].x = ii * 1e-11f;
+        delays[ii].y = ii * 1e-15f;
+    }
     TimeType current_epoch = 10.0;
     TimeType delay_epoch = 9.0;
     // First try everything with only zeros
