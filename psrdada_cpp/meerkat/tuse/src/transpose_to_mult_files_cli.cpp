@@ -30,8 +30,8 @@ int main(int argc, char** argv)
         std::uint32_t nfreq;
         std::uint32_t nbeams;
         std::uint32_t ngroups;
-        std::size_t filesize;       
- 
+        std::size_t filesize;
+
         std::string filename;
         /*
          * Define and parse the program options
@@ -80,6 +80,12 @@ int main(int argc, char** argv)
             return ERROR_IN_COMMAND_LINE;
         }
 
+        /*Check the size of the file*/
+
+        if ( filesize < nsamples * nchans * nfreq * ngroups )
+        {
+            throw std::runtime_error(std::string("Incorrect size of file. File size has to be greater than size of data per beam in one DADA block"));
+        }
 
        /* Application Code */
 
