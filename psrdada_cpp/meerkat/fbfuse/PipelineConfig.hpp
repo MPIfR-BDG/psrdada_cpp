@@ -265,7 +265,7 @@ public:
      *             currently assumes that all antennas are intended to be included
      *             in the incoherent beam.
      */
-    std::size_t ib_anntena_offset() const {return FBFUSE_IB_ANTENNA_OFFSET;}
+    std::size_t ib_antenna_offset() const {return FBFUSE_IB_ANTENNA_OFFSET;}
 
     /**
      * @brief      Return the number of incoherent beams to be produced

@@ -13,6 +13,9 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <sys/types.h>
+
+BOOST_LOG_TRIVIAL(debug) << std::setprecision(15);
 
 #endif //PSRDADA_CPP_COMMON_HPP

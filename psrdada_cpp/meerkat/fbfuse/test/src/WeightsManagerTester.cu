@@ -131,8 +131,7 @@ TEST_F(WeightsManagerTester, test_real_values)
     DelayVectorType delays(delays_size, {0.0f, 0.0f});
     for (int ii=0; ii<delays_size; ++ii)
     {
-        delays[ii].x = ii * 1e-11f;
-        delays[ii].y = ii * 1e-15f;
+        delays[ii] = {ii * 1e-11f, ii * 1e-15f};
     }
     TimeType current_epoch = 10.0;
     TimeType delay_epoch = 9.0;
