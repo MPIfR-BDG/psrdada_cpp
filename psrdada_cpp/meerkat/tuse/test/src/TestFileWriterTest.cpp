@@ -1,4 +1,5 @@
 #include "psrdada_cpp/meerkat/tuse/test/TestFileWriterTest.h"
+#include "psrdada_cpp/sigprocheader.hpp"
 #include "psrdada_cpp/dada_output_stream.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/dada_db.hpp"
@@ -46,8 +47,8 @@ TEST_F(TestFileWriterTest, test_filesize)
     // Setup RawBytes to write
     char* hdr_ptr = new char[4096];
     RawBytes header(hdr_ptr, 4096, 4096, false);
-    const char* hdrstr = "HEADER_START and HEADER_END";
-    std::memcpy(hdr_ptr, hdrstr,27); 
+    //const char* hdrstr = "HEADER_START and HEADER_END";
+    //std::memcpy(hdr_ptr, hdrstr,27); 
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
     // Write data to the buffer
@@ -62,6 +63,8 @@ TEST_F(TestFileWriterTest, test_filesize)
     MultiLog log1("input stream");
     std::string filename("Test_file");
     TestFileWriter testfiles(filename,15360);
+    SigprocHeader sh;
+    testfiles.header(sh);
 
     DadaReadClient client(dada_buffer.key(), log1);
     auto& header_stream = client.header_stream();
@@ -91,7 +94,7 @@ TEST_F(TestFileWriterTest, test_filesize)
         fstream.seekg(0, std::ios::end);
         int filSize = fstream.tellg();
         fstream.close();
-        ASSERT_EQ(filSize, 15387);
+        ASSERT_EQ(filSize, 15360);
     }    
  
 }
@@ -110,6 +113,7 @@ TEST_F(TestFileWriterTest, test_number_of_files)
     // Setup RawBytes to write
     char* hdr_ptr = new char[4096];
     RawBytes header(hdr_ptr, 4096, 4096, false); 
+    SigprocHeader sh;
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
     // Write data to the buffer
@@ -124,7 +128,8 @@ TEST_F(TestFileWriterTest, test_number_of_files)
     MultiLog log1("input stream");
     std::string filename("Fil_file");
     TestFileWriter testfiles(filename,20480);
-
+    testfiles.header(sh);
+    
     DadaReadClient client(dada_buffer.key(), log1);
     auto& header_stream = client.header_stream();
     auto& header_block = header_stream.next();
