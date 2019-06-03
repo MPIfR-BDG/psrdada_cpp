@@ -11,7 +11,7 @@ namespace edd {
 namespace kernels {
 
 
-// pack float to 2,4,8,16 bit integers
+// pack float to 2,4,8,16 bit integers with linear scaling
 template <unsigned int input_bit_depth>
 __global__ void packNbit(const float *__restrict__ input,
                          uint32_t *__restrict__ output, size_t inputSize,

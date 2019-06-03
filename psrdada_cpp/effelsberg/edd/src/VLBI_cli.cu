@@ -39,6 +39,9 @@ int main(int argc, char **argv) {
     std::string filename(buffer);
     std::string output_type = "file";
 
+    int thread_id, station_id, payload_size;
+    double sampleRate;
+
     /** Define and parse the program options
     */
     namespace po = boost::program_options;
@@ -68,7 +71,23 @@ int main(int argc, char **argv) {
                        "size of the spead data heaps. The number of the "
                        "heaps in the dada block depends on the number of "
                        "side channel items.");
+    desc.add_options()("thread_id",
+                       po::value<int>()->default_value(0)->notifier(
+                           [&thread_id](int in) { thread_id = in; }),
+                       "Thread ID for the VDIF header");
+    desc.add_options()("station_id",
+                       po::value<int>()->default_value(0)->notifier(
+                           [&station_id](int in) { station_id = in; }),
+                       "Station ID for the VDIF header");
+    desc.add_options()("payload_size",
+                       po::value<int>()->default_value(5000)->notifier(
+                           [&payload_size](int in) { payload_size = in; }),
+                       "Payload size [bytes]");
 
+    desc.add_options()("sample_rate",
+                       po::value<double>()->default_value(2.6E9)->notifier(
+                           [&sampleRate](double in) { sampleRate = in; }),
+                       "Sample rate of the input signal");
     desc.add_options()(
         "log_level", po::value<std::string>()->default_value("info")->notifier(
                          [](std::string level) { set_log_level(level); }),
@@ -105,11 +124,12 @@ int main(int argc, char **argv) {
 
     // ToDo: Options to set values
     effelsberg::edd::VDIFHeader vdifHeader;
-    vdifHeader.setThreadId(0);
-    vdifHeader.setStationId(0);
+    vdifHeader.setDataFrameLength(payload_size / 8);
+    vdifHeader.setThreadId(thread_id);
+    vdifHeader.setStationId(station_id);
+    BOOST_LOG_TRIVIAL(warning) << "SETTING FIXED REFERENCE EPOCH AND SECONDS FROM EPOCH!! Should be read from data stream!!";
     vdifHeader.setReferenceEpoch(123);
     vdifHeader.setSecondsFromReferenceEpoch(42); // for first block
-    double sampleRate = 2.6E9;
 
 
     std::cout << "Running with output_type: " << output_type << std::endl;

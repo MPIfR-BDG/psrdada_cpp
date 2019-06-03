@@ -1,4 +1,5 @@
 #include "psrdada_cpp/effelsberg/edd/GatedSpectrometer.cuh"
+#include "psrdada_cpp/effelsberg/edd/Tools.cuh"
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
@@ -62,43 +63,6 @@ __global__ void countBitSet(const uint64_t *sideChannelData, size_t N, size_t
 
   if(threadIdx.x == 0)
    nBitsSet[0] += x[threadIdx.x];
-}
-
-
-// blocksize for the array sum kernel
-#define array_sum_Nthreads 1024
-
-__global__ void array_sum(float *in, size_t N, float *out) {
-  extern __shared__ float data[];
-
-  size_t tid = threadIdx.x;
-
-  float ls = 0;
-
-  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
-       i += blockDim.x * gridDim.x) {
-    ls += in[i]; // + in[i + blockDim.x];   // loading two elements increase the used bandwidth by ~10% but requires matching blocksize and size of input array
-  }
-
-  data[tid] = ls;
-  __syncthreads();
-
-  for (size_t i = blockDim.x / 2; i > 0; i /= 2) {
-    if (tid < i) {
-      data[tid] += data[tid + i];
-    }
-    __syncthreads();
-  }
-
-  // unroll last warp
-  // if (tid < 32)
-  //{
-  //  warpReduce(data, tid);
-  //}
-
-  if (tid == 0) {
-    out[blockIdx.x] = data[0];
-  }
 }
 
 
@@ -268,8 +232,8 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
     throw std::runtime_error("Unsupported number of bits");
   }
   BOOST_LOG_TRIVIAL(debug) << "Calculate baseline";
-  psrdada_cpp::effelsberg::edd::array_sum<<<64, array_sum_Nthreads, array_sum_Nthreads * sizeof(float), _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage_G0.data()), _unpacked_voltage_G0.size(), thrust::raw_pointer_cast(_baseLineN.data()));
-  psrdada_cpp::effelsberg::edd::array_sum<<<1, array_sum_Nthreads, array_sum_Nthreads * sizeof(float), _proc_stream>>>(thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(), thrust::raw_pointer_cast(_baseLineN.data()));
+  psrdada_cpp::effelsberg::edd::array_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage_G0.data()), _unpacked_voltage_G0.size(), thrust::raw_pointer_cast(_baseLineN.data()));
+  psrdada_cpp::effelsberg::edd::array_sum<<<1, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(), thrust::raw_pointer_cast(_baseLineN.data()));
 
   BOOST_LOG_TRIVIAL(debug) << "Perform gating";
   gating<<<1024, 1024, 0, _proc_stream>>>(

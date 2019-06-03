@@ -1,7 +1,7 @@
 #include "psrdada_cpp/effelsberg/edd/VLBI.cuh"
-#include "psrdada_cpp/effelsberg/edd/Packer.cuh"
+//#include "psrdada_cpp/effelsberg/edd/Packer.cuh"
+#include "psrdada_cpp/effelsberg/edd/Tools.cuh"
 
-//#include "psrdada_cpp/effelsberg/edd/GatedSpectrometer.cuh"
 #include "psrdada_cpp/cuda_utils.hpp"
 
 #include <cuda.h>
@@ -15,6 +15,9 @@
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
+
+
+
 
 
 template <class HandlerType>
@@ -48,7 +51,7 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
 
   _packed_voltage.resize(n64bit_words * 64 / input_bitDepth / 16);
 
-  _spillOver.reserve(5000);
+  _spillOver.reserve(vdifHeader.getDataFrameLength() * 8);
   BOOST_LOG_TRIVIAL(debug) << "  Output voltages size: "
                            << _packed_voltage.size() << " byte";
 
@@ -78,6 +81,8 @@ template <class HandlerType> void VLBI<HandlerType>::init(RawBytes &block) {
   headerInfo << "\n"
              << "# VLBI parameters: \n";
 
+
+
   size_t bEnd = std::strlen(block.ptr());
   if (bEnd + headerInfo.str().size() < block.total_bytes()) {
     std::strcpy(block.ptr() + bEnd, headerInfo.str().c_str());
@@ -85,9 +90,11 @@ template <class HandlerType> void VLBI<HandlerType>::init(RawBytes &block) {
     BOOST_LOG_TRIVIAL(warning)
         << "Header of size " << block.total_bytes()
         << " bytes already contains " << bEnd
-        << "bytes. Cannot add gated spectrometer info of size "
+        << "bytes. Cannot add VLBI info of size "
         << headerInfo.str().size() << " bytes.";
   }
+
+  _baseLineN.resize(array_sum_Nthreads);
 
   _handler.init(block);
 }
@@ -137,12 +144,26 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
     throw std::runtime_error("Unsupported number of bits");
   }
 
-  // ToDo: Eventually calulate minV, maxV from mean and std.
 
-  float minV = -2;
-  float maxV = 2;
-  pack<2>(_unpacked_voltage, _packed_voltage.b(), minV, maxV, _proc_stream);
+  BOOST_LOG_TRIVIAL(debug) << "Calculate baseline";
+  psrdada_cpp::effelsberg::edd::array_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage.data()), _unpacked_voltage.size(), thrust::raw_pointer_cast(_baseLineN.data()));
+  psrdada_cpp::effelsberg::edd::array_sum<<<1, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(), thrust::raw_pointer_cast(_baseLineN.data()));
 
+  BOOST_LOG_TRIVIAL(debug) << "Calculate std dev";
+  psrdada_cpp::effelsberg::edd::scaled_square_offset_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage.data()), _unpacked_voltage.size(), thrust::raw_pointer_cast(_baseLineN.data()), thrust::raw_pointer_cast(_baseLineN.data()));
+  psrdada_cpp::effelsberg::edd::array_sum<<<1, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(), thrust::raw_pointer_cast(_baseLineN.data()));
+
+  // non linear packing
+  float v = 0.981599; // L. Kogan, Correction functions for digital correlators
+                      // with two and four quantization levels, Radio Science 33 (1998), 1289-1296
+  BOOST_LOG_TRIVIAL(debug) << "Packing data with non linear 2-bit packaging using levels -v*sigma, 0, v*sigma with n = " << v;
+  _packed_voltage.b().resize(_unpacked_voltage.size() / 16);
+  BOOST_LOG_TRIVIAL(debug) << "Input size: " << _unpacked_voltage.size() << " elements";
+  BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << _packed_voltage.b().size() << " elements";
+
+  pack2bit_nonLinear<<<128, 1024, 0, _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage.data()),
+    thrust::raw_pointer_cast(_packed_voltage.b().data()),
+    _unpacked_voltage.size(), v,  thrust::raw_pointer_cast(_baseLineN.data()));
 
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
 

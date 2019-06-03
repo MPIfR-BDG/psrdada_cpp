@@ -159,18 +159,6 @@ __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                        size_t noOfSideChannels, size_t selectedSideChannel, const float *_baseLine);
 
 
-/**
-   * @brief      Sums all elements of an input array.
-   *
-   * @detail     The results is stored in an array with one value per launch
-   *             block. Full reuction thus requires two kernel launches.
-   *
-   * @param      in. Input array.
-   * @param      N. Size of input array.
-   * @param      out. Output array.
-   * */
-__global__ void array_sum(float *in, size_t N, float *out);
-
 
 
 } // edd

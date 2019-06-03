@@ -149,6 +149,7 @@ private:
 
   // process tmp
   thrust::device_vector<float> _unpacked_voltage;
+  thrust::device_vector<float> _baseLineN;
 
   // Output data
   DoubleDeviceBuffer<uint32_t> _packed_voltage;
@@ -161,6 +162,15 @@ private:
   cudaStream_t _proc_stream;
   cudaStream_t _d2h_stream;
 };
+
+
+// pack float to 2 bit integers with VLBI non linear scaling with levels
+// sigma = \sqrt(sigma2))
+// -n * sigma, -1 signa, sigma, n * sigma
+__global__ void pack2bit_nonLinear(const float *__restrict__ input,
+                         uint32_t *__restrict__ output, size_t inputSize,
+                         float n, float *sigma2);
+
 
 
 } //namespace edd

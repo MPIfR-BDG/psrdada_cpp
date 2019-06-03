@@ -10,6 +10,7 @@ set(psrdada_cpp_effelsberg_edd_src
     src/DetectorAccumulator.cu
     src/ScaledTransposeTFtoTFT.cu
     src/VLBI.cu
+    src/Tools.cu
     src/DadaBufferLayout.cpp
     )
 
