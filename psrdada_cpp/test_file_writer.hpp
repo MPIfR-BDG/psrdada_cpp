@@ -22,13 +22,13 @@ namespace psrdada_cpp {
         ~TestFileWriter();
         void init(RawBytes&);
         bool operator()(RawBytes&);
-        void header(SigprocHeader& header);
+        void header(SigprocHeader const& header);
 
     private:
         std::ofstream _outfile;
         char* _header;
         std::string _basefilename;
-        std::unique_ptr<SigprocHeader> _shptr;
+        SigprocHeader _sheader;
         std::size_t _filesize;
         std::uint32_t _filenum;
         std::size_t _wsize;

@@ -82,7 +82,9 @@ int main(int argc, char** argv)
             return ERROR_IN_COMMAND_LINE;
         }
 
-       /* Open file to parse all values to the key_t object*/
+        /* Check size of the DADA buffers */
+
+        /* Open file to parse all values to the key_t object*/
         fkeys.open(filename,std::fstream::in);
         std::uint32_t ii;
         for (ii=0; ii < nbeams; ii++)
