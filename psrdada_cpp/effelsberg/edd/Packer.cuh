@@ -11,6 +11,44 @@ namespace edd {
 namespace kernels {
 
 
+// convert a float to an int32 clipped to minv, maxv and with a maxium
+// bit_depth. For an input_bit_depth of 2 and 4 the loop is faster than fmin,
+// fmax
+template <unsigned int input_bit_depth>
+__device__ __forceinline__ uint32_t convert32(float inp, float maxV, float minV, float level)
+{
+  uint32_t p = 0;
+  #pragma unroll
+  for (int k = 1; k < (1 << input_bit_depth); k++) {
+    p += (inp > ((k * level) + minV));
+  } // this is more efficient than fmin, fmax for clamp and cast.
+  return p;
+}
+
+template <>
+__device__ __forceinline__ uint32_t convert32<8>(float inp, float maxV, float minV, float level)
+{
+  inp -= minV;
+  inp /= level;
+  inp = fminf(inp, ((1 << 8)- 1));
+  inp = fmaxf(inp, 0);
+  uint32_t p = uint32_t (inp);
+  return p;
+}
+
+template <>
+__device__ __forceinline__ uint32_t convert32<16>(float inp, float maxV, float minV, float level)
+{
+  inp -= minV;
+  inp /= level;
+  inp = fminf(inp, ((1 << 16)- 1));
+  inp = fmaxf(inp, 0);
+  uint32_t p = uint32_t (inp);
+  return p;
+}
+
+
+
 // pack float to 2,4,8,16 bit integers with linear scaling
 template <unsigned int input_bit_depth>
 __global__ void packNbit(const float *__restrict__ input,
@@ -32,12 +70,7 @@ __global__ void packNbit(const float *__restrict__ input,
       // Load new input value, clip and convert to Nbit integer
       const float inp = input[i + j * blockDim.x];
 
-      uint32_t p = 0;
-      #pragma unroll
-      for (int k = 1; k < (1 << input_bit_depth); k++) {
-        p += (inp > ((k * l) + minV));
-      } // this is more efficient than fmin, fmax for clamp and cast.
-
+      uint32_t p = convert32<input_bit_depth>(inp, maxV, minV, l);
       // store in shared memory with linear access
       tmp[threadIdx.x] += p << (input_bit_depth * j);
     }
@@ -64,6 +97,7 @@ __global__ void packNbit(const float *__restrict__ input,
     __syncthreads();
   }
 }
+
 } // namespace kernels
 
 

@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
     vdifHeader.setThreadId(thread_id);
     vdifHeader.setStationId(station_id);
     BOOST_LOG_TRIVIAL(warning) << "SETTING FIXED REFERENCE EPOCH AND SECONDS FROM EPOCH!! Should be read from data stream!!";
-    vdifHeader.setReferenceEpoch(123);
+    vdifHeader.setReferenceEpoch(0);
     vdifHeader.setSecondsFromReferenceEpoch(42); // for first block
 
 
