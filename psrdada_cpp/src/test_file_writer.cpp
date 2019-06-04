@@ -4,8 +4,8 @@ namespace psrdada_cpp {
 
     TestFileWriter::TestFileWriter(std::string filename, std::size_t filesize)
     : _basefilename(filename),
-      _filesize(filesize),
       _sheader(nullptr),
+      _filesize(filesize),
       _filenum(0),
       _wsize(0)
     {
