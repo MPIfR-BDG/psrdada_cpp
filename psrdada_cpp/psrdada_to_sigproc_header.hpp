@@ -40,7 +40,7 @@ public:
     /**
      * @brief      Set the SIGPROC header
      */
-    void header(SigprocHeader header);
+    void header(SigprocHeader const& header);
 
     /**
      * @brief      Get the SIGPROC header

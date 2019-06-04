@@ -38,7 +38,7 @@ namespace psrdada_cpp {
     }
 
     template <class HandlerType>
-    void PsrDadaToSigprocHeader<HandlerType>::header(SigprocHeader h)
+    void PsrDadaToSigprocHeader<HandlerType>::header(SigprocHeader const& h)
     {
         _sh = h;
     }
