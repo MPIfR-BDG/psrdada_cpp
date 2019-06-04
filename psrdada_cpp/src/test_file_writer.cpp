@@ -1,4 +1,5 @@
 #include "psrdada_cpp/test_file_writer.hpp"
+#include <algorithm>
 
 namespace psrdada_cpp {
 
@@ -32,8 +33,18 @@ namespace psrdada_cpp {
     void TestFileWriter::init(RawBytes& block)
     {
     /* Find where the HEADER_END is */
-        std::memcpy(_header, block.ptr(), _sheader.header_size());
-        _outfile.write(block.ptr(), _sheader.header_size());
+        std::string header(block.ptr(), block.total_bytes());
+        std::string sentinel("HEADER_END");
+        auto it = std::search(header.begin(), header.end(), sentinel.begin(), sentinel.end());
+        BOOST_LOG_TRIVIAL(debug) << "distance:" << std::distance(header.begin(), it);
+        if (it == header.end())
+        {
+            _header_size = 0;
+            throw std::runtime_error("No HEADER_END in string detected");
+        }
+        _header_size = std::distance(header.begin(),it) + sentinel.size(); 
+        std::memcpy(_header, block.ptr(), _header_size);
+        _outfile.write(block.ptr(), _header_size);
         block.used_bytes(block.total_bytes());
     }
 
@@ -68,17 +79,12 @@ namespace psrdada_cpp {
                 return true;
             }
             ++_filenum;
-            _outfile.write(_header, _sheader.header_size());
+            _outfile.write(_header, _header_size);
             _outfile.write(current_ptr,block.total_bytes() - left_size);
             block.used_bytes(block.total_bytes());
             _wsize += block.total_bytes() - left_size;
         }
         return false;
-    }
-
-    void TestFileWriter::header(SigprocHeader const& header)
-    {
-        _sheader = header;
     }
 
 } //psrdada_cpp

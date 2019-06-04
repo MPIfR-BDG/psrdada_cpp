@@ -63,8 +63,6 @@ TEST_F(TestFileWriterTest, test_filesize)
     MultiLog log1("input stream");
     std::string filename("Test_file");
     TestFileWriter testfiles(filename,15360);
-    SigprocHeader sh;
-    testfiles.header(sh);
 
     DadaReadClient client(dada_buffer.key(), log1);
     auto& header_stream = client.header_stream();
@@ -113,7 +111,7 @@ TEST_F(TestFileWriterTest, test_number_of_files)
     // Setup RawBytes to write
     char* hdr_ptr = new char[4096];
     RawBytes header(hdr_ptr, 4096, 4096, false); 
-    SigprocHeader sh;
+    std::memset(hdr_ptr,0, 4096);
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
     // Write data to the buffer
@@ -128,7 +126,6 @@ TEST_F(TestFileWriterTest, test_number_of_files)
     MultiLog log1("input stream");
     std::string filename("Fil_file");
     TestFileWriter testfiles(filename,20480);
-    testfiles.header(sh);
     
     DadaReadClient client(dada_buffer.key(), log1);
     auto& header_stream = client.header_stream();
