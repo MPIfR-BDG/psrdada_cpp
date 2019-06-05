@@ -204,23 +204,23 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   size_t remainingBytes = outputBlockSize - _spillOver.size();
   size_t numberOfBlocksInOutput =
       (_packed_voltage.size() - remainingBytes) / outputBlockSize;
-  BOOST_LOG_TRIVIAL(debug) << " Number of blocks in output"
+  BOOST_LOG_TRIVIAL(debug) << "   Number of blocks in output "
                            << numberOfBlocksInOutput;
 
   _outputBuffer.a().resize((1 + numberOfBlocksInOutput) *
                            (outputBlockSize + vlbiHeaderSize));
 
-  BOOST_LOG_TRIVIAL(debug) << " Copying " << _spillOver.size()
+  BOOST_LOG_TRIVIAL(debug) << "   Copying " << _spillOver.size()
                            << " bytes spill over";
   // leave room for header and fill first block of output with spill over
   std::copy(_spillOver.begin(), _spillOver.end(),
             _outputBuffer.a().begin() + vlbiHeaderSize);
 
-  BOOST_LOG_TRIVIAL(debug) << " Copying remaining " << remainingBytes
+  BOOST_LOG_TRIVIAL(debug) << "   Copying remaining " << remainingBytes
                            << " bytes for first block";
   // cuda memcopy remainder of first block
-  CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_packed_voltage.a_ptr()),
-                                   static_cast<void *>(_outputBuffer.a_ptr()),
+  CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_outputBuffer.a_ptr() + vlbiHeaderSize + _spillOver.size()),
+                                   static_cast<void *>(_packed_voltage.a_ptr()),
                                    remainingBytes, cudaMemcpyDeviceToHost,
                                    _d2h_stream));
 
@@ -229,7 +229,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   const size_t width = outputBlockSize;
   size_t height = numberOfBlocksInOutput;
 
-  BOOST_LOG_TRIVIAL(debug) << " Copying " << numberOfBlocksInOutput
+  BOOST_LOG_TRIVIAL(debug) << "   Copying " << height
                            << " blocks a " << outputBlockSize << " bytes";
   // we now have a full first block, pitch copy rest leaving room for the header
   CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
@@ -248,8 +248,8 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
                            << " bytes with offset " << offset;
 
   CUDA_ERROR_CHECK(cudaMemcpyAsync(
-      static_cast<void *>(_packed_voltage.a_ptr() + offset),
       static_cast<void *>(thrust::raw_pointer_cast(_spillOver.data())),
+      static_cast<void *>(_packed_voltage.a_ptr() + offset),
       _spillOver.size(), cudaMemcpyDeviceToHost, _d2h_stream));
 
   // fill in header data
