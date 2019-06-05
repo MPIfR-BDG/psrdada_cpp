@@ -15,22 +15,6 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
-
-// some helper functions to dealm with bit encoding of the header
-// ToDo: Find better place in utility collection
-
-/// Create bit mask with ones between first and lastBit (inclusive) and zeros
-/// otherwise;
-uint32_t bitMask(uint32_t firstBit, uint32_t lastBit);
-
-/// Squeeze a value into the specified bitrange of the target. Throws runtime
-/// error if too large.
-void setBitsWithValue(uint32_t &target, uint32_t firstBit, uint32_t lastBit, uint32_t value);
-
-/// Get numerical value from the specified bits in the target.
-uint32_t getBitsValue(const uint32_t &target, uint32_t firstBit, uint32_t lastBit);
-
-
 const size_t vlbiHeaderSize = 8 * 32 / 8; // bytes [8 words a 32 bit]
 
 /// class VDIFHeader stores a VDIF compliant header block with conveniant
@@ -97,8 +81,9 @@ public:
    * @brief      Constructor
    *
    * @param      buffer_bytes A RawBytes object wrapping a DADA header buffer
-   * @param      speadHeapSize Size of the spead heap block.
    * @param      input_bitDepth Bit depth of the sampled signal.
+   * @param      speadHeapSize Size of the spead heap block.
+   * @param      digitizer_threshold Threshold for the 2 bit digitization in units of the RMS of the signal.
    * @param      VDIFHeader Header of the VDIF output to be sed. Must contain size of the output VDIF payload in bytes.
    * @param      handler Output handler
    *
@@ -106,6 +91,7 @@ public:
   VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
                     std::size_t speadHeapSize,
                     double sampleRate,
+                    double digitizer_threshold,
                     const VDIFHeader &vdifHeader,
                     HandlerType &handler);
   ~VLBI();
@@ -138,7 +124,8 @@ private:
   std::size_t _output_bitDepth;
   std::size_t _speadHeapSize;
   std::size_t _outputBlockSize;
-  double _sampleRate;
+  double _sampleRate, _digitizer_threshold;
+  VDIFHeader _vdifHeader;
 
   HandlerType &_handler;
   int _call_count;
@@ -147,15 +134,16 @@ private:
   // Input data
   DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
 
-  // process tmp
+  // Tmp data for processing
   thrust::device_vector<float> _unpacked_voltage;
   thrust::device_vector<float> _baseLineN;
+  thrust::device_vector<float> _stdDevN;
 
   // Output data
-  DoubleDeviceBuffer<uint32_t> _packed_voltage;
+  DoubleDeviceBuffer<uint8_t> _packed_voltage;
   DoublePinnedHostBuffer<uint8_t> _outputBuffer;
 
-  VDIFHeader _vdifHeader;
+  // spill over between two dada blocks as vdif block not necessarily aligned
   thrust::host_vector<uint8_t, thrust::system::cuda::experimental::pinned_allocator<uint8_t>> _spillOver;
 
   cudaStream_t _h2d_stream;
@@ -165,13 +153,12 @@ private:
 
 
 // pack float to 2 bit integers with VLBI non linear scaling with levels
-// sigma = \sqrt(sigma2))
 // -n * sigma, -1 signa, sigma, n * sigma
+// For performance/technical reasons it is
+// sigma = \sqrt(sigma2)) and meanN = N * mean
 __global__ void pack2bit_nonLinear(const float *__restrict__ input,
                          uint32_t *__restrict__ output, size_t inputSize,
-                         float n, float *sigma2);
-
-
+                         float n, float *sigma2, float *meanN);
 
 } //namespace edd
 } //namespace effelsberg

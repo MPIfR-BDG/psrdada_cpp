@@ -4,59 +4,13 @@
 
 #include "gtest/gtest.h"
 
-//TEST(PackerTest, check2bit)
-//{
-//    std::size_t n = 1024;
-//    thrust::device_vector<float>  input(n);
-//    thrust::device_vector<uint32_t>  output(n);
-//
-//    {
-//      float minV = -2;
-//      float maxV = 2;
-//
-//      srand (time(NULL));
-//      for (int i =0; i < input.size(); i++)
-//      {
-//        input[i] = ((float(rand()) / RAND_MAX) - 0.5) * 2.5 * (maxV-minV) + maxV + minV;
-//      }
-//
-//      thrust::fill(output.begin(), output.end(), 5);
-//      cudaStream_t stream;
-//      cudaStreamCreate(&stream);
-//      psrdada_cpp::effelsberg::edd::pack<2>(input, output, minV, maxV, stream);
-//      EXPECT_EQ(output.size(), n / 16);
-//
-//      float step = (maxV - minV) / 3;
-//      float L2 = minV + step;
-//      float L3 = minV + 2 * step;
-//      float L4 = minV + 3 * step;
-//
-//      const size_t nbp = 16; // 16 samples per output value
-//      for(int i = 0; i < input.size() / nbp; i++)
-//      {
-//          uint32_t of = output[i];
-//          for (size_t j =0; j< nbp; j++)
-//          {
-//            uint32_t a = ((of >> (j *2)) & 3);
-//            int k = i * nbp + j;
-//            if (input[k] >= L4)
-//              EXPECT_EQ(a, 3);
-//            else if (input[k] >= L3)
-//              EXPECT_EQ(a, 2);
-//            else if (input[k] >= L2)
-//              EXPECT_EQ(a, 1);
-//            else
-//              EXPECT_EQ(a, 0);
-//          }
-//      }
-//    }
-//}
+
 
 class PackerTest: public ::testing::Test
 {
   protected:
     thrust::device_vector<float>  input;
-    thrust::device_vector<uint32_t>  output; 
+    thrust::device_vector<uint32_t>  output;
     float minV;
     float maxV;
     cudaStream_t stream;
@@ -92,7 +46,7 @@ class PackerTest: public ::testing::Test
 
       float step = (maxV - minV) /  ((1 << bit_depth) - 1);
 
-      const size_t nbp = 32 / bit_depth; 
+      const size_t nbp = 32 / bit_depth;
       for(int i = 0; i < input.size() / nbp; i++)
       {
           uint32_t of = output[i];
@@ -116,7 +70,29 @@ TEST_F(PackerTest, 2bit)
 {
   psrdada_cpp::effelsberg::edd::pack<2>(input, output, minV, maxV, stream);
   checkOutputSize(2);
-  checkOutputValues(2);
+  float step = (maxV - minV) / 3;
+  float L2 = minV + step;
+  float L3 = minV + 2 * step;
+  float L4 = minV + 3 * step;
+
+  const size_t nbp = 16; // 16 samples per output value
+  for(int i = 0; i < input.size() / nbp; i++)
+  {
+      uint32_t of = output[i];
+      for (size_t j =0; j< nbp; j++)
+      {
+        uint32_t a = ((of >> (j *2)) & 3);
+        int k = i * nbp + j;
+        if (input[k] >= L4)
+          EXPECT_EQ(a, 3);
+        else if (input[k] >= L3)
+          EXPECT_EQ(a, 2);
+        else if (input[k] >= L2)
+          EXPECT_EQ(a, 1);
+        else
+          EXPECT_EQ(a, 0);
+      }
+  }
 }
 
 

@@ -1,5 +1,5 @@
 #include "psrdada_cpp/effelsberg/edd/VLBI.cuh"
-//#include "psrdada_cpp/effelsberg/edd/Packer.cuh"
+#include "psrdada_cpp/effelsberg/edd/Packer.cuh"
 #include "psrdada_cpp/effelsberg/edd/Tools.cuh"
 
 #include "psrdada_cpp/cuda_utils.hpp"
@@ -7,6 +7,7 @@
 #include <cuda.h>
 #include <cuda_profiler_api.h>
 #include <thrust/system/cuda/execution_policy.h>
+#include <thrust/extrema.h>
 
 #include <cstring>
 #include <iostream>
@@ -17,42 +18,42 @@ namespace effelsberg {
 namespace edd {
 
 
-
-
-
 template <class HandlerType>
 VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
-                        std::size_t speadHeapSize,
-                        double sampleRate,
-                    const VDIFHeader &vdifHeader,
-                        HandlerType &handler)
+                        std::size_t speadHeapSize, double sampleRate,
+                        double digitizer_threshold,
+                        const VDIFHeader &vdifHeader, HandlerType &handler)
     : _buffer_bytes(buffer_bytes), _input_bitDepth(input_bitDepth),
-    _sampleRate(sampleRate), _vdifHeader(vdifHeader), _output_bitDepth(2),
-    _speadHeapSize(speadHeapSize), _handler(handler), _call_count(0) {
+      _sampleRate(sampleRate), _digitizer_threshold(digitizer_threshold),
+      _vdifHeader(vdifHeader), _output_bitDepth(2),
+      _speadHeapSize(speadHeapSize), _handler(handler), _call_count(0) {
 
   // Sanity checks
   // check for any device errors
   CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
   BOOST_LOG_TRIVIAL(info) << "Creating new VLBI instance";
-  BOOST_LOG_TRIVIAL(info) << " Output data in VDIF format with "
+  BOOST_LOG_TRIVIAL(info) << "   Output data in VDIF format with "
                           << vlbiHeaderSize << "bytes header info and "
-                          << _vdifHeader.getDataFrameLength() << " bytes payload";
-  BOOST_LOG_TRIVIAL(debug) << " Expecting speadheaps of size " << speadHeapSize
-                           << " byte";
+                          << _vdifHeader.getDataFrameLength()
+                          << " bytes payload";
+  BOOST_LOG_TRIVIAL(debug) << "   Expecting speadheaps of size "
+                           << speadHeapSize << "   byte";
 
-  BOOST_LOG_TRIVIAL(debug) << " Sample rate " << _sampleRate << " Hz";
+  BOOST_LOG_TRIVIAL(debug) << "   Sample rate " << _sampleRate << " Hz";
 
   std::size_t n64bit_words = _buffer_bytes / sizeof(uint64_t);
   BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
   _raw_voltage_db.resize(n64bit_words);
-  BOOST_LOG_TRIVIAL(debug) << "  Input voltages size (in 64-bit words): "
-                           << _raw_voltage_db.size();
+  BOOST_LOG_TRIVIAL(debug) << "   Input voltages size : "
+                           << _raw_voltage_db.size() << " 64-bit words,"
+                           << _raw_voltage_db.size() * 64 / 8 << " bytes";
 
-  _packed_voltage.resize(n64bit_words * 64 / input_bitDepth / 16);
+  _packed_voltage.resize(n64bit_words * 64 / input_bitDepth * _output_bitDepth /
+                         8);
 
   _spillOver.reserve(vdifHeader.getDataFrameLength() * 8);
-  BOOST_LOG_TRIVIAL(debug) << "  Output voltages size: "
+  BOOST_LOG_TRIVIAL(debug) << "   Output voltages size: "
                            << _packed_voltage.size() << " byte";
 
   CUDA_ERROR_CHECK(cudaStreamCreate(&_h2d_stream));
@@ -61,7 +62,7 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
 
   _unpacker.reset(new Unpacker(_proc_stream));
 
-  _vdifHeader.setBitsPerSample(2);
+  _vdifHeader.setBitsPerSample(_output_bitDepth);
   _vdifHeader.setNumberOfChannels(1);
   _vdifHeader.setRealDataType();
 } // constructor
@@ -81,20 +82,18 @@ template <class HandlerType> void VLBI<HandlerType>::init(RawBytes &block) {
   headerInfo << "\n"
              << "# VLBI parameters: \n";
 
-
-
   size_t bEnd = std::strlen(block.ptr());
   if (bEnd + headerInfo.str().size() < block.total_bytes()) {
     std::strcpy(block.ptr() + bEnd, headerInfo.str().c_str());
   } else {
-    BOOST_LOG_TRIVIAL(warning)
-        << "Header of size " << block.total_bytes()
-        << " bytes already contains " << bEnd
-        << "bytes. Cannot add VLBI info of size "
-        << headerInfo.str().size() << " bytes.";
+    BOOST_LOG_TRIVIAL(warning) << "Header of size " << block.total_bytes()
+                               << " bytes already contains " << bEnd
+                               << "bytes. Cannot add VLBI info of size "
+                               << headerInfo.str().size() << " bytes.";
   }
 
   _baseLineN.resize(array_sum_Nthreads);
+  _stdDevN.resize(array_sum_Nthreads);
 
   _handler.init(block);
 }
@@ -146,26 +145,50 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
 
 
   BOOST_LOG_TRIVIAL(debug) << "Calculate baseline";
-  psrdada_cpp::effelsberg::edd::array_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage.data()), _unpacked_voltage.size(), thrust::raw_pointer_cast(_baseLineN.data()));
-  psrdada_cpp::effelsberg::edd::array_sum<<<1, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(), thrust::raw_pointer_cast(_baseLineN.data()));
+  psrdada_cpp::effelsberg::edd::
+      array_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(
+          thrust::raw_pointer_cast(_unpacked_voltage.data()),
+          _unpacked_voltage.size(),
+          thrust::raw_pointer_cast(_baseLineN.data()));
+  psrdada_cpp::effelsberg::edd::
+      array_sum<<<1, array_sum_Nthreads, 0, _proc_stream>>>(
+          thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(),
+          thrust::raw_pointer_cast(_baseLineN.data()));
 
-  BOOST_LOG_TRIVIAL(debug) << "Calculate std dev";
-  psrdada_cpp::effelsberg::edd::scaled_square_offset_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage.data()), _unpacked_voltage.size(), thrust::raw_pointer_cast(_baseLineN.data()), thrust::raw_pointer_cast(_baseLineN.data()));
-  psrdada_cpp::effelsberg::edd::array_sum<<<1, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(), thrust::raw_pointer_cast(_baseLineN.data()));
+  BOOST_LOG_TRIVIAL(debug) << "Calculate std-dev";
+  psrdada_cpp::effelsberg::edd::
+      scaled_square_residual_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(
+          thrust::raw_pointer_cast(_unpacked_voltage.data()),
+          _unpacked_voltage.size(), thrust::raw_pointer_cast(_baseLineN.data()),
+          thrust::raw_pointer_cast(_stdDevN.data()));
+  psrdada_cpp::effelsberg::edd::
+      array_sum<<<1, array_sum_Nthreads, 0, _proc_stream>>>(
+          thrust::raw_pointer_cast(_stdDevN.data()), _stdDevN.size(),
+          thrust::raw_pointer_cast(_stdDevN.data()));
+
 
   // non linear packing
-  float v = 0.981599; // L. Kogan, Correction functions for digital correlators
-                      // with two and four quantization levels, Radio Science 33 (1998), 1289-1296
-  BOOST_LOG_TRIVIAL(debug) << "Packing data with non linear 2-bit packaging using levels -v*sigma, 0, v*sigma with n = " << v;
-  _packed_voltage.b().resize(_unpacked_voltage.size() / 16);
-  BOOST_LOG_TRIVIAL(debug) << "Input size: " << _unpacked_voltage.size() << " elements";
-  BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << _packed_voltage.b().size() << " elements";
+  BOOST_LOG_TRIVIAL(debug) << "Packing data with non linear 2-bit packaging "
+                              "using levels -v*sigma, 0, v*sigma with v = "
+                           << _digitizer_threshold;
+  _packed_voltage.b().resize(_unpacked_voltage.size() * 2 / 8);
+  BOOST_LOG_TRIVIAL(debug) << "Input size: " << _unpacked_voltage.size()
+                           << " elements";
+  BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to "
+                           << _packed_voltage.b().size() << " byte";
 
-  pack2bit_nonLinear<<<128, 1024, 0, _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage.data()),
-    thrust::raw_pointer_cast(_packed_voltage.b().data()),
-    _unpacked_voltage.size(), v,  thrust::raw_pointer_cast(_baseLineN.data()));
+  pack2bit_nonLinear<<<128, 1024, 0, _proc_stream>>>(
+      thrust::raw_pointer_cast(_unpacked_voltage.data()),
+      (uint32_t *)thrust::raw_pointer_cast(_packed_voltage.b().data()),
+      _unpacked_voltage.size(), _digitizer_threshold,
+      thrust::raw_pointer_cast(_stdDevN.data()),
+      thrust::raw_pointer_cast(_baseLineN.data()));
 
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
+  BOOST_LOG_TRIVIAL(trace) << " Standard Deviation squared: " << _stdDevN[0]
+                           << " "
+                           << "Mean Value: "
+                           << _baseLineN[0] / _unpacked_voltage.size();
 
   if ((_call_count == 2)) {
     return false;

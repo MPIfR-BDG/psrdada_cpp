@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     std::string output_type = "file";
 
     int thread_id, station_id, payload_size;
-    double sampleRate;
+    double sampleRate, digitizer_threshold;
 
     /** Define and parse the program options
     */
@@ -83,7 +83,14 @@ int main(int argc, char **argv) {
                        po::value<int>()->default_value(5000)->notifier(
                            [&payload_size](int in) { payload_size = in; }),
                        "Payload size [bytes]");
-
+    desc.add_options()("digitizer_threshold",
+                       po::value<double>()->default_value(0.981599)->notifier(
+                           [&digitizer_threshold](double in) { digitizer_threshold = in; }),
+                       "Digitizer threshold in levels of the rms of the signal."
+                       "The default v = 0.981599 is set according to "
+                       "L. Kogan, Correction functions for digital correlators"
+                       " with two and four quantization levels, "
+                       "Radio Science 33 (1998), 1289-1296");
     desc.add_options()("sample_rate",
                        po::value<double>()->default_value(2.6E9)->notifier(
                            [&sampleRate](double in) { sampleRate = in; }),
@@ -92,7 +99,7 @@ int main(int argc, char **argv) {
         "log_level", po::value<std::string>()->default_value("info")->notifier(
                          [](std::string level) { set_log_level(level); }),
         "The logging level to use "
-        "(debug, info, warning, "
+        "(trace, debug, info, warning, "
         "error)");
 
     po::variables_map vm;
@@ -124,7 +131,7 @@ int main(int argc, char **argv) {
 
     // ToDo: Options to set values
     effelsberg::edd::VDIFHeader vdifHeader;
-    vdifHeader.setDataFrameLength(payload_size / 8);
+    vdifHeader.setDataFrameLength(payload_size);
     vdifHeader.setThreadId(thread_id);
     vdifHeader.setStationId(station_id);
     BOOST_LOG_TRIVIAL(warning) << "SETTING FIXED REFERENCE EPOCH AND SECONDS FROM EPOCH!! Should be read from data stream!!";
@@ -138,7 +145,7 @@ int main(int argc, char **argv) {
       SimpleFileWriter sink(filename);
       effelsberg::edd::VLBI<decltype(sink)> vlbi(
           buffer_bytes, nbits,
-          speadHeapSize, sampleRate, vdifHeader, sink);
+          speadHeapSize, sampleRate, digitizer_threshold, vdifHeader, sink);
 
       DadaInputStream<decltype(vlbi)> istream(input_key, log, vlbi);
       istream.start();
@@ -148,7 +155,7 @@ int main(int argc, char **argv) {
       DadaOutputStream sink(string_to_key(filename), log);
       effelsberg::edd::VLBI<decltype(sink)> vlbi(
           buffer_bytes, nbits,
-          speadHeapSize, sampleRate, vdifHeader, sink);
+          speadHeapSize, sampleRate, digitizer_threshold,  vdifHeader, sink);
       DadaInputStream<decltype(vlbi)> istream(input_key, log, vlbi);
       istream.start();
     }
