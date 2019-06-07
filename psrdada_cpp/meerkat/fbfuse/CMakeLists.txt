@@ -23,6 +23,6 @@ cuda_add_executable(fbfuse src/fbfuse_cli.cu)
 target_link_libraries(fbfuse ${PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES})
 install(TARGETS fbfuse DESTINATION bin)
 
-#add_subdirectory(test)
+add_subdirectory(test)
 
 endif(ENABLE_CUDA)

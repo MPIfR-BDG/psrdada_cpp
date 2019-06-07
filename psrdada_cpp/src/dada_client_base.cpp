@@ -35,6 +35,11 @@ namespace psrdada_cpp {
         return ipcbuf_get_nbufs((ipcbuf_t *) _hdu->data_block);
     }
 
+    float DadaClientBase::data_buffer_percent_full() const
+    {
+        return ipcio_percent_full(_hdu->data_block);
+    }
+
     std::size_t DadaClientBase::header_buffer_count() const
     {
         return ipcbuf_get_nbufs(_hdu->header_block);

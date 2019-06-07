@@ -70,7 +70,7 @@ void generate_weights_k(
                     //must change.
                     sincos(TWOPI * phase, &weight.y, &weight.x);
                     compressed_weight.x = (char) __double2int_rn(weight.x * 127.0);
-                    compressed_weight.y = (char) __double2int_rn(weight.y * 127.0);
+                    compressed_weight.y = (char) __double2int_rn(-1.0f * weight.y * 127.0);
                     int output_idx = time_idx * weights_per_time_step + antenna_offset;
                     weights[output_idx] = compressed_weight;
                 }

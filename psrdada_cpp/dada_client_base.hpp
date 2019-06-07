@@ -47,6 +47,11 @@ namespace psrdada_cpp {
         std::size_t data_buffer_count() const;
 
         /**
+         * @brief      Get the percentage fill level of the data buffer
+         */
+        float data_buffer_percent_full() const;
+
+        /**
          * @brief      Get the number of header blocks in the ring buffer
          */
         std::size_t header_buffer_count() const;
