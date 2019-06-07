@@ -24,7 +24,8 @@ namespace edd {
 #define CLEAR_BIT(value, bit) ((value) &= ~BIT_MASK(bit))
 #define TEST_BIT(value, bit) (((value)&BIT_MASK(bit)) ? 1 : 0)
 
-
+typedef unsigned long long int uint64_cu;
+static_assert(sizeof(uint64_cu) == sizeof(uint64_t), "Long long int not of 64 bit! This is problematic for CUDA!");
 /**
  @class GatedSpectrometer
  @brief Split data into two streams and create integrated spectra depending on
@@ -36,6 +37,7 @@ public:
   typedef uint64_t RawVoltageType;
   typedef float UnpackedVoltageType;
   typedef float2 ChannelisedVoltageType;
+
 //  typedef float IntegratedPowerType;
   //typedef int8_t IntegratedPowerType;
 
@@ -91,7 +93,8 @@ private:
   void process(thrust::device_vector<RawVoltageType> const &digitiser_raw,
                thrust::device_vector<uint64_t> const &sideChannelData,
                thrust::device_vector<IntegratedPowerType> &detected,
-               thrust::device_vector<size_t> &noOfBitSet);
+               thrust::device_vector<uint64_cu> &noOfBitSetsIn_G0,
+               thrust::device_vector<uint64_cu> &noOfBitSetsIn_G1);
 
 private:
   DadaBufferLayout _dadaBufferLayout;
@@ -109,6 +112,8 @@ private:
   cufftHandle _fft_plan;
   uint64_t _nchans;
   uint64_t _call_count;
+  double _processing_efficiency;
+
   std::unique_ptr<Unpacker> _unpacker;
   std::unique_ptr<DetectorAccumulator<IntegratedPowerType> > _detector;
 
@@ -118,7 +123,10 @@ private:
 
   // Output data
   DoubleDeviceBuffer<IntegratedPowerType> _power_db;
-  DoubleDeviceBuffer<size_t> _noOfBitSetsInSideChannel;
+
+
+  DoubleDeviceBuffer<uint64_cu> _noOfBitSetsIn_G0;
+  DoubleDeviceBuffer<uint64_cu> _noOfBitSetsIn_G1;
   DoublePinnedHostBuffer<char> _host_power_db;
 
   // Intermediate process steps
@@ -153,10 +161,16 @@ private:
    *             data.
    * @param      selectedSideChannel No. of side channel item to be eveluated.
                  0 <= selectedSideChannel < noOfSideChannels.
+   * @param      stats_G0 No. of sampels contributing to G0, accounting also
+   *             for loat heaps
+   * @param      stats_G1 No. of sampels contributing to G1, accounting also
+   *             for loat heaps
    */
 __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
-                       size_t noOfSideChannels, size_t selectedSideChannel, const float *_baseLine);
+                       size_t noOfSideChannels, size_t selectedSideChannel,
+                       const float *_baseLine, uint64_cu* stats_G0, uint64_cu*
+                       stats_G1);
 
 
 

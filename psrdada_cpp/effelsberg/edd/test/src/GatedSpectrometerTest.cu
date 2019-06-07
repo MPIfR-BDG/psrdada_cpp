@@ -58,6 +58,8 @@ TEST(GatedSpectrometer, GatingKernel)
   thrust::device_vector<float> G0(blockSize * nBlocks);
   thrust::device_vector<float> G1(blockSize * nBlocks);
   thrust::device_vector<uint64_t> _sideChannelData(nBlocks);
+  thrust::device_vector<psrdada_cpp::effelsberg::edd::uint64_cu> _nG0(1);
+  thrust::device_vector<psrdada_cpp::effelsberg::edd::uint64_cu> _nG1(1);
   thrust::device_vector<float> baseLine(1);
 
   thrust::fill(G0.begin(), G0.end(), 42);
@@ -73,7 +75,10 @@ TEST(GatedSpectrometer, GatingKernel)
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
           G0.size(), blockSize, 0, 1,
-          0, thrust::raw_pointer_cast(baseLine.data()));
+          0, thrust::raw_pointer_cast(baseLine.data()), 
+          thrust::raw_pointer_cast(_nG0.data()),
+          thrust::raw_pointer_cast(_nG1.data())
+          );
     thrust::pair<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator> minmax;
     minmax = thrust::minmax_element(G0.begin(), G0.end());
     EXPECT_EQ(*minmax.first, 42);
@@ -82,6 +87,9 @@ TEST(GatedSpectrometer, GatingKernel)
     minmax = thrust::minmax_element(G1.begin(), G1.end());
     EXPECT_EQ(*minmax.first, 0);
     EXPECT_EQ(*minmax.second, 0);
+
+    EXPECT_EQ(_nG0[0], G0.size());
+    EXPECT_EQ(_nG1[0], 0);
   }
 
   // everything to G1 // with baseline -5
@@ -94,7 +102,10 @@ TEST(GatedSpectrometer, GatingKernel)
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
           G0.size(), blockSize, 0, 1,
-          0, thrust::raw_pointer_cast(baseLine.data()));
+          0, thrust::raw_pointer_cast(baseLine.data()),
+          thrust::raw_pointer_cast(_nG0.data()),
+          thrust::raw_pointer_cast(_nG1.data())
+          );
     thrust::pair<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator> minmax;
     minmax = thrust::minmax_element(G0.begin(), G0.end());
     EXPECT_EQ(*minmax.first, -5.);
@@ -103,6 +114,10 @@ TEST(GatedSpectrometer, GatingKernel)
     minmax = thrust::minmax_element(G1.begin(), G1.end());
     EXPECT_EQ(*minmax.first, 42);
     EXPECT_EQ(*minmax.second, 42);
+
+
+    EXPECT_EQ(_nG0[0], G0.size());
+    EXPECT_EQ(_nG1[0], 0);
   }
 }
 
