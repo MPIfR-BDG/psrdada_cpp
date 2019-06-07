@@ -62,7 +62,9 @@ TEST_F(BufferDumpTester, do_nothing)
 
     NullSink sink;
     DadaReadClient reader(buffer.key(), log);
-    BufferDump<decltype(sink)> dumper(reader, sink, max_fill_level, nantennas, nchans, total_nchans, cfreq, bw, block_size/nantennas/nchans);
+    BufferDump<decltype(sink)> dumper(reader, sink, "/tmp/buffer_dump_test.sock",
+                                      max_fill_level, nantennas, nchans,
+                                      total_nchans, cfreq, bw);
 
     std::thread dumper_thread([&](){
         dumper.start();
@@ -71,7 +73,7 @@ TEST_F(BufferDumpTester, do_nothing)
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     dumper.stop();
-    
+
     dumper_thread.join();
 }
 

@@ -1,11 +1,15 @@
 #include "psrdada_cpp/meerkat/fbfuse/BufferDump.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
-#include<cstdio>
-#include<cstdlib>
-#include<cmath>
-#include<chrono>
-#include<thread>
+#include <boost/asio.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/optional.hpp>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <chrono>
+#include <thread>
 
 namespace
 {
@@ -23,6 +27,7 @@ template <typename Handler>
 BufferDump<Handler>::BufferDump(
     DadaReadClient& client,
     Handler& handler,
+    std::string socket_name,
     float max_fill_level,
     std::size_t nantennas,
     std::size_t subband_nchannels,
@@ -32,6 +37,7 @@ BufferDump<Handler>::BufferDump(
     std::size_t samples_per_block)
     : _client(client)
     , _handler(handler)
+    , _socket_name(socket_name)
     , _max_fill_level(max_fill_level)
     , _nantennas(nantennas)
     , _subband_nchans(subband_nchannels)
@@ -39,8 +45,8 @@ BufferDump<Handler>::BufferDump(
     , _centre_freq(centre_freq)
     , _bw(bandwidth)
     , _current_block_idx(0)
-    , _samples_per_block(samples_per_block)
     , _stop(false)
+    , _socket(nullptr)
 {
     std::memset(_event_msg_buffer, 0, sizeof(_event_msg_buffer));
     std::memset(_header_buffer, 0, sizeof(_header_buffer));
@@ -49,6 +55,10 @@ BufferDump<Handler>::BufferDump(
 template <typename Handler>
 BufferDump<Handler>::~BufferDump()
 {
+    if (_socket)
+    {
+        _socket.close();
+    }
 }
 
 template <typename Handler>
@@ -56,13 +66,13 @@ void BufferDump<Handler>::start()
 {
     BOOST_LOG_TRIVIAL(info) << "Starting BufferDump instance (listenting on socket '')";
     // Open Unix socket endpoint
-    /**
-    ::unlink("/tmp/foobar"); // Remove previous binding.
-    local::stream_protocol::endpoint ep("/tmp/foobar");
-    local::stream_protocol::acceptor acceptor(my_io_context, ep);
-    local::stream_protocol::socket socket(my_io_context);
-    acceptor.accept(socket);
-    */
+
+    ::unlink(_socket_name); // Remove previous binding.
+    boost::asio::io_service io_service;
+    local::stream_protocol::endpoint ep(_socket_name);
+    local::stream_protocol::acceptor acceptor(io_service, ep);
+    _socket.reset(new local::stream_protocol::socket(io_service));
+    acceptor.accept(*_socket);
     read_dada_header();
     listen();
 }
@@ -138,21 +148,23 @@ bool BufferDump<Handler>::has_event() const
 template <typename Handler>
 void BufferDump<Handler>::get_event(Event& event)
 {
-    /**
-    ptree pt;
-    boost::asio::read(_socket, boost::asio::buffer(
+    boost::property_tree::ptree pt;
+    boost::asio::read(*_socket, boost::asio::buffer(
         _event_msg_buffer, sizeof(_event_msg_buffer)));
     std::string event_string(_event_msg_buffer);
+    BOOST_LOG_TRIVIAL(info) << "Getting Event information...";
     boost::property_tree::json_parser::read_json(event_string, pt);
     event.utc_start = pt.get<long double>("utc_start");
     event.utc_end = pt.get<long double>("utc_end");
     event.dm = pt.get<float>("dm");
     event.reference_freq = pt.get<float>("reference_freq");
     event.trigger_id = pt.get<std::string>("trigger_id");
-    */
-    BOOST_LOG_TRIVIAL(info) << "Getting Event information...";
-    BOOST_LOG_TRIVIAL(info) << "Event DM:" << event.dm;
-
+    BOOST_LOG_TRIVIAL(info) << "Event info:\n"
+                            << "UTC_START: " << event.utc_start << "\n"
+                            << "UTC_END: " << event.utc_end << "\n"
+                            << "DM: " << event.dm << "\n"
+                            << "REF FREQ: " << event.reference_freq << "\n"
+                            << "TRIGGER_ID: " << event.trigger_id;
 }
 
 template <typename Handler>
@@ -180,6 +192,15 @@ void BufferDump<Handler>::capture(Event const& event)
     BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << nelements << " elements";
     _tmp_buffer.resize(nelements);
 
+
+    std::size_t block_bytes = _client.data_buffer_size();
+    std::size_t heap_group_bytes = _nantennas * _subband_nchans * 256 * sizeof(unsigned);
+
+    if (block_bytes % heap_group_bytes != 0)
+    {
+        throw std::runtime_error("...");
+    }
+    std::size_t samples_per_block = 256 * (block_bytes / heap_group_bytes);
     BOOST_LOG_TRIVIAL(debug) << "Calculating sample offsets for each channel";
     for (std::size_t ii = 0; ii < _subband_nchans; ++ii)
     {
@@ -193,8 +214,8 @@ void BufferDump<Handler>::capture(Event const& event)
                                  << right_edge_of_output[ii] << ")";
     }
 
-    std::size_t start_block_idx = left_edge_of_output[0] / _samples_per_block;
-    std::size_t end_block_idx = right_edge_of_output[_subband_nchans-1] / _samples_per_block;
+    std::size_t start_block_idx = left_edge_of_output[0] / samples_per_block;
+    std::size_t end_block_idx = right_edge_of_output[_subband_nchans-1] / samples_per_block;
     BOOST_LOG_TRIVIAL(debug) << "First DADA block to extract from = " << start_block_idx;
     BOOST_LOG_TRIVIAL(debug) << "Last DADA block to extract from = " << end_block_idx;
     while (_current_block_idx < start_block_idx)
@@ -211,8 +232,8 @@ void BufferDump<Handler>::capture(Event const& event)
     {
         BOOST_LOG_TRIVIAL(debug) << "Extracting data from block " << _current_block_idx;
         RawBytes& block = _client.data_stream().next();
-        std::size_t block_start = _current_block_idx * _samples_per_block;
-        std::size_t block_end = (_current_block_idx + 1) * _samples_per_block;
+        std::size_t block_start = _current_block_idx * samples_per_block;
+        std::size_t block_end = (_current_block_idx + 1) * samples_per_block;
         for (std::size_t chan_idx = 0; chan_idx < _subband_nchans; ++chan_idx)
         {
             if ((left_edge_of_output[chan_idx] > block_end) ||
