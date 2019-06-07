@@ -31,18 +31,19 @@ class BufferDump
             std::size_t subband_nchannels,
             std::size_t total_nchannels,
             float centre_freq,
-            float bandwidth);
+            float bandwidth,
+            std::size_t samples_per_block);
         ~BufferDump();
         void start();
         void stop();
 
     private:
         void listen();
-        void capture();
+        void capture(const Event&);
         void read_dada_header();
         void skip_block();
         bool has_event() const;
-        void get_event();
+        void get_event(Event& event);
 
     private:
         DadaReadClient& _client;
@@ -53,11 +54,15 @@ class BufferDump
         std::size_t _total_nchans;
         float _centre_freq;
         float _bw;
-        std::size_t _current_block_idx
+        std::size_t _current_block_idx;
+        std::size_t _samples_per_block;
         bool _stop;
         std::vector<unsigned> _tmp_buffer;
         char _event_msg_buffer[4096];
         char _header_buffer[4096];
+        std::size_t _sample_clock_start;
+        std::size_t _sample_clock;
+        long double _sync_time;
 };
 
 } // fbfuse

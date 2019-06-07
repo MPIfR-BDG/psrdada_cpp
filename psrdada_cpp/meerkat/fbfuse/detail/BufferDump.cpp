@@ -3,20 +3,21 @@
 #include "psrdada_cpp/raw_bytes.hpp"
 #include<cstdio>
 #include<cstdlib>
-
-using namespace std;
-//using boost::property_tree::ptree;
-
-/* A quick C++ script that calculates the DM delay and snips out the data accordingly to store
- */
+#include<cmath>
+#include<chrono>
+#include<thread>
 
 namespace
 {
     double dm_delay( float f1, float f2, float dm, float tsamp)
     {
-        return (4.15 * 0.001 * dm * (std::powl(1/f1,2) - std::powl(1/f2, 2)))/tsamp;
+        return (4.15 * 0.001 * dm * (std::pow(1/f1,2) - std::pow(1/f2, 2)))/tsamp;
     }
 }
+
+namespace psrdada_cpp{
+namespace meerkat {
+namespace fbfuse{
 
 template <typename Handler>
 BufferDump<Handler>::BufferDump(
@@ -27,7 +28,8 @@ BufferDump<Handler>::BufferDump(
     std::size_t subband_nchannels,
     std::size_t total_nchannels,
     float centre_freq,
-    float bandwidth)
+    float bandwidth,
+    std::size_t samples_per_block)
     : _client(client)
     , _handler(handler)
     , _max_fill_level(max_fill_level)
@@ -37,6 +39,7 @@ BufferDump<Handler>::BufferDump(
     , _centre_freq(centre_freq)
     , _bw(bandwidth)
     , _current_block_idx(0)
+    , _samples_per_block(samples_per_block)
     , _stop(false)
 {
     std::memset(_event_msg_buffer, 0, sizeof(_event_msg_buffer));
@@ -71,10 +74,10 @@ void BufferDump<Handler>::stop()
 }
 
 template <typename Handler>
-void BufferDump<Handler>::read_dada_header();
+void BufferDump<Handler>::read_dada_header()
 {
     BOOST_LOG_TRIVIAL(info) << "Parsing DADA buffer header";
-    auto& header_block = _client.header_steam().next();
+    auto& header_block = _client.header_stream().next();
     Header parser(header_block);
     _sample_clock_start = parser.get<std::size_t>("SAMPLE_CLOCK_START");
     _sample_clock = parser.get<std::size_t>("SAMPLE_CLOCK");
@@ -82,8 +85,8 @@ void BufferDump<Handler>::read_dada_header();
     BOOST_LOG_TRIVIAL(info) << "Parsed SAMPLE_CLOCK_START = " << _sample_clock_start;
     BOOST_LOG_TRIVIAL(info) << "Parsed SAMPLE_CLOCK = " << _sample_clock;
     BOOST_LOG_TRIVIAL(info) << "Parsed SYNC_TIME = " << _sync_time;
-    std::memcpy(_header_buffer, header.ptr(), sizeof(_header_buffer));
-    _client.header_steam().release();
+    std::memcpy(_header_buffer, header_block.ptr(), sizeof(_header_buffer));
+    _client.header_stream().release();
     BOOST_LOG_TRIVIAL(info) << "Parsing complete";
 }
 
@@ -92,7 +95,7 @@ void BufferDump<Handler>::listen()
 {
     while (!_stop)
     {
-        if has_event()
+        if (has_event())
         {
             Event event;
             try
@@ -107,10 +110,9 @@ void BufferDump<Handler>::listen()
             capture(event);
         }
 
-        float fill_level = _client.data_buffer_percent_full();
-        BOOST_LOG_TRIVIAL(debug) << "DADA buffer fill level = " << fill_level << "%";
-        while (fill_level > _max_fill_level)
+        while (_client.data_buffer_percent_full() > _max_fill_level)
         {
+            BOOST_LOG_TRIVIAL(debug) << "DADA buffer fill level = " << _client.data_buffer_percent_full() << "%";
             skip_block();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -148,6 +150,8 @@ void BufferDump<Handler>::get_event(Event& event)
     event.reference_freq = pt.get<float>("reference_freq");
     event.trigger_id = pt.get<std::string>("trigger_id");
     */
+    BOOST_LOG_TRIVIAL(info) << "Getting Event information...";
+    BOOST_LOG_TRIVIAL(info) << "Event DM:" << event.dm;
 
 }
 
@@ -156,7 +160,8 @@ void BufferDump<Handler>::capture(Event const& event)
 {
 
     std::size_t output_left_idx = 0, output_right_idx = 0;
-    std::size_t block_left_idx = 0, block_right_idx = 0;
+    std::size_t block_left_idx = 0;
+    // block_right_idx = 0;
     std::vector<std::size_t> left_edge_of_output(_subband_nchans);
     std::vector<std::size_t> right_edge_of_output(_subband_nchans);
     long double start_of_buffer = _sync_time + _sample_clock_start / _sample_clock;
@@ -179,7 +184,7 @@ void BufferDump<Handler>::capture(Event const& event)
     for (std::size_t ii = 0; ii < _subband_nchans; ++ii)
     {
         float channel_freq = (_centre_freq - chan_bw/2.0f) + ii * chan_bw;
-        double delay = dm_delay(event.reference_freq, channel_freq, event.dm, _tsamp);
+        double delay = dm_delay(event.reference_freq, channel_freq, event.dm, tsamp);
         left_edge_of_output[ii] = static_cast<std::size_t>(delay) + start_sample;
         right_edge_of_output[ii] = static_cast<std::size_t>(delay) + end_sample;
         BOOST_LOG_TRIVIAL(debug) << "Channel " << ii << ", "
@@ -230,12 +235,12 @@ void BufferDump<Handler>::capture(Event const& event)
             if (block_end >= right_edge_of_output[chan_idx])
             {
                 output_right_idx = nsamps;
-                block_right_idx = right_edge_of_output[chan_idx] - block_start;
+                //block_right_idx = right_edge_of_output[chan_idx] - block_start;
             }
             else
             {
                 output_right_idx = block_end - left_edge_of_output[chan_idx];
-                block_right_idx = _samples_per_block;
+                //block_right_idx = _samples_per_block;
             }
 
             std::size_t span = output_right_idx - output_left_idx;
@@ -268,6 +273,8 @@ void BufferDump<Handler>::capture(Event const& event)
     _handler(output);
 }
 
-
+}
+}
+}
 
 
