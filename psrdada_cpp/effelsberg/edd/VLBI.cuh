@@ -41,6 +41,13 @@ class VDIFHeader
 		void setReferenceEpoch(uint32_t value);
 		uint32_t getReferenceEpoch() const;
 
+    /// set reference epoch and seconds from reference epoch from POSIX time
+    /// stamp
+    void setTimeReferencesFromTimestamp(size_t);
+    /// converts time reference data to POSIX time
+    size_t getTimestamp();
+
+
 		void setDataFrameNumber(uint32_t value);
 		uint32_t getDataFrameNumber() const;
 

@@ -131,12 +131,10 @@ int main(int argc, char **argv) {
 
     // ToDo: Options to set values
     effelsberg::edd::VDIFHeader vdifHeader;
-    vdifHeader.setDataFrameLength(payload_size);
+    vdifHeader.setDataFrameLength((payload_size + effelsberg::edd::vlbiHeaderSize) / 8); // In units of 8 bytes (SIC) according to VDIF spec.
+    vdifHeader.setNumberOfChannels(0);  // log_2 (channel number) 
     vdifHeader.setThreadId(thread_id);
     vdifHeader.setStationId(station_id);
-    BOOST_LOG_TRIVIAL(warning) << "SETTING FIXED REFERENCE EPOCH AND SECONDS FROM EPOCH!! Should be read from data stream!!";
-    vdifHeader.setReferenceEpoch(0);
-    vdifHeader.setSecondsFromReferenceEpoch(42); // for first block
 
 
     std::cout << "Running with output_type: " << output_type << std::endl;

@@ -5,6 +5,9 @@
 #include <cuda.h>
 #include <cstdint>
 
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/date_time/gregorian/gregorian.hpp"
+
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
@@ -110,6 +113,33 @@ void VDIFHeader::setStationId(uint32_t value) {
 
 uint32_t VDIFHeader::getStationId() const {
   return getBitsValue(data[3], 0, 15);
+}
+
+void VDIFHeader::setTimeReferencesFromTimestamp(size_t sync_time) {
+  boost::posix_time::ptime pt = boost::posix_time::from_time_t(sync_time);
+
+  boost::gregorian::date epochBegin(pt.date().year(),
+                                    ((pt.date().month() <= 6) ? 1 : 7), 1);
+  setReferenceEpoch((epochBegin.year() - 2000) * 2 + (epochBegin.month() >= 7));
+
+  boost::posix_time::time_duration delta =
+      pt - boost::posix_time::ptime(epochBegin);
+  setSecondsFromReferenceEpoch(delta.total_seconds());
+
+    BOOST_LOG_TRIVIAL(debug) << " Time stamp: " << sync_time
+        << " => VDIF Reference epoch: " << getReferenceEpoch()
+        << " at " << getSecondsFromReferenceEpoch() << " s";
+}
+
+
+size_t VDIFHeader::getTimestamp() {
+  boost::gregorian::date vdifEpochBegin(getReferenceEpoch() / 2 + 2000,
+                                        ((getReferenceEpoch() % 2) * 6) + 1, 1);
+  boost::posix_time::ptime pt =  boost::posix_time::ptime(vdifEpochBegin) + boost::posix_time::seconds(getSecondsFromReferenceEpoch());
+  boost::posix_time::ptime unixEpoch =
+      boost::posix_time::time_from_string("1970-01-01 00:00:00.000");
+  boost::posix_time::time_duration delta = pt - unixEpoch;
+  return delta.total_seconds();
 }
 
 

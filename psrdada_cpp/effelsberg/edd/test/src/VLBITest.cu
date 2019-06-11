@@ -1,6 +1,5 @@
 #include "gtest/gtest.h"
 
-#include <time.h>
 #include <stdlib.h>
 
 #include "psrdada_cpp/effelsberg/edd/VLBI.cuh"
@@ -99,7 +98,26 @@ TEST(VDIFHeader, getSetWord3)
 	EXPECT_EQ(header.getStationId(), 42);
 }
 
+TEST(VDIFHeader, testTimeStampConversion)
+{
+	VDIFHeader header;
+  size_t currentTime = 1554915838;
+  header.setTimeReferencesFromTimestamp(currentTime);
 
+  EXPECT_EQ(currentTime, header.getTimestamp()) << "Reference epoch: " << header.getReferenceEpoch() << " + " << header.getSecondsFromReferenceEpoch() << " s";
+
+  header.setTimeReferencesFromTimestamp(946684800);
+  EXPECT_EQ(0, header.getReferenceEpoch());
+  EXPECT_EQ(0, header.getSecondsFromReferenceEpoch());
+
+  header.setTimeReferencesFromTimestamp(962409600);
+  EXPECT_EQ(1, header.getReferenceEpoch());
+  EXPECT_EQ(0, header.getSecondsFromReferenceEpoch());
+
+  header.setTimeReferencesFromTimestamp(962409600 + 100);
+  EXPECT_EQ(1, header.getReferenceEpoch());
+  EXPECT_EQ(100, header.getSecondsFromReferenceEpoch());
+}
 
 //int main(int argc, char **argv) {
 //  ::testing::InitGoogleTest(&argc, argv);

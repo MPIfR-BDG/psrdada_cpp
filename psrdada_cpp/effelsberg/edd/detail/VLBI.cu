@@ -1,8 +1,9 @@
 #include "psrdada_cpp/effelsberg/edd/VLBI.cuh"
 #include "psrdada_cpp/effelsberg/edd/Packer.cuh"
 #include "psrdada_cpp/effelsberg/edd/Tools.cuh"
-
 #include "psrdada_cpp/cuda_utils.hpp"
+
+#include "ascii_header.h" // dada
 
 #include <cuda.h>
 #include <cuda_profiler_api.h>
@@ -62,8 +63,7 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
 
   _unpacker.reset(new Unpacker(_proc_stream));
 
-  _vdifHeader.setBitsPerSample(_output_bitDepth);
-  _vdifHeader.setNumberOfChannels(1);
+  _vdifHeader.setBitsPerSample(_output_bitDepth - 1); // bits per sample - 1
   _vdifHeader.setRealDataType();
 } // constructor
 
@@ -78,6 +78,24 @@ template <class HandlerType> VLBI<HandlerType>::~VLBI() {
 
 template <class HandlerType> void VLBI<HandlerType>::init(RawBytes &block) {
   BOOST_LOG_TRIVIAL(debug) << "VLBI init called";
+
+  size_t sync_time = 0;
+  if (ascii_header_get(block.ptr(), "SYNC_TIME", "%ld", &sync_time) != 1)
+  {
+    BOOST_LOG_TRIVIAL(warning) << "No or multiple SYNC_TIME parameters in header stream! Not setting reference";
+    return;
+  }
+  size_t sample_clock_start = 0;
+  if (ascii_header_get(block.ptr(), "SAMPLE_CLOCK_START", "%ld", &sample_clock_start) != 1)
+  {
+    BOOST_LOG_TRIVIAL(warning) << "No or multiple SAMPLE_CLOCK_START in header stream! Not setting reference time";
+    return;
+  }
+
+  size_t timestamp = sync_time + sample_clock_start / _sampleRate;
+  BOOST_LOG_TRIVIAL(info) << "POSIX timestamp  captured from header: " << timestamp;
+  _vdifHeader.setTimeReferencesFromTimestamp(timestamp);
+
   std::stringstream headerInfo;
   headerInfo << "\n"
              << "# VLBI parameters: \n";
