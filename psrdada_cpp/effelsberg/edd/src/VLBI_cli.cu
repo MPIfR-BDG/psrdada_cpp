@@ -129,7 +129,6 @@ int main(int argc, char **argv) {
     DadaClientBase client(input_key, log);
     std::size_t buffer_bytes = client.data_buffer_size();
 
-    // ToDo: Options to set values
     effelsberg::edd::VDIFHeader vdifHeader;
     vdifHeader.setDataFrameLength((payload_size + effelsberg::edd::vlbiHeaderSize) / 8); // In units of 8 bytes (SIC) according to VDIF spec.
     vdifHeader.setNumberOfChannels(0);  // log_2 (channel number) 
