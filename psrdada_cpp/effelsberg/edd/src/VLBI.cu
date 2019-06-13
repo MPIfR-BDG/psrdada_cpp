@@ -12,7 +12,73 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
-VDIFHeader::VDIFHeader() {
+
+
+VDIFHeaderView::VDIFHeaderView(const uint32_t* data) : data(data) {};
+void VDIFHeaderView::setDataLocation(const uint32_t* _data) {
+  data = _data;
+};
+
+bool VDIFHeaderView::isValid() const {
+  return (getBitsValue(data[0], 31, 31) == 0);
+}
+
+uint32_t VDIFHeaderView::getSecondsFromReferenceEpoch() const {
+  return getBitsValue(data[0], 0, 29);
+}
+
+uint32_t VDIFHeaderView::getReferenceEpoch() const {
+  return getBitsValue(data[1], 24, 29);
+}
+
+uint32_t VDIFHeaderView::getDataFrameNumber() const {
+  return getBitsValue(data[1], 0, 23);
+}
+uint32_t VDIFHeaderView::getDataFrameLength() const {
+  return getBitsValue(data[2], 0, 23);
+}
+
+uint32_t VDIFHeaderView::getVersionNumber() const {
+  return getBitsValue(data[2], 29, 31);
+}
+
+uint32_t VDIFHeaderView::getNumberOfChannels() const {
+  return getBitsValue(data[2], 24, 28);
+}
+
+bool VDIFHeaderView::isRealDataType() const {
+  return (getBitsValue(data[3], 31, 31) == 0);
+}
+
+bool VDIFHeaderView::isComplexDataType() const {
+  return (getBitsValue(data[3], 31, 31) == 1);
+}
+
+uint32_t VDIFHeaderView::getBitsPerSample() const {
+  return getBitsValue(data[3], 26, 30);
+}
+
+uint32_t VDIFHeaderView::getThreadId() const {
+  return getBitsValue(data[3], 16, 25);
+}
+
+uint32_t VDIFHeaderView::getStationId() const {
+  return getBitsValue(data[3], 0, 15);
+}
+
+size_t VDIFHeaderView::getTimestamp() const {
+  boost::gregorian::date vdifEpochBegin(getReferenceEpoch() / 2 + 2000,
+                                        ((getReferenceEpoch() % 2) * 6) + 1, 1);
+  boost::posix_time::ptime pt =  boost::posix_time::ptime(vdifEpochBegin) + boost::posix_time::seconds(getSecondsFromReferenceEpoch());
+  boost::posix_time::ptime unixEpoch =
+      boost::posix_time::time_from_string("1970-01-01 00:00:00.000");
+  boost::posix_time::time_duration delta = pt - unixEpoch;
+  return delta.total_seconds();
+}
+
+
+VDIFHeader::VDIFHeader() : VDIFHeaderView(data)
+{
   for (int i = 0; i < 8; i++) {
     data[i] = 0U;
   }
@@ -31,60 +97,24 @@ void VDIFHeader::setInvalid() { setBitsWithValue(data[0], 31, 31, 1); }
 
 void VDIFHeader::setValid() { setBitsWithValue(data[0], 31, 31, 0); }
 
-bool VDIFHeader::isValid() const {
-  return (getBitsValue(data[0], 31, 31) == 0);
-}
-
 void VDIFHeader::setSecondsFromReferenceEpoch(uint32_t value) {
   setBitsWithValue(data[0], 0, 29, value);
-}
-
-uint32_t VDIFHeader::getSecondsFromReferenceEpoch() const {
-  return getBitsValue(data[0], 0, 29);
 }
 
 void VDIFHeader::setReferenceEpoch(uint32_t value) {
   setBitsWithValue(data[1], 24, 29, value);
 }
 
-uint32_t VDIFHeader::getReferenceEpoch() const {
-  return getBitsValue(data[1], 24, 29);
-}
-
 void VDIFHeader::setDataFrameNumber(uint32_t value) {
   setBitsWithValue(data[1], 0, 23, value);
-}
-
-uint32_t VDIFHeader::getDataFrameNumber() const {
-  return getBitsValue(data[1], 0, 23);
 }
 
 void VDIFHeader::setDataFrameLength(uint32_t value) {
   setBitsWithValue(data[2], 0, 23, value);
 }
 
-uint32_t VDIFHeader::getDataFrameLength() const {
-  return getBitsValue(data[2], 0, 23);
-}
-
-uint32_t VDIFHeader::getVersionNumber() const {
-  return getBitsValue(data[2], 29, 31);
-}
-
 void VDIFHeader::setNumberOfChannels(uint32_t value) {
   setBitsWithValue(data[2], 24, 28, value);
-}
-
-uint32_t VDIFHeader::getNumberOfChannels() const {
-  return getBitsValue(data[2], 24, 28);
-}
-
-bool VDIFHeader::isRealDataType() const {
-  return (getBitsValue(data[3], 31, 31) == 0);
-}
-
-bool VDIFHeader::isComplexDataType() const {
-  return (getBitsValue(data[3], 31, 31) == 1);
 }
 
 void VDIFHeader::setComplexDataType() { setBitsWithValue(data[3], 31, 31, 1); }
@@ -95,24 +125,12 @@ void VDIFHeader::setBitsPerSample(uint32_t value) {
   setBitsWithValue(data[3], 26, 30, value);
 }
 
-uint32_t VDIFHeader::getBitsPerSample() const {
-  return getBitsValue(data[3], 26, 30);
-}
-
 void VDIFHeader::setThreadId(uint32_t value) {
   setBitsWithValue(data[3], 16, 25, value);
 }
 
-uint32_t VDIFHeader::getThreadId() const {
-  return getBitsValue(data[3], 16, 25);
-}
-
 void VDIFHeader::setStationId(uint32_t value) {
   setBitsWithValue(data[3], 0, 15, value);
-}
-
-uint32_t VDIFHeader::getStationId() const {
-  return getBitsValue(data[3], 0, 15);
 }
 
 void VDIFHeader::setTimeReferencesFromTimestamp(size_t sync_time) {
@@ -132,15 +150,6 @@ void VDIFHeader::setTimeReferencesFromTimestamp(size_t sync_time) {
 }
 
 
-size_t VDIFHeader::getTimestamp() {
-  boost::gregorian::date vdifEpochBegin(getReferenceEpoch() / 2 + 2000,
-                                        ((getReferenceEpoch() % 2) * 6) + 1, 1);
-  boost::posix_time::ptime pt =  boost::posix_time::ptime(vdifEpochBegin) + boost::posix_time::seconds(getSecondsFromReferenceEpoch());
-  boost::posix_time::ptime unixEpoch =
-      boost::posix_time::time_from_string("1970-01-01 00:00:00.000");
-  boost::posix_time::time_duration delta = pt - unixEpoch;
-  return delta.total_seconds();
-}
 
 
 __global__ void pack2bit_nonLinear(const float *__restrict__ input,

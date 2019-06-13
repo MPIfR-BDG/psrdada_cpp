@@ -17,10 +17,37 @@ namespace edd {
 
 const size_t vlbiHeaderSize = 8 * 32 / 8; // bytes [8 words a 32 bit]
 
+
+/// class VDIFHeaderView provides interprets a data block as VDIF compliant header 
+/// See https://vlbi.org/vlbi-standards/vdif/specification 1.1.1 from June 2014 for details.
+class VDIFHeaderView
+{
+  private:
+    const uint32_t *data;
+  public:
+    VDIFHeaderView(const uint32_t* data);
+    void setDataLocation(const uint32_t* _data);
+    uint32_t getVersionNumber() const;
+		bool isValid() const;
+		uint32_t getSecondsFromReferenceEpoch() const;
+		uint32_t getReferenceEpoch() const;
+    size_t getTimestamp() const;
+		uint32_t getDataFrameNumber() const;
+		uint32_t getDataFrameLength() const;
+		uint32_t getNumberOfChannels() const;
+    bool isRealDataType() const;
+		bool isComplexDataType() const;
+		uint32_t getBitsPerSample() const;
+		uint32_t getThreadId() const;
+		uint32_t getStationId() const;
+
+};
+
+
 /// class VDIFHeader stores a VDIF compliant header block with conveniant
 /// setters and getters. See https://vlbi.org/vlbi-standards/vdif/
 /// specification 1.1.1 from June 2014 for details.
-class VDIFHeader
+class VDIFHeader : public VDIFHeaderView
 {
 	private:
 	  uint32_t data[8];
@@ -30,49 +57,27 @@ class VDIFHeader
 
     // return pointer to the data block for low level manipulation
 		uint32_t* getData();
-
 		void setInvalid();
 		void setValid();
-		bool isValid() const;
-
 		void setSecondsFromReferenceEpoch(uint32_t value);
-		uint32_t getSecondsFromReferenceEpoch() const;
-
 		void setReferenceEpoch(uint32_t value);
-		uint32_t getReferenceEpoch() const;
 
     /// set reference epoch and seconds from reference epoch from POSIX time
     /// stamp
     void setTimeReferencesFromTimestamp(size_t);
     /// converts time reference data to POSIX time
-    size_t getTimestamp();
-
-
 		void setDataFrameNumber(uint32_t value);
-		uint32_t getDataFrameNumber() const;
-
 		void setDataFrameLength(uint32_t value);
-		uint32_t getDataFrameLength() const;
-
-    uint32_t getVersionNumber() const;
-
 		void setNumberOfChannels(uint32_t value);
-		uint32_t getNumberOfChannels() const;
-
-		bool isRealDataType() const;
-		bool isComplexDataType() const;
 		void setComplexDataType();
 		void setRealDataType();
-
 	  void setBitsPerSample(uint32_t value);
-		uint32_t getBitsPerSample() const;
-
 	  void setThreadId(uint32_t value);
-		uint32_t getThreadId() const;
-
 	  void setStationId(uint32_t value);
-		uint32_t getStationId() const;
 };
+
+
+
 
 
 /**
