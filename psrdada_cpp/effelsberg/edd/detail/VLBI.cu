@@ -93,7 +93,7 @@ template <class HandlerType> void VLBI<HandlerType>::init(RawBytes &block) {
   }
 
   size_t timestamp = sync_time + sample_clock_start / _sampleRate;
-  BOOST_LOG_TRIVIAL(info) << "POSIX timestamp  captured from header: " << timestamp;
+  BOOST_LOG_TRIVIAL(info) << "POSIX timestamp  captured from header: " << timestamp << " = " << sync_time << " + " << sample_clock_start << " / " << _sampleRate << " = SYNC_TIME + SAMPLE_CLOCK_START/SAMPLERATE" ;
   _vdifHeader.setTimeReferencesFromTimestamp(timestamp);
 
   std::stringstream headerInfo;
@@ -217,15 +217,17 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   BOOST_LOG_TRIVIAL(debug) << "Copy Data back to host";
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
 
-  const size_t outputBlockSize = _vdifHeader.getDataFrameLength();
+  const size_t outputBlockSize = _vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize;
+
+  const size_t totalSizeOfData = _packed_voltage.size() + _spillOver.size(); // current array + remaining of previous
+ 
+  size_t numberOfBlocksInOutput = totalSizeOfData / outputBlockSize;
 
   size_t remainingBytes = outputBlockSize - _spillOver.size();
-  size_t numberOfBlocksInOutput =
-      (_packed_voltage.size() - remainingBytes) / outputBlockSize;
   BOOST_LOG_TRIVIAL(debug) << "   Number of blocks in output "
                            << numberOfBlocksInOutput;
 
-  _outputBuffer.a().resize((1 + numberOfBlocksInOutput) *
+  _outputBuffer.a().resize(numberOfBlocksInOutput *
                            (outputBlockSize + vlbiHeaderSize));
 
   BOOST_LOG_TRIVIAL(debug) << "   Copying " << _spillOver.size()
@@ -245,7 +247,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   const size_t dpitch = outputBlockSize + vlbiHeaderSize;
   const size_t spitch = outputBlockSize;
   const size_t width = outputBlockSize;
-  size_t height = numberOfBlocksInOutput;
+  size_t height = numberOfBlocksInOutput-1;
 
   BOOST_LOG_TRIVIAL(debug) << "   Copying " << height
                            << " blocks a " << outputBlockSize << " bytes";
@@ -258,10 +260,9 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
 
 
   // new spill over
-  _spillOver.resize(_packed_voltage.size() - remainingBytes -
-                    numberOfBlocksInOutput * outputBlockSize);
+  _spillOver.resize(totalSizeOfData - numberOfBlocksInOutput * outputBlockSize);
 
-  size_t offset = numberOfBlocksInOutput * outputBlockSize + remainingBytes;
+  size_t offset = (numberOfBlocksInOutput-1) * outputBlockSize + remainingBytes;
   BOOST_LOG_TRIVIAL(debug) << " New spill over size " << _spillOver.size()
                            << " bytes with offset " << offset;
 
@@ -274,7 +275,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   const size_t samplesPerDataFrame = outputBlockSize * 8 / _output_bitDepth;
   const size_t dataFramesPerSecond = _sampleRate / samplesPerDataFrame;
 
-  for (size_t i = 0; i < numberOfBlocksInOutput + 1; i++)
+  for (size_t i = 0; i < numberOfBlocksInOutput; i++)
   {
     // copy header to correct position
       std::copy(reinterpret_cast<uint8_t *>(_vdifHeader.getData()),
