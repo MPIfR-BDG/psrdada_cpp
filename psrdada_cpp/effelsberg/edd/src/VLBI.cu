@@ -134,14 +134,24 @@ void VDIFHeader::setStationId(uint32_t value) {
 }
 
 void VDIFHeader::setTimeReferencesFromTimestamp(size_t sync_time) {
+  BOOST_LOG_TRIVIAL(debug) << "Setting time reference from timestamp: " << sync_time;
   boost::posix_time::ptime pt = boost::posix_time::from_time_t(sync_time);
+  BOOST_LOG_TRIVIAL(debug) << "  - posix_time:  " << pt;
 
   boost::gregorian::date epochBegin(pt.date().year(),
                                     ((pt.date().month() <= 6) ? 1 : 7), 1);
-  setReferenceEpoch((epochBegin.year() - 2000) * 2 + (epochBegin.month() >= 7));
+  BOOST_LOG_TRIVIAL(debug) << "  - epochBegin: " << epochBegin;
+  int refEpoch = (epochBegin.year() - 2000) * 2 + (epochBegin.month() >= 7);
+  if (refEpoch < 0)
+  {
+    BOOST_LOG_TRIVIAL(error) << "Cannot encode time before 1 Jan 2000 - received " << pt;
+  }
+  BOOST_LOG_TRIVIAL(debug) << "  - reference epoch: " << refEpoch;
+  setReferenceEpoch(refEpoch);
 
   boost::posix_time::time_duration delta =
       pt - boost::posix_time::ptime(epochBegin);
+  BOOST_LOG_TRIVIAL(debug) << "  - time delta since epoch begin: " << delta << " = "  << delta.total_seconds();
   setSecondsFromReferenceEpoch(delta.total_seconds());
 
     BOOST_LOG_TRIVIAL(debug) << " Time stamp: " << sync_time
