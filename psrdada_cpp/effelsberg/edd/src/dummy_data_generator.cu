@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
     DadaOutputStream sink(output_key, log);
     char header[4096];
 
-    std::strcpy(header, "HEADER       DADA\nHDR_VERSION  1.0\nHDR_SIZE     4096\nDADA_VERSION 1.0\nFILE_SIZE    2013265920\nNBIT           32\nNDIM         2\nNPOL         1\nNCHAN     4096\nRESOLUTION   1\nDSB 1\n");
+    std::strcpy(header, "HEADER       DADA\nHDR_VERSION  1.0\nHDR_SIZE     4096\nDADA_VERSION 1.0\nFILE_SIZE    2013265920\nNBIT           32\nNDIM         2\nNPOL         1\nNCHAN     4096\nRESOLUTION   1\nDSB 1\nSYNC_TIME    123456789\nSAMPLE_CLOCK_START 175671842316288\n");
 
 
 
