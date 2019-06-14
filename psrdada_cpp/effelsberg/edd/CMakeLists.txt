@@ -32,7 +32,7 @@ install(TARGETS VLBI DESTINATION bin)
 
 cuda_add_executable(vdif_send src/vdif_send.cu)
 target_link_libraries(vdif_send ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-install(TARGETS VLBI DESTINATION bin)
+install(TARGETS vdif_send DESTINATION bin)
 
 cuda_add_executable(dada_dummy_data src/dummy_data_generator.cu)
 target_link_libraries(dada_dummy_data ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
