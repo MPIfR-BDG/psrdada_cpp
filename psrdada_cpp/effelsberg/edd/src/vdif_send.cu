@@ -30,7 +30,7 @@ namespace edd {
 class VDIF_Sender
 {
   private:
-    std::string destination_ip;
+    std::string destination_ip, source_ip;
     int port;
     double max_rate;
 
@@ -47,8 +47,8 @@ class VDIF_Sender
      * @param      io_service     boost::asio::io_Service instance to use for
      *                            communication.
      */
-    VDIF_Sender(std::string destination_ip, int port, double max_rate, boost::asio::io_service&
-        io_service): socket(io_service), destination_ip(destination_ip), port(port), max_rate(max_rate)
+    VDIF_Sender(const std::string &source_ip, const std::string &destination_ip, int port, double max_rate, boost::asio::io_service&
+        io_service): socket(io_service), source_ip(source_ip), destination_ip(destination_ip), port(port), max_rate(max_rate)
     {
 
     }
@@ -66,9 +66,15 @@ class VDIF_Sender
    */
   void init(RawBytes &block)
   {
+    BOOST_LOG_TRIVIAL(debug) << "Preparing socket for communication from " << source_ip << " to " << destination_ip << " port: " << port;
     // drop header as not needed, only open socket.
     remote_endpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(destination_ip), port);
+    boost::asio::ip::address_v4 local_interface =
+      boost::asio::ip::address_v4::from_string(source_ip);
+    boost::asio::ip::multicast::outbound_interface option(local_interface);
+
     socket.open(boost::asio::ip::udp::v4());
+    socket.set_option(option);
   };
 
   /**
@@ -134,7 +140,7 @@ int main(int argc, char **argv) {
     key_t input_key;
 
     int destination_port;
-    std::string destination_ip;
+    std::string destination_ip, source_ip;
     double max_rate;
 
     /** Define and parse the program options
@@ -149,9 +155,12 @@ int main(int argc, char **argv) {
             [&input_key](std::string in) { input_key = string_to_key(in); }),
         "The shared memory key for the dada buffer to connect to (hex "
         "string)");
-    desc.add_options()("ip",
+    desc.add_options()("dest_ip",
                        po::value<std::string>(&destination_ip)->required(),
                        "Destination IP");
+    desc.add_options()("if_ip",
+                       po::value<std::string>(&source_ip)->required(),
+                       "IP of the interface to use");
     desc.add_options()("port",
                        po::value<int>()->default_value(8125)->notifier(
                            [&destination_port](int in) { destination_port = in; }),
@@ -191,7 +200,7 @@ int main(int argc, char **argv) {
 
 
     boost::asio::io_service io_service;
-    effelsberg::edd::VDIF_Sender vdif_sender(destination_ip, destination_port, max_rate, io_service);
+    effelsberg::edd::VDIF_Sender vdif_sender(source_ip, destination_ip, destination_port, max_rate, io_service);
 
     DadaInputStream<decltype(vdif_sender)> istream(input_key, log, vdif_sender);
     istream.start();
