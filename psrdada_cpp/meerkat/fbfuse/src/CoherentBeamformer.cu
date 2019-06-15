@@ -166,7 +166,8 @@ void bf_aptf_general_k(
             + (start_beam_idx + lane_idx) * tf_size
             + (output_sample_idx % FBFUSE_CB_NSAMPLES_PER_HEAP) * gridDim.y
             + blockIdx.y);
-    tbtf_powers[output_idx] = (int8_t) ((power - output_offset) / output_scale);
+    float scaled_power = (power - output_offset) / output_scale;
+    tbtf_powers[output_idx] = (int8_t) (scaled_power * (scaled_power < 127.0f) + 127.0f * (scaled_power >= 127.0f));
 }
 } //namespace kernels
 
