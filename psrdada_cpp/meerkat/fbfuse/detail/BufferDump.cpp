@@ -69,9 +69,12 @@ void BufferDump<Handler>::start()
 
     ::unlink(_socket_name); // Remove previous binding.
     boost::asio::io_service io_service;
-    local::stream_protocol::endpoint ep(_socket_name);
-    local::stream_protocol::acceptor acceptor(io_service, ep);
-    _socket.reset(new local::stream_protocol::socket(io_service));
+    boost::asio::local::stream_protocol::endpoint ep(_socket_name);
+    boost::asio::local::stream_protocol::acceptor acceptor(io_service, ep);
+    boost::asio::local::socket::non_blocking_io non_blocking_io(true);
+    _socket.reset(new boost::asio::local::stream_protocol::socket(io_service));
+    boost::asio::local::socket::non_blocking_io non_blocking_io(true);
+    _socket->io_control(non_blocking_io);
     acceptor.accept(*_socket);
     read_dada_header();
     listen();
@@ -105,6 +108,23 @@ void BufferDump<Handler>::listen()
 {
     while (!_stop)
     {
+        // accept
+
+        // if not block
+        // read
+        // get event
+        // capture
+
+        // EWOULDBLOCK
+        // check the buffer percentage
+        // loop
+
+        while (_client.data_buffer_percent_full() > _max_fill_level)
+        {
+            BOOST_LOG_TRIVIAL(debug) << "DADA buffer fill level = " << _client.data_buffer_percent_full() << "%";
+            skip_block();
+        }
+
         if (has_event())
         {
             Event event;
@@ -120,11 +140,6 @@ void BufferDump<Handler>::listen()
             capture(event);
         }
 
-        while (_client.data_buffer_percent_full() > _max_fill_level)
-        {
-            BOOST_LOG_TRIVIAL(debug) << "DADA buffer fill level = " << _client.data_buffer_percent_full() << "%";
-            skip_block();
-        }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
