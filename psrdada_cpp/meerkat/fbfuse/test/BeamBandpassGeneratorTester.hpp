@@ -18,7 +18,7 @@ protected:
 public:
     BeamBandpassGeneratorTester();
     ~BeamBandpassGeneratorTester();
-
+    void operator()(RawBytes& block);
 };
 
 } //namespace test

@@ -36,15 +36,15 @@ public:
     BeamBandpassGenerator(BeamBandpassGenerator const&) = delete;
 
     void init(RawBytes&);
-    bool operator()(RawBytes&);
+    void operator()(RawBytes&);
 
 private:
     Handler& _handler;
-    unsigned int _nbeams,
-    unsigned int _nchans_per_subband,
-    unsigned int _nsubbands,
-    unsigned int _heap_size,
-    unsigned int _nbuffer_acc,
+    unsigned int _nbeams;
+    unsigned int _nchans_per_subband;
+    unsigned int _nsubbands;
+    unsigned int _heap_size;
+    unsigned int _nbuffer_acc;
     std::size_t _naccumulated;
     std::size_t _count;
     std::vector<ChannelStatistics> _output_buffer;

@@ -53,7 +53,7 @@ void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
     for (unsigned int heap_group_idx = 0; heap_group_idx < nheap_groups; ++heap_group_idx)
     {
         std::size_t input_idx_0 = heap_group_idx * bftf;
-        for (unsigned int beam_idx = 0; beam_idx < _beams; ++beam_idx)
+        for (unsigned int beam_idx = 0; beam_idx < _nbeams; ++beam_idx)
         {
             std::size_t input_idx_1 = input_idx_0 + beam_idx * ftf;
             std::size_t output_idx_0 = beam_idx * total_nchans;
@@ -68,9 +68,9 @@ void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
                     {
                         std::size_t input_idx_4 = input_idx_3 + chan_idx;
                         std::size_t output_idx_2  = output_idx_1 + chan_idx;
-                        float value = static_cast<OutputType>(block.ptr()[input_idx_4]);
+                        float value = static_cast<float>(block.ptr()[input_idx_4]);
                         auto& stats = _output_buffer[output_idx_2];
-                        stats.mean += value
+                        stats.mean += value;
                         stats.variance += value * value;
                     }
                 }
@@ -79,7 +79,7 @@ void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
     }
     ++_naccumulated;
     _count += total_nsamps;
-    if (_naccumulated >= nbuffer_acc)
+    if (_naccumulated >= _nbuffer_acc)
     {
         // Convert statistics to true mean and variance
         for (auto& stats: _output_buffer)
@@ -89,8 +89,8 @@ void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
         }
 
         // Call handler
-        const std::size_t nbytes = _sum_buffer.size() * sizeof(ChannelStatistics);
-        RawBytes bytes(static_cast<char*>(_sum_buffer.data()), nbytes, nbytes);
+        const std::size_t nbytes = _output_buffer.size() * sizeof(ChannelStatistics);
+        RawBytes bytes(reinterpret_cast<char*>(_output_buffer.data()), nbytes, nbytes);
         _handler(bytes);
 
         // Clear buffers

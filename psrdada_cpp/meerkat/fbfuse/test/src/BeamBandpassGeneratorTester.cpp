@@ -1,4 +1,4 @@
-#include "psrdada_cpp/meerkat/fbfuse/test/BeamBandpassGeneratorTester.cuh"
+#include "psrdada_cpp/meerkat/fbfuse/test/BeamBandpassGeneratorTester.hpp"
 #include <vector>
 
 namespace psrdada_cpp {
@@ -27,29 +27,17 @@ void BeamBandpassGeneratorTester::TearDown()
 
 }
 
-struct TestHandler
+void BeamBandpassGeneratorTester::operator()(RawBytes& block)
 {
-    TestHandler()
+    ChannelStatistics* stats_ptr = reinterpret_cast<ChannelStatistics*>(block.ptr());
+    std::vector<ChannelStatistics> stats(stats_ptr,
+        stats_ptr + block.used_bytes() / sizeof(ChannelStatistics));
+    for (auto const& stat: stats)
     {
-        operator_called = false;
+        ASSERT_EQ(stat.mean, 0.0f);
+        ASSERT_EQ(stat.variance, 0.0f);
     }
-
-    bool operator()(RawBytes& block)
-    {
-        ChannelStatistics* stats_ptr = reinterpret_cast<ChannelStatistics*>(block.ptr());
-        std::vector<ChannelStatistics> stats(stats_ptr,
-            stats_ptr + block.used_bytes() / sizeof(ChannelStatistics));
-        for (auto stat: stats)
-        {
-            ASSERT_EQ(stat.mean, 0.0f);
-            ASSERT_EQ(stat.variance, 0.0f);
-        }
-        operator_called = true;
-    }
-
-    bool operator_called;
-};
-
+}
 
 TEST_F(BeamBandpassGeneratorTester, all_zeros_single_accumulate)
 {
@@ -60,10 +48,9 @@ TEST_F(BeamBandpassGeneratorTester, all_zeros_single_accumulate)
     const unsigned int nbuffer_acc = 1;
     const unsigned int nheap_groups = 32;
     const std::size_t bytes = nheap_groups * nbeams * nsubbands * heap_size;
-    TestHandler handler;
-    BeamBandpassGenerator bandpass_generator(
+    BeamBandpassGenerator<BeamBandpassGeneratorTester> bandpass_generator(
         nbeams, nchans_per_subband, nsubbands,
-        heap_size, nbuffer_acc, handler);
+        heap_size, nbuffer_acc, *this);
     std::vector<char> buffer(bytes, 0);
     RawBytes block(buffer.data(), bytes, bytes);
     bandpass_generator(block);
