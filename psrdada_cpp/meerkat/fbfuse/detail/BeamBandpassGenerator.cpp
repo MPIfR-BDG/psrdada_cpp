@@ -38,7 +38,7 @@ void BeamBandpassGenerator<Handler>::init(RawBytes& block)
 }
 
 template <typename Handler>
-void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
+bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
 {
     const std::size_t heap_group_size = _nbeams * _nsubbands * _heap_size;
     assert(block.used_bytes() % heap_group_size == 0);
@@ -104,6 +104,7 @@ void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
         _count = 0;
         _naccumulated = 0;
     }
+    return false;	
 }
 
 } //namespace fbfuse

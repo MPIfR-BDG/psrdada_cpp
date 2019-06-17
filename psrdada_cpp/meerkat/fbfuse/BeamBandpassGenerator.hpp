@@ -36,7 +36,7 @@ public:
     BeamBandpassGenerator(BeamBandpassGenerator const&) = delete;
 
     void init(RawBytes&);
-    void operator()(RawBytes&);
+    bool operator()(RawBytes&);
 
 private:
     Handler& _handler;

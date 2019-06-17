@@ -23,7 +23,7 @@ cuda_add_executable(fbfuse src/fbfuse_cli.cu)
 target_link_libraries(fbfuse ${PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES})
 install(TARGETS fbfuse DESTINATION bin)
 
-cuda_add_executable(beam_bandpass src/beam_bandpass.cpp)
+cuda_add_executable(beam_bandpass src/beam_bandpass_cli.cpp)
 target_link_libraries(beam_bandpass ${PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES})
 install(TARGETS beam_bandpass DESTINATION bin)
 

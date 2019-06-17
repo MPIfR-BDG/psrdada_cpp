@@ -26,7 +26,7 @@ namespace
 int main(int argc, char** argv)
 {
     key_t input_key;
-    std::string fname;
+    std::string filename;
     std::size_t nbeams;
     std::size_t nchans_per_subband;
     std::size_t nsubbands;
@@ -50,27 +50,27 @@ int main(int argc, char** argv)
                 }),
            "The shared memory key (hex string) for the dada buffer containing input data (in TBFTF order)")
 
-        ("filename", po::value<std::string>(&fname)
+        ("filename", po::value<std::string>(&filename)
             ->default_value("bandpass.bin"),
            "The filename for the output data file")
 
-        ("nbeams", po::value<std::size_t>(*nbeams)
+        ("nbeams", po::value<std::size_t>(&nbeams)
             ->required(),
            "The number of beams in the buffer")
 
-        ("nchans_per_subband", po::value<std::size_t>(*nchans_per_subband)
+        ("nchans_per_subband", po::value<std::size_t>(&nchans_per_subband)
             ->required(),
            "The number of channels per subband in the buffer")
 
-        ("nsubbands", po::value<std::size_t>(*nsubbands)
+        ("nsubbands", po::value<std::size_t>(&nsubbands)
             ->default_value(1),
            "The number of subbands in the buffer")
 
-        ("heap_size", po::value<std::size_t>(*heap_size)
+        ("heap_size", po::value<std::size_t>(&heap_size)
             ->default_value(8192),
            "The heap size of heaps in the buffer")
 
-        ("nbuffer_acc", po::value<std::size_t>(*nbuffer_acc)
+        ("nbuffer_acc", po::value<std::size_t>(&nbuffer_acc)
             ->default_value(1),
            "The number of buffers to accumulate")
 
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
          */
         MultiLog log("beam_bandpass");
         SimpleFileWriter file_writer(filename);
-        BeamBandpassGenerator<decltype(file_writer)> bandpass_generator(
+        meerkat::fbfuse::BeamBandpassGenerator<decltype(file_writer)> bandpass_generator(
             nbeams, nchans_per_subband, nsubbands, heap_size, nbuffer_acc, file_writer);
         DadaInputStream<decltype(bandpass_generator)> stream(input_key, log, bandpass_generator);
         stream.start();
