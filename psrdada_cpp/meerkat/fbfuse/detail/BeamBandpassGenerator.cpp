@@ -50,6 +50,7 @@ void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
     const unsigned int nsamps_per_heap = _heap_size / _nchans_per_subband;
     const unsigned int total_nchans = _nchans_per_subband * _nsubbands;
     const std::size_t total_nsamps = nheap_groups * nsamps_per_heap;
+
     for (unsigned int heap_group_idx = 0; heap_group_idx < nheap_groups; ++heap_group_idx)
     {
         std::size_t input_idx_0 = heap_group_idx * bftf;
@@ -68,6 +69,7 @@ void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
                     {
                         std::size_t input_idx_4 = input_idx_3 + chan_idx;
                         std::size_t output_idx_2  = output_idx_1 + chan_idx;
+
                         float value = static_cast<float>(block.ptr()[input_idx_4]);
                         auto& stats = _output_buffer[output_idx_2];
                         stats.mean += value;
@@ -96,8 +98,8 @@ void BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
         // Clear buffers
         for (auto& stats: _output_buffer)
         {
-            stats.mean = 0.0;
-            stats.variance = 0.0f;
+            //stats.mean = 0.0;
+            //stats.variance = 0.0f;
         }
         _count = 0;
         _naccumulated = 0;

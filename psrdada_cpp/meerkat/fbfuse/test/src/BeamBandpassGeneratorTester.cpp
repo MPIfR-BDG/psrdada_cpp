@@ -44,7 +44,6 @@ struct TestHandler
         ASSERT_EQ(stats.size(), _expectation.size());
         for (int ii = 0; ii < stats.size(); ++ii)
         {
-	    std::cout << ii << std::endl;	
             EXPECT_NEAR(stats[ii].mean, _expectation[ii].mean, 0.0001f);
             EXPECT_NEAR(stats[ii].variance, _expectation[ii].variance, 0.0001f);
         }
@@ -93,7 +92,7 @@ TEST_F(BeamBandpassGeneratorTester, mean_equals_channel_id_var_zero)
         for (int kk = 0; kk < nchans_per_subband * nsubbands; ++kk)
         {
             expectation[jj * nchans_per_subband * nsubbands + kk].mean = static_cast<float>(kk);
-            expectation[jj * nchans_per_subband * nsubbands + kk].mean = 0.0f;
+            expectation[jj * nchans_per_subband * nsubbands + kk].variance = 0.0f;
 	}
     }
     TestHandler handler(expectation);
