@@ -78,7 +78,8 @@ void SimpleShmWriter::init(RawBytes& block)
 bool SimpleShmWriter::operator()(RawBytes& block)
 {
     assert(block.used_bytes() == _data_size);
-    std::memcpy(_shm_ptr + _header_size, static_cast<void*>(block.ptr()), _data_size);
+    std::memcpy(static_cast<void*>(static_cast<char*>(_shm_ptr) + _header_size),
+        static_cast<void*>(block.ptr()), _data_size);
     return false;
 }
 
