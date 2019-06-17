@@ -18,7 +18,6 @@ protected:
 public:
     BeamBandpassGeneratorTester();
     ~BeamBandpassGeneratorTester();
-
 };
 
 } //namespace test
