@@ -22,6 +22,10 @@ BeamBandpassGenerator<Handler>::BeamBandpassGenerator(
     , _naccumulated(0)
     , _count(0)
 {
+    BOOST_LOG_TRIVIAL(debug) << "Initialising BeamBandpassGenerator instance";
+    BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to "
+                             << nchans_per_subband * nsubbands * nbeams
+                             << " bytes";
     _output_buffer.resize(nchans_per_subband * nsubbands * nbeams);
 }
 
@@ -51,6 +55,14 @@ bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
     const unsigned int total_nchans = _nchans_per_subband * _nsubbands;
     const std::size_t total_nsamps = nheap_groups * nsamps_per_heap;
 
+    BOOST_LOG_TRIVIAL(debug) << "Received " << block.used_bytes()
+                             << " bytes data block";
+    BOOST_LOG_TRIVIAL(debug) << "Determined block dimensions (TBFTF order): "
+                             << "[" << nheap_groups << ", "
+                             << nbeams << ", "
+                             << _nsubbands << ", "
+                             << nsamps_per_heap << ", "
+                             << _nchans_per_subband << "]";
     for (unsigned int heap_group_idx = 0; heap_group_idx < nheap_groups; ++heap_group_idx)
     {
         std::size_t input_idx_0 = heap_group_idx * bftf;
@@ -81,8 +93,11 @@ bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
     }
     ++_naccumulated;
     _count += total_nsamps;
+    BOOST_LOG_TRIVIAL(debug) << "Nblocks accumulated = " << _naccumulated;
+    BOOST_LOG_TRIVIAL(debug) << "Total samples accumulated = " << _count;
     if (_naccumulated >= _nbuffer_acc)
     {
+        BOOST_LOG_TRIVIAL(debug) << "Accumulation threshold met, outputing statistics";
         // Convert statistics to true mean and variance
         for (auto& stats: _output_buffer)
         {
