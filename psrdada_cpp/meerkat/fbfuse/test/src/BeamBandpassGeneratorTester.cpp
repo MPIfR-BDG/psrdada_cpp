@@ -8,6 +8,7 @@ namespace test {
 
 BeamBandpassGeneratorTester::BeamBandpassGeneratorTester()
     : ::testing::Test()
+    , _operator_called(false)
 {
 
 }
@@ -37,6 +38,7 @@ void BeamBandpassGeneratorTester::operator()(RawBytes& block)
         ASSERT_EQ(stat.mean, 0.0f);
         ASSERT_EQ(stat.variance, 0.0f);
     }
+    _operator_called = true;
 }
 
 TEST_F(BeamBandpassGeneratorTester, all_zeros_single_accumulate)
@@ -54,6 +56,7 @@ TEST_F(BeamBandpassGeneratorTester, all_zeros_single_accumulate)
     std::vector<char> buffer(bytes, 0);
     RawBytes block(buffer.data(), bytes, bytes);
     bandpass_generator(block);
+    ASSERT_TRUE(_operator_called);
 }
 
 } //namespace test
