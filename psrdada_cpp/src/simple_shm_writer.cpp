@@ -11,12 +11,12 @@ SimpleShmWriter::SimpleShmWriter(
     , _header_size(header_size)
     , _data_size(data_size)
 {
-    _shm_fd = shm_open(_shm_key, O_CREAT | O_EXCL | O_RDWR, 0666);
+    _shm_fd = shm_open(_shm_key.c_str(), O_CREAT | O_EXCL | O_RDWR, 0666);
     if (_shm_fd == -1)
     {
         std::stringstream msg;
         msg << "Failed to open shared memory named "
-        << _delay_buffer_shm << " with error: "
+        << _shm_key << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -24,7 +24,7 @@ SimpleShmWriter::SimpleShmWriter(
     {
         std::stringstream msg;
         msg << "Failed to ftruncate shared memory named "
-        << _delay_buffer_shm << " with error: "
+        << _shm_key << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -33,7 +33,7 @@ SimpleShmWriter::SimpleShmWriter(
     {
         std::stringstream msg;
         msg << "Failed to mmap shared memory named "
-        << _delay_buffer_shm << " with error: "
+        << _shm_key << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -45,7 +45,7 @@ SimpleShmWriter::~SimpleShmWriter()
     {
         std::stringstream msg;
         msg << "Failed to unmap shared memory "
-        << _delay_buffer_shm << " with error: "
+        << _shm_key << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -59,11 +59,11 @@ SimpleShmWriter::~SimpleShmWriter()
         throw std::runtime_error(msg.str());
     }
 
-    if (shm_unlink(_shm_key) == -1)
+    if (shm_unlink(_shm_key.c_str()) == -1)
     {
         std::stringstream msg;
         msg << "Failed to unlink shared memory "
-        << _delay_buffer_shm << " with error: "
+        << _shm_key << " with error: "
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
@@ -79,7 +79,7 @@ bool SimpleShmWriter::operator()(RawBytes& block)
 {
     assert(block.used_bytes() == _data_size);
     std::memcpy(_shm_ptr + _header_size, static_cast<void*>(block.ptr()), _data_size);
-    return false
+    return false;
 }
 
 } //psrdada_cpp
