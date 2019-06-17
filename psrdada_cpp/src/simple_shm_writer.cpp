@@ -1,9 +1,9 @@
-#include "psrdada_cpp/simple_file_writer.hpp"
+#include "psrdada_cpp/simple_shm_writer.hpp"
 #include <cassert>
 
 namespace psrdada_cpp {
 
-SimpleFileWriter::SimpleFileWriter(
+SimpleShmWriter::SimpleShmWriter(
     std::string const& shm_key,
     std::size_t header_size,
     std::size_t data_size)
@@ -39,7 +39,7 @@ SimpleFileWriter::SimpleFileWriter(
     }
 }
 
-SimpleFileWriter::~SimpleFileWriter()
+SimpleShmWriter::~SimpleShmWriter()
 {
     if (munmap(_shm_ptr, _header_size + _data_size) == -1)
     {
@@ -69,13 +69,13 @@ SimpleFileWriter::~SimpleFileWriter()
     }
 }
 
-void SimpleFileWriter::init(RawBytes& block)
+void SimpleShmWriter::init(RawBytes& block)
 {
     assert(block.used_bytes() == _header_size);
     std::memcpy(_shm_ptr, static_cast<void*>(block.ptr()), _header_size);
 }
 
-bool SimpleFileWriter::operator()(RawBytes& block)
+bool SimpleShmWriter::operator()(RawBytes& block)
 {
     assert(block.used_bytes() == _data_size);
     std::memcpy(_shm_ptr + _header_size, static_cast<void*>(block.ptr()), _data_size);
