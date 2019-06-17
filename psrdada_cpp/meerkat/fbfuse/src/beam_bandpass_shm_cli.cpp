@@ -103,9 +103,8 @@ int main(int argc, char** argv)
         /**
          * All the application code goes here
          */
-
-        DadaReadClient client(input_key, log);
         MultiLog log("beam_bandpass");
+	DadaClientBase client(input_key, log);
         SimpleShmWriter shm_writer(shm_key, client.header_buffer_size(), client.data_buffer_size());
         meerkat::fbfuse::BeamBandpassGenerator<decltype(shm_writer)> bandpass_generator(
             nbeams, nchans_per_subband, nsubbands, heap_size, nbuffer_acc, shm_writer);
