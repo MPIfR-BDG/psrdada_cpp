@@ -16,6 +16,7 @@ set(psrdada_cpp_src
     src/multilog.cpp
     src/raw_bytes.cpp
     src/simple_file_writer.cpp
+    src/simple_shm_writer.cpp	
     src/test_file_writer.cpp
     src/sigprocheader.cpp
     src/psrdadaheader.cpp
@@ -36,6 +37,7 @@ set(psrdada_cpp_inc
   raw_bytes.hpp
   cuda_utils.hpp
   simple_file_writer.hpp
+  simple_shm_writer.hpp
   test_file_writer.hpp
   sigprocheader.hpp
   psrdadaheader.hpp
