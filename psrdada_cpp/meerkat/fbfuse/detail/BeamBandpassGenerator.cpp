@@ -98,13 +98,13 @@ bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
         // Clear buffers
         for (auto& stats: _output_buffer)
         {
-            //stats.mean = 0.0;
-            //stats.variance = 0.0f;
+            stats.mean = 0.0;
+            stats.variance = 0.0f;
         }
         _count = 0;
         _naccumulated = 0;
     }
-    return false;	
+    return false;
 }
 
 } //namespace fbfuse
