@@ -60,7 +60,7 @@ bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
                              << " bytes data block";
     BOOST_LOG_TRIVIAL(debug) << "Determined block dimensions (TBFTF order): "
                              << "[" << nheap_groups << ", "
-                             << nbeams << ", "
+                             << _nbeams << ", "
                              << _nsubbands << ", "
                              << nsamps_per_heap << ", "
                              << _nchans_per_subband << "]";
