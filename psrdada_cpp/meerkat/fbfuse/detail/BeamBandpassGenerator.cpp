@@ -26,6 +26,7 @@ BeamBandpassGenerator<Handler>::BeamBandpassGenerator(
     BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to "
                              << nchans_per_subband * nsubbands * nbeams
                              << " bytes";
+    _calculation_buffer.resize(nchans_per_subband * nsubbands * nbeams);
     _output_buffer.resize(nchans_per_subband * nsubbands * nbeams);
 }
 
@@ -83,9 +84,9 @@ bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
                         std::size_t output_idx_2  = output_idx_1 + chan_idx;
 
                         float value = static_cast<float>(block.ptr()[input_idx_4]);
-                        auto& stats = _output_buffer[output_idx_2];
-                        stats.mean += value;
-                        stats.variance += value * value;
+                        auto& sums = _calculation_buffer[output_idx_2];
+                        sums.sum += value;
+                        sums.sum_of_squares += value * value;
                     }
                 }
             }
@@ -99,23 +100,22 @@ bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
     {
         BOOST_LOG_TRIVIAL(debug) << "Accumulation threshold met, outputing statistics";
         // Convert statistics to true mean and variance
-        for (auto& stats: _output_buffer)
+
+        for (std::size_t ii = 0; ii < _output_buffer.size(); ++ii)
         {
-            stats.mean /= _count;
-            stats.variance = (stats.variance / _count) - (stats.mean * stats.mean);
+            auto const& sums = _calculation_buffer[ii];
+            auto& stats = _output_buffer[ii];
+            double mean = sums.sum / _count;
+            double variance = (sums.sum_of_squares / _count) - (mean * mean);
+            stats.mean = static_cast<float>(mean);
+            stats.variance = static_cast<float>(variance);
         }
 
         // Call handler
         const std::size_t nbytes = _output_buffer.size() * sizeof(ChannelStatistics);
         RawBytes bytes(reinterpret_cast<char*>(_output_buffer.data()), nbytes, nbytes);
         _handler(bytes);
-
-        // Clear buffers
-        for (auto& stats: _output_buffer)
-        {
-            stats.mean = 0.0;
-            stats.variance = 0.0f;
-        }
+        std::fill(_calculation_buffer.begin(), _calculation_buffer.end(), {0.0, 0.0});
         _count = 0;
         _naccumulated = 0;
     }

@@ -9,6 +9,12 @@ namespace psrdada_cpp {
 namespace meerkat {
 namespace fbfuse {
 
+struct ChannelSums
+{
+    double sum;
+    double sum_of_squares;
+};
+
 struct ChannelStatistics
 {
     float mean;
@@ -47,6 +53,7 @@ private:
     unsigned int _nbuffer_acc;
     std::size_t _naccumulated;
     std::size_t _count;
+    std::vector<ChannelSums> _calculation_buffer;
     std::vector<ChannelStatistics> _output_buffer;
 };
 
