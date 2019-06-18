@@ -14,7 +14,7 @@ SimpleShmWriter::SimpleShmWriter(
     BOOST_LOG_TRIVIAL(debug) << "Unlinking /dev/shm/" << shm_key;
     shm_unlink(_shm_key.c_str());
     BOOST_LOG_TRIVIAL(debug) << "Opening Posix shared memory buffer at /dev/shm/"
-                             << shm_key;
+                             << _shm_key;
     _shm_fd = shm_open(_shm_key.c_str(), O_CREAT | O_EXCL | O_RDWR, 0666);
     if (_shm_fd == -1)
     {
@@ -67,7 +67,7 @@ SimpleShmWriter::~SimpleShmWriter()
         << std::strerror(errno);
         throw std::runtime_error(msg.str());
     }
-    BOOST_LOG_TRIVIAL(debug) << "Unlinking /dev/shm/" << shm_key;
+    BOOST_LOG_TRIVIAL(debug) << "Unlinking /dev/shm/" << _shm_key;
     if (shm_unlink(_shm_key.c_str()) == -1)
     {
         std::stringstream msg;
