@@ -23,7 +23,8 @@ namespace psrdada_cpp
         std::size_t total_bytes,
         std::time_t sync_epoch,
         double block_duration,
-        std::size_t ts_per_block)
+        std::size_t ts_per_block,
+        double offset=0.0)
     {
         std::vector<char> sync_header(header_size, 0);
         std::vector<char> sync_block(nbytes_per_write, 1);
@@ -67,7 +68,7 @@ namespace psrdada_cpp
         bool infinite = (total_bytes == 0);
         while (true)
         {
-            auto epoch_of_wait = sync_epoch_tp + std::chrono::duration<double>(next_block_idx * block_duration);
+            auto epoch_of_wait = sync_epoch_tp + std::chrono::duration<double>(next_block_idx * block_duration + offset);
             std::this_thread::sleep_until(epoch_of_wait);
             handler(data);
             bytes_written += data.used_bytes();

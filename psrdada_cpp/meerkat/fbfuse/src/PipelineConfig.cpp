@@ -145,29 +145,29 @@ float PipelineConfig::ib_power_offset() const
     return _ib_power_offset;
 }
 
-float PipelineConfig::centre_frequency() const
+double PipelineConfig::centre_frequency() const
 {
     return _cfreq;
 }
 
-void PipelineConfig::centre_frequency(float cfreq)
+void PipelineConfig::centre_frequency(double cfreq)
 {
     _cfreq = cfreq;
     _channel_frequencies_stale = true;
 }
 
-float PipelineConfig::bandwidth() const
+double PipelineConfig::bandwidth() const
 {
     return _bw;
 }
 
-void PipelineConfig::bandwidth(float bw)
+void PipelineConfig::bandwidth(double bw)
 {
     _bw = bw;
     _channel_frequencies_stale = true;
 }
 
-std::vector<float> const& PipelineConfig::channel_frequencies() const
+std::vector<double> const& PipelineConfig::channel_frequencies() const
 {
     if (_channel_frequencies_stale)
     {
@@ -183,12 +183,12 @@ void PipelineConfig::calculate_channel_frequencies() const
      * frequencies are labeled for the data out of the F-engine. Either
      * way is a roughly correct place-holder.
      */
-    float chbw = bandwidth()/nchans();
-    float fbottom = centre_frequency() - bandwidth()/2.0f;
+    double chbw = bandwidth()/nchans();
+    double fbottom = centre_frequency() - bandwidth()/2.0;
     _channel_frequencies.clear();
     for (std::size_t chan_idx=0; chan_idx < nchans(); ++chan_idx)
     {
-        _channel_frequencies.push_back(fbottom + chbw/2.0f + (chbw * chan_idx));
+        _channel_frequencies.push_back(fbottom + chbw/2.0 + (chbw * chan_idx));
     }
     _channel_frequencies_stale = false;
 }
