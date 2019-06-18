@@ -115,7 +115,8 @@ bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
         const std::size_t nbytes = _output_buffer.size() * sizeof(ChannelStatistics);
         RawBytes bytes(reinterpret_cast<char*>(_output_buffer.data()), nbytes, nbytes);
         _handler(bytes);
-        std::fill(_calculation_buffer.begin(), _calculation_buffer.end(), {0.0, 0.0});
+        ChannelStatistics fill_value = {0.0, 0.0};
+        std::fill(_calculation_buffer.begin(), _calculation_buffer.end(), fill_value);
         _count = 0;
         _naccumulated = 0;
     }
