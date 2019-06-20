@@ -29,17 +29,18 @@ protected:
     void calc_weights_c_reference(
         thrust::host_vector<float2> const& delay_models,
         thrust::host_vector<char2>& weights,
-        std::vector<float> const& channel_frequencies,
+        std::vector<double> const& channel_frequencies,
         int nantennas,
         int nbeams,
         int nchans,
-        float tstart,
-        float tstep,
+        double current_epoch,
+        double delay_epoch,
+        double tstep,
         int ntsteps);
 
     void compare_against_host(DelayVectorType const& delays,
         WeightsVectorType const& weights,
-        TimeType epoch);
+        TimeType current_epoch, TimeType delay_epoch);
 
 protected:
     PipelineConfig _config;

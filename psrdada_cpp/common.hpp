@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <sys/types.h>
 
 #endif //PSRDADA_CPP_COMMON_HPP

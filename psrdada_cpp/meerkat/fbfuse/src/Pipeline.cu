@@ -161,7 +161,7 @@ void Pipeline::process(VoltageVectorType const& taftp_vec,
     BOOST_LOG_TRIVIAL(debug) << "Checking for delay updates";
     auto const& delays = _delay_manager->delays();
     BOOST_LOG_TRIVIAL(debug) << "Calculating weights at unix time: " << _unix_timestamp;
-    auto const& weights = _weights_manager->weights(delays, _unix_timestamp);
+    auto const& weights = _weights_manager->weights(delays, _unix_timestamp, _delay_manager->epoch());
     BOOST_LOG_TRIVIAL(debug) << "Transposing input data from TAFTP to FTPA order";
     _split_transpose->transpose(taftp_vec, _split_transpose_output, _processing_stream);
     BOOST_LOG_TRIVIAL(debug) << "Forming coherent beams";

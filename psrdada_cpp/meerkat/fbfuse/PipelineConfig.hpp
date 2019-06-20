@@ -108,31 +108,31 @@ public:
      * @brief      Get the centre frequency for the subband to
      *             be processed by this instance.
      */
-    float centre_frequency() const;
+    double centre_frequency() const;
 
     /**
      * @brief      Set the centre frequency for the subband to
      *             be processed by this instance.
      */
-    void centre_frequency(float cfreq);
+    void centre_frequency(double cfreq);
 
     /**
      * @brief      Get the bandwidth of the subband to
      *             be processed by this instance.
      */
-    float bandwidth() const;
+    double bandwidth() const;
 
     /**
      * @brief      Set the bandwidth of the subband to
      *             be processed by this instance.
      */
-    void bandwidth(float bw);
+    void bandwidth(double bw);
 
     /**
      * @brief      Return the centre frequency of each channel in the
      *             subband to be processed.
      */
-    std::vector<float> const& channel_frequencies() const;
+    std::vector<double> const& channel_frequencies() const;
 
     // These are all just wrappers to provide programmatic access
     // to the compile time constants that we are forced to use for
@@ -265,7 +265,7 @@ public:
      *             currently assumes that all antennas are intended to be included
      *             in the incoherent beam.
      */
-    std::size_t ib_anntena_offset() const {return FBFUSE_IB_ANTENNA_OFFSET;}
+    std::size_t ib_antenna_offset() const {return FBFUSE_IB_ANTENNA_OFFSET;}
 
     /**
      * @brief      Return the number of incoherent beams to be produced
@@ -323,9 +323,9 @@ private:
     key_t _input_dada_key;
     key_t _cb_dada_key;
     key_t _ib_dada_key;
-    float _cfreq;
-    float _bw;
-    mutable std::vector<float> _channel_frequencies;
+    double _cfreq;
+    double _bw;
+    mutable std::vector<double> _channel_frequencies;
     mutable bool _channel_frequencies_stale;
     float _input_level;
     float _output_level;
