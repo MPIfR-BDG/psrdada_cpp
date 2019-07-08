@@ -31,7 +31,11 @@ void PsrDadaHeader::from_bytes(RawBytes& block, std::uint32_t beamnum)
     set_dec(get_value("DEC" + std::to_string(beamnum) + " ",header));
     set_telescope(get_value("TELESCOPE ",header));
     set_instrument(get_value("INSTRUMENT ",header));
-    set_tstart(atof(get_value("MJD ",header).c_str()));
+    // Getting the correct MJD
+    auto sync_mjd = atof(get_value("SYNC_TIME_MJD", header).c_str());
+    auto sample_clock = atof(get_value("SAMPLE_CLOCK", header).c_str());
+    auto sample_clock_start = atof(get_value("SAMPLE_CLOCK_START", header).c_str());
+    set_tstart(sync_mjd + (double)(sample_clock_start/sample_clock/86400.0));
     return;
 }
 

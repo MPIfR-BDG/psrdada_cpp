@@ -1,4 +1,5 @@
 #include "psrdada_cpp/test_file_writer.hpp"
+#include "psrdada_cpp/sigprocheader.hpp"
 #include <algorithm>
 
 namespace psrdada_cpp {
@@ -79,6 +80,14 @@ namespace psrdada_cpp {
                 return true;
             }
             ++_filenum;
+            // Update time information
+            SigprocHeader sh;
+            FilHead fh;
+            std::stringstream instream;
+            instream >> _header;
+            sh.read_header(instream, fh);
+            fh.tstart = fh.tstart + (((_filesize/(fh.nbits/8))/(fh.nchans)) * fh.tsamp)/(86400.0);
+            sh.write_header(_header, fh);
             _outfile.write(_header, _header_size);
             _outfile.write(current_ptr,block.total_bytes() - left_size);
             block.used_bytes(block.total_bytes());

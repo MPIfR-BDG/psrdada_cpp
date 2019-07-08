@@ -29,7 +29,7 @@ namespace psrdada_cpp {
         std::string _basefilename;
         std::size_t _header_size;
         std::size_t _filesize;
-        std::uint32_t _filenum;
+        std::size_t _filenum;
         std::size_t _wsize;
     };
 }//psrdada_cpp
