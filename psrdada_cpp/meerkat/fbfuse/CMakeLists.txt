@@ -29,11 +29,15 @@ install(TARGETS beam_bandpass DESTINATION bin)
 
 add_subdirectory(test)
 
-endif(ENABLE_CUDA)
-
 add_executable(beam_bandpass_shm src/beam_bandpass_shm_cli.cpp)
 target_link_libraries(beam_bandpass_shm ${PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES})
 install(TARGETS beam_bandpass_shm DESTINATION bin)
+
+endif(ENABLE_CUDA)
+
+#add_executable(beam_bandpass_shm src/beam_bandpass_shm_cli.cpp)
+#target_link_libraries(beam_bandpass_shm ${PSRDADA_CPP_MEERKAT_FBFUSE_LIBRARIES})
+#install(TARGETS beam_bandpass_shm DESTINATION bin)
 
 
 

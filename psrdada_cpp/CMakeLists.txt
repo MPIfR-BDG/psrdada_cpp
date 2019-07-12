@@ -20,6 +20,7 @@ set(psrdada_cpp_src
     src/test_file_writer.cpp
     src/sigprocheader.cpp
     src/psrdadaheader.cpp
+    src/udp_stream.cpp
     src/file_to_dada_cli.cpp
    )
 
@@ -42,6 +43,7 @@ set(psrdada_cpp_inc
   sigprocheader.hpp
   psrdadaheader.hpp
   psrdada_to_sigproc_header.hpp
+  udp_stream.hpp
   file_input_stream.hpp
   )
 
