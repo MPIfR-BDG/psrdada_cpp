@@ -10,18 +10,17 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
-template <class HandlerType>
-Channeliser<HandlerType>::Channeliser(
+Channeliser::Channeliser(
     std::size_t buffer_bytes,
     std::size_t fft_length,
     std::size_t nbits,
     float input_level,
     float output_level,
-    HandlerType& handler)
+    DadaWriteClient& client)
     : _buffer_bytes(buffer_bytes)
     , _fft_length(fft_length)
     , _nbits(nbits)
-    , _handler(handler)
+    , _client(client)
     , _fft_plan(0)
     , _call_count(0)
 {
@@ -36,6 +35,9 @@ Channeliser<HandlerType>::Channeliser(
     std::size_t n64bit_words = buffer_bytes / sizeof(uint64_t);
     _nchans = _fft_length / 2 + 1;
     int batch = nsamps_per_buffer/_fft_length;
+    std::size_t packed_channelised_voltage_bytes = _nchans * batch * sizeof(PackedChannelisedVoltageType);
+    BOOST_LOG_TRIVIAL(debug) << "Output buffer bytes: " << packed_channelised_voltage_bytes;
+    assert(_client.data_buffer_size() == packed_channelised_voltage_bytes /* Incorrect output DADA buffer size */);
     BOOST_LOG_TRIVIAL(debug) << "Calculating scales and offsets";
     float scale = std::sqrt(_nchans) * input_level;
     BOOST_LOG_TRIVIAL(debug) << "Correction factors for 8-bit conversion:  scaling = " << scale;
@@ -54,7 +56,6 @@ Channeliser<HandlerType>::Channeliser(
     BOOST_LOG_TRIVIAL(debug) << "Channelised voltages size: " << _channelised_voltage.size();
     _packed_channelised_voltage.resize(_channelised_voltage.size());
     BOOST_LOG_TRIVIAL(debug) << "Packed channelised voltages size: " << _packed_channelised_voltage.size();
-    _host_packed_channelised_voltage.resize(_packed_channelised_voltage.size());
     CUDA_ERROR_CHECK(cudaStreamCreate(&_h2d_stream));
     CUDA_ERROR_CHECK(cudaStreamCreate(&_proc_stream));
     CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_stream));
@@ -63,8 +64,7 @@ Channeliser<HandlerType>::Channeliser(
     _transposer.reset(new ScaledTransposeTFtoTFT(_nchans, 8192, scale, 0.0, _proc_stream));
 }
 
-template <class HandlerType>
-Channeliser<HandlerType>::~Channeliser()
+Channeliser::~Channeliser()
 {
     BOOST_LOG_TRIVIAL(debug) << "Destroying Channeliser";
     if (!_fft_plan)
@@ -74,15 +74,17 @@ Channeliser<HandlerType>::~Channeliser()
     cudaStreamDestroy(_d2h_stream);
 }
 
-template <class HandlerType>
-void Channeliser<HandlerType>::init(RawBytes& block)
+void Channeliser::init(RawBytes& block)
 {
     BOOST_LOG_TRIVIAL(debug) << "Channeliser init called";
-    _handler.init(block);
+    auto& header_block = _client.header_stream().next();
+    /* Populate new header */
+    std::memcpy(header_block.ptr(), block.ptr(), block.total_bytes());
+    header_block.used_bytes(header_block.total_bytes());
+    _client.header_stream().release();
 }
 
-template <class HandlerType>
-void Channeliser<HandlerType>::process(
+void Channeliser::process(
     thrust::device_vector<RawVoltageType> const& digitiser_raw,
     thrust::device_vector<PackedChannelisedVoltageType>& packed_channelised)
 {
@@ -103,8 +105,7 @@ void Channeliser<HandlerType>::process(
     _transposer->transpose(_channelised_voltage, packed_channelised);
 }
 
-template <class HandlerType>
-bool Channeliser<HandlerType>::operator()(RawBytes& block)
+bool Channeliser::operator()(RawBytes& block)
 {
     ++_call_count;
     BOOST_LOG_TRIVIAL(debug) << "Channeliser operator() called (count = " << _call_count << ")";
@@ -131,30 +132,21 @@ bool Channeliser<HandlerType>::operator()(RawBytes& block)
     {
         return false;
     }
-
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
-    _host_packed_channelised_voltage.swap();
+    
+    if (_call_count > 3)
+    {
+        _client.data_stream().release();
+    }
+    auto& data_block = _client.data_stream().next();
     CUDA_ERROR_CHECK(cudaMemcpyAsync(
-        static_cast<void*>(_host_packed_channelised_voltage.a_ptr()),
+        static_cast<void*>(data_block.ptr()),
         static_cast<void*>(_packed_channelised_voltage.b_ptr()),
         _packed_channelised_voltage.size() * sizeof(PackedChannelisedVoltageType),
         cudaMemcpyDeviceToHost,
         _d2h_stream));
-    
-    if (_call_count == 3)
-    {
-        return false;
-    }   
-
-    //Wrap _detected_host_previous in a RawBytes object here;
-    RawBytes bytes(reinterpret_cast<char*>(_host_packed_channelised_voltage.b_ptr()),
-        _host_packed_channelised_voltage.size() * sizeof(PackedChannelisedVoltageType),
-        _host_packed_channelised_voltage.size() * sizeof(PackedChannelisedVoltageType));
-    BOOST_LOG_TRIVIAL(debug) << "Calling handler";
-    // The handler can't do anything asynchronously without a copy here 
-    // as it would be unsafe (given that it does not own the memory it 
-    // is being passed).
-    return _handler(bytes);
+    data_block.used_bytes(data_block.total_bytes());
+    return false;
 }
 
 } //edd

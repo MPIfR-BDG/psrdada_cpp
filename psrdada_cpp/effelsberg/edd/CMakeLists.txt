@@ -6,12 +6,13 @@ set(PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES
     ${DEPENDENCY_LIBRARIES})
 
 set(psrdada_cpp_effelsberg_edd_src
-    src/Unpacker.cu
+    src/Channeliser.cu
+    src/DadaBufferLayout.cpp
     src/DetectorAccumulator.cu
     src/ScaledTransposeTFtoTFT.cu
-    src/VLBI.cu
     src/Tools.cu
-    src/DadaBufferLayout.cpp
+    src/Unpacker.cu
+    src/VLBI.cu
     )
 
 cuda_add_library(${CMAKE_PROJECT_NAME}_effelsberg_edd ${psrdada_cpp_effelsberg_edd_src})

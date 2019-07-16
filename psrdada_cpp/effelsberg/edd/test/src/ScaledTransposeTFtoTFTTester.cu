@@ -79,7 +79,7 @@ TEST_F(ScaledTransposeTFtoTFTTester, counter_test)
     int nsamps_per_packet = 8192;
     float stdev = 64.0f;
     float scale = 4.0f;
-    int nsamps = nsamps_per_packet * 1024;
+    int nsamps = nsamps_per_packet * 32;
     int n = nchans * nsamps;
     std::default_random_engine generator;
     std::normal_distribution<float> distribution(0.0, stdev);
