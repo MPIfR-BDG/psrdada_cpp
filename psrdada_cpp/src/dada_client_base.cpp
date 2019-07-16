@@ -47,7 +47,8 @@ namespace psrdada_cpp {
         dada_hdu_set_key(_hdu, _key);
         if (dada_hdu_connect (_hdu) < 0){
             _log.write(LOG_ERR, "could not connect to hdu\n");
-            throw std::runtime_error("Unable to connect to hdu\n");
+            throw std::runtime_error(std::string("Unable to connect to buffer with key: ")
+                + std::to_string(_key));
         }
         BOOST_LOG_TRIVIAL(debug) << this->id() << "Header buffer is " << header_buffer_count()
             << " x " << header_buffer_size() << " bytes";
@@ -61,7 +62,8 @@ namespace psrdada_cpp {
         BOOST_LOG_TRIVIAL(debug) << this->id() << "Disconnecting from dada buffer";
         if (dada_hdu_disconnect (_hdu) < 0){
             _log.write(LOG_ERR, "could not disconnect from hdu\n");
-            throw std::runtime_error("Unable to disconnect from hdu\n");
+            throw std::runtime_error(std::string("Unable to disconnect from buffer with key: ")
+                + std::to_string(_key));
         }
         dada_hdu_destroy(_hdu);
         _connected = false;
@@ -71,6 +73,18 @@ namespace psrdada_cpp {
     {
         disconnect();
         connect();
+    }
+
+    void DadaClientBase::cuda_register_memory()
+    {
+#if ENABLE_CUDA
+        if (dada_cuda_dbregister(_hdu) < 0)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Failed to register HDU DADA buffers as pinned memory";
+        }
+#else
+        BOOST_LOG_TRIVIAL(warning) << "cuda_register_memory can only be used with ENABLE_CUDA is defined";
+#endif //ENABLE_CUDA
     }
 
     std::string const& DadaClientBase::id() const

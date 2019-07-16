@@ -8,6 +8,9 @@ namespace psrdada_cpp {
     , _header_stream(*this)
     , _data_stream(*this)
     {
+
+        BOOST_LOG_TRIVIAL(debug) << this->id() << "Pinning dada buffers for CUDA memcpy";
+        cuda_register_memory();
         lock();
     }
 
@@ -26,7 +29,8 @@ namespace psrdada_cpp {
         if (dada_hdu_lock_read (_hdu) < 0)
         {
             _log.write(LOG_ERR, "open_hdu: could not lock read\n");
-            throw std::runtime_error("Error locking HDU");
+            throw std::runtime_error(std::string("Error locking HDU with key: ")
+                + std::to_string(_key));
         }
         _locked = true;
     }
@@ -41,7 +45,8 @@ namespace psrdada_cpp {
         if (dada_hdu_unlock_read (_hdu) < 0)
         {
             _log.write(LOG_ERR, "open_hdu: could not release read\n");
-            throw std::runtime_error("Error releasing HDU");
+            throw std::runtime_error(std::string("Error releasing HDU with key: ")
+                + std::to_string(_key));
         }
         _locked = false;
     }
@@ -83,7 +88,7 @@ namespace psrdada_cpp {
         _current_block.reset(new RawBytes(tmp, _parent.header_buffer_size(), nbytes));
         BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Header block used/total bytes = "
             << _current_block->used_bytes() <<"/"<<_current_block->total_bytes();
-        BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Header content\n " << _current_block->ptr();
+        BOOST_LOG_TRIVIAL(debug) << _parent.id() << "Header content\n" << _current_block->ptr();
         return *_current_block;
     }
 

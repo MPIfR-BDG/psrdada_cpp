@@ -3,6 +3,7 @@
 
 #include "dada_hdu.h"
 #include "dada_def.h"
+#include "dada_cuda.h"
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/common.hpp"
 
@@ -62,6 +63,11 @@ namespace psrdada_cpp {
          * @brief      Reconnect to the ring buffer
          */
         void reconnect();
+
+        /**
+         * @brief     Pin memory with CUDA API
+         */
+        void cuda_register_memory();
 
         /**
          * @brief      Return a string identifier based on the buffer key and log name
