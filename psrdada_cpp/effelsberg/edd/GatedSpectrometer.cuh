@@ -19,7 +19,7 @@ namespace effelsberg {
 namespace edd {
 
 
-#define BIT_MASK(bit) (1L << (bit))
+#define BIT_MASK(bit) (1uL << (bit))
 #define SET_BIT(value, bit) ((value) |= BIT_MASK(bit))
 #define CLEAR_BIT(value, bit) ((value) &= ~BIT_MASK(bit))
 #define TEST_BIT(value, bit) (((value)&BIT_MASK(bit)) ? 1 : 0)
