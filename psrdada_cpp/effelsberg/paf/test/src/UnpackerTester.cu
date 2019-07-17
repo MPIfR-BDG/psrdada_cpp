@@ -73,7 +73,7 @@ TEST_F(UnpackerTester, paf_unpack_test)
     Unpacker::OutputType gpu_output;
     OutputType host_output;
     Unpacker unpacker(_stream);
-    unpacker.unpack<12>(gpu_input, gpu_output);
+    unpacker.unpack(gpu_input, gpu_output);
     unpacker_c_reference(host_input, host_output);
     compare_against_host(gpu_output, host_output);
 }

@@ -17,13 +17,13 @@
 
 #define OSAMP_RATEI           0.84375  // 27.0/32.0
 #define CUFFT_RANK1           1
-#define CUFFT_RANK2           1         
+#define CUFFT_RANK2           1
 
 #define CUFFT_NX1             64
 #define CUFFT_MOD1            27              // Set to remove oversampled data
 #define NCHAN_KEEP_CHAN       (int)(CUFFT_NX1 * OSAMP_RATEI)
 #define CUFFT_NX2             (int)(CUFFT_NX1 * OSAMP_RATEI)              // We work in seperate raw channels
-#define CUFFT_MOD2            (int)(CUFFT_NX2/2)         
+#define CUFFT_MOD2            (int)(CUFFT_NX2/2)
 
 #define NCHAN_OUT             324             // Final number of channels, multiple times of CUFFT2_NX2
 #define NCHAN_KEEP_BAND       (int)(CUFFT_NX2 * NCHAN_OUT)
@@ -61,13 +61,13 @@ __device__ __forceinline__ uint64_t swap64(uint64_t x)
 }
 
 __global__
-void unpack_paf_to_float32(int64_t const* __restrict__ dbuf_in, 
-    float2* __restrict__ dbuf_rt1, 
+void unpack_paf_to_float32(int64_t const* __restrict__ dbuf_in,
+    float2* __restrict__ dbuf_rt1,
     uint64_t offset_rt1)
 {
     uint64_t loc_in, loc_rt1;
     int64_t tmp;
-    /* 
+    /*
        Loc for the input array, it is in continuous order, it is in (STREAM_BUF_NDFSTP)T(NCHK_NIC)F(NSAMP_DF)T(NCHAN_CHK)F(NPOL_SAMP)P order
        This is for entire setting, since gridDim.z =1 and blockDim.z = 1, we can simply it to the latter format;
        Becareful here, if these number are not 1, we need to use a different format;
@@ -76,17 +76,17 @@ void unpack_paf_to_float32(int64_t const* __restrict__ dbuf_in,
         blockIdx.y * blockDim.x * blockDim.y +
         threadIdx.x * blockDim.y +
         threadIdx.y;
-    tmp = BSWAP_64(dbuf_in[loc_in]);
-    
-    // Put the data into PFT order  
+    tmp = swap64(dbuf_in[loc_in]);
+
+    // Put the data into PFT order
     loc_rt1 = blockIdx.y * gridDim.x * blockDim.x * blockDim.y +
         threadIdx.y * gridDim.x * blockDim.x +
         blockIdx.x * blockDim.x +
         threadIdx.x;
-    
-    dbuf_rt1[loc_rt1].x = (int16_t)((tmp & 0x000000000000ffffULL));  
+
+    dbuf_rt1[loc_rt1].x = (int16_t)((tmp & 0x000000000000ffffULL));
     dbuf_rt1[loc_rt1].y = (int16_t)((tmp & 0x00000000ffff0000ULL) >> 16);
-    
+
     loc_rt1 = loc_rt1 + offset_rt1;
     dbuf_rt1[loc_rt1].x = (int16_t)((tmp & 0x0000ffff00000000ULL) >> 32);
     dbuf_rt1[loc_rt1].y = (int16_t)((tmp & 0xffff000000000000ULL) >> 48);
