@@ -58,53 +58,53 @@ public:
 
 	void set_ngroups(const int ngroups);
 
-       /**
-        * @brief Setter for frequency channels
-        */
+    /**
+     * @brief Setter for frequency channels
+     */
 
-        void set_nchans(const int nchans);
+    void set_nchans(const int nchans);
 
-       /**
-        * @brief Setter of number of time samples
-        */
+    /**
+     * @brief Setter of number of time samples
+     */
 
-        void set_nsamples(const int nsamples);
+    void set_nsamples(const int nsamples);
 
-       /**
-        * @brief Setter for number of frequency blocks
-        */
+    /**
+     * @brief Setter for number of frequency blocks
+     */
 
-        void set_nfreq(const int _nfreq);
+    void set_nfreq(const int _nfreq);
 
-       /**
-        * @brief getter for number of channels
-        */
+    /**
+     * @brief getter for number of channels
+     */
 
-        std::uint32_t nchans();
+    std::uint32_t nchans();
 
-       /**
-        * @brief getter for number of time samples
-        */
+    /**
+     * @brief getter for number of time samples
+     */
 
-        std::uint32_t nsamples();
+    std::uint32_t nsamples();
 
-       /**
-        * @brief getter for frequency blocks
-        */
+    /**
+     * @brief getter for frequency blocks
+     */
 
-        std::uint32_t nfreq();
+    std::uint32_t nfreq();
 
-       /**
- 	*@brief: getter for ngroups
-	*/
+    /**
+     *@brief: getter for ngroups
+     */
 
-	std::uint32_t ngroups();
+    std::uint32_t ngroups();
 
-       /**
-        *@brief: getter for nbeams
-	*/
+    /**
+     *@brief: getter for nbeams
+     */
 
-	std::uint32_t nbeams();
+    std::uint32_t nbeams();
 
 private:
     std::uint32_t _numbeams;

@@ -21,20 +21,20 @@ namespace psrdada_cpp
     {
         int len = str.size();
         std::memcpy(ptr,(char*)&len,sizeof(len));
-	ptr += sizeof(len);
+	    ptr += sizeof(len);
         std::copy(str.begin(),str.end(),ptr);
-	ptr += len;
+	    ptr += len;
     }
 
      void SigprocHeader::header_write(char*& ptr, std::string const& str, std::string const& name)
     {
-	header_write(ptr,str);
-	header_write(ptr,name);
+	    header_write(ptr,str);
+	    header_write(ptr,name);
     }
 
     void SigprocHeader::write_header(RawBytes& block, PsrDadaHeader ph)
     {
-	auto ptr = block.ptr();
+	    auto ptr = block.ptr();
         header_write(ptr,"HEADER_START");
         header_write<std::uint32_t>(ptr,"telescope_id",0);
         header_write<std::uint32_t>(ptr,"machine_id",11);
@@ -44,8 +44,8 @@ namespace psrdada_cpp
         // RA DEC 
         auto ra_val = ph.ra();
         auto dec_val =ph.dec();
-	std::vector<std::string> ra_s;
-	std::vector<std::string> dec_s;
+    	std::vector<std::string> ra_s;
+	    std::vector<std::string> dec_s;
         boost::split(ra_s,ra_val,boost::is_any_of(":"));
         boost::split(dec_s,dec_val,boost::is_any_of(":"));
         double ra = stod(boost::join(ra_s,""));
@@ -65,7 +65,7 @@ namespace psrdada_cpp
 
     std::size_t SigprocHeader::header_size() const
     {
-	return _header_size;
+	    return _header_size;
     }
 
 

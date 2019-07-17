@@ -99,13 +99,13 @@ int main(int argc, char** argv)
         {
             nullsinks.emplace_back(std::make_shared<NullSink>());
         }
-
         meerkat::tuse::TransposeToDada<NullSink> transpose(nbeams,std::move(nullsinks));
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
         transpose.set_nfreq(nfreq);
         transpose.set_ngroups(ngroups);
         transpose.set_nbeams(nbeams);
+
         PsrDadaToSigprocHeader<decltype(transpose)> ptos(transpose);
         MultiLog log1("instream");
         DadaInputStream<decltype(ptos)> input(input_key,log1,ptos);
