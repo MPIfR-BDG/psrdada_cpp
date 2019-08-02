@@ -19,6 +19,8 @@ namespace
     }
 }
 
+typedef boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_RCVTIMEO> rcv_timeout_option;
+
 namespace psrdada_cpp{
 namespace meerkat {
 namespace fbfuse{
@@ -33,8 +35,7 @@ BufferDump<Handler>::BufferDump(
     std::size_t subband_nchannels,
     std::size_t total_nchannels,
     float centre_freq,
-    float bandwidth,
-    std::size_t samples_per_block)
+    float bandwidth)
     : _client(client)
     , _handler(handler)
     , _socket_name(socket_name)
@@ -57,7 +58,7 @@ BufferDump<Handler>::~BufferDump()
 {
     if (_socket)
     {
-        _socket.close();
+        (*_socket).close();
     }
 }
 
@@ -66,16 +67,20 @@ void BufferDump<Handler>::start()
 {
     BOOST_LOG_TRIVIAL(info) << "Starting BufferDump instance (listenting on socket '')";
     // Open Unix socket endpoint
+    boost::system::error_code ec;
 
-    ::unlink(_socket_name); // Remove previous binding.
+    ::unlink(_socket_name.c_str()); // Remove previous binding.
     boost::asio::io_service io_service;
     boost::asio::local::stream_protocol::endpoint ep(_socket_name);
     boost::asio::local::stream_protocol::acceptor acceptor(io_service, ep);
-    boost::asio::local::socket::non_blocking_io non_blocking_io(true);
+    acceptor.non_blocking(true);
     _socket.reset(new boost::asio::local::stream_protocol::socket(io_service));
-    boost::asio::local::socket::non_blocking_io non_blocking_io(true);
-    _socket->io_control(non_blocking_io);
-    acceptor.accept(*_socket);
+    acceptor.accept(*_socket, ep, ec);
+    if (ec != boost::asio::error::try_again)
+    {
+	BOOST_LOG_TRIVIAL(error) << ec.message();
+	exit(1);
+    }
     read_dada_header();
     listen();
 }
@@ -108,37 +113,29 @@ void BufferDump<Handler>::listen()
 {
     while (!_stop)
     {
-        // accept
-
-        // if not block
-        // read
-        // get event
-        // capture
-
-        // EWOULDBLOCK
-        // check the buffer percentage
-        // loop
-
+	BOOST_LOG_TRIVIAL(info) << "Looking for events...";
+	if (has_event())
+	{
+	    BOOST_LOG_TRIVIAL(info) << "Event found!!";
+	    Event event;
+	    try
+            {
+	        get_event(event);
+	    }
+	    catch(std::exception& e)
+	    {
+	        BOOST_LOG_TRIVIAL(error) << e.what();
+	        continue;
+	    }
+	    capture(event);
+	}
         while (_client.data_buffer_percent_full() > _max_fill_level)
         {
             BOOST_LOG_TRIVIAL(debug) << "DADA buffer fill level = " << _client.data_buffer_percent_full() << "%";
             skip_block();
         }
 
-        if (has_event())
-        {
-            Event event;
-            try
-            {
-                get_event(event);
-            }
-            catch(std::exception& e)
-            {
-                BOOST_LOG_TRIVIAL(error) << e.what();
-                continue;
-            }
-            capture(event);
-        }
+     
 
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }

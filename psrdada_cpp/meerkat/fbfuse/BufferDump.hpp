@@ -3,6 +3,7 @@
 
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/dada_read_client.hpp"
+#include <boost/asio.hpp>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,7 @@ class BufferDump
         BufferDump(
             DadaReadClient& client,
             Handler& handler,
+	    std::string socket_name,
             float max_fill_level,
             std::size_t nantennas,
             std::size_t subband_nchannels,
@@ -62,7 +64,7 @@ class BufferDump
         std::size_t _sample_clock_start;
         std::size_t _sample_clock;
         long double _sync_time;
-        std::unique_ptr<local::stream_protocol::socket> _socket;
+        std::unique_ptr<boost::asio::local::stream_protocol::socket> _socket;
 };
 
 } // fbfuse
