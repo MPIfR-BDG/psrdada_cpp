@@ -15,9 +15,11 @@ namespace
 {
     double dm_delay( float f1, float f2, float dm, float tsamp)
     {
-        return (4.15 * 0.001 * dm * (std::pow(1/f1,2) - std::pow(1/f2, 2)))/tsamp;
+        return (4.15 * 0.001 * dm * (std::pow(1/f1/1e9,2.0) - std::pow(1/f2/1e9, 2.0)))/tsamp;
     }
 }
+
+
 
 typedef boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_RCVTIMEO> rcv_timeout_option;
 
@@ -62,25 +64,35 @@ BufferDump<Handler>::~BufferDump()
     }
 }
 
+
+template<typename Handler>
+void BufferDump<Handler>::setup()
+{
+    boost::system::error_code ec;
+    ::unlink(_socket_name.c_str()); // Remove previous binding.
+    boost::asio::local::stream_protocol::endpoint ep(_socket_name);
+    _acceptor.reset(new boost::asio::local::stream_protocol::acceptor(_io_service,ep));
+    //boost::asio::local::stream_protocol::acceptor acceptor(_io_service, ep);
+    _acceptor->non_blocking(true);
+    _socket.reset(new boost::asio::local::stream_protocol::socket(_io_service));
+    //_socket->open();
+    //_socket->non_blocking(true);
+    //_socket->bind(ep, ec);
+    _acceptor->accept(*_socket, ep, ec);
+    if (ec && ec != boost::asio::error::try_again)
+    {
+	BOOST_LOG_TRIVIAL(error) << "Error on accept: " << ec.message();
+	exit(1);
+    }
+    return;
+}
+
 template <typename Handler>
 void BufferDump<Handler>::start()
 {
     BOOST_LOG_TRIVIAL(info) << "Starting BufferDump instance (listenting on socket '')";
     // Open Unix socket endpoint
-    boost::system::error_code ec;
-
-    ::unlink(_socket_name.c_str()); // Remove previous binding.
-    boost::asio::io_service io_service;
-    boost::asio::local::stream_protocol::endpoint ep(_socket_name);
-    boost::asio::local::stream_protocol::acceptor acceptor(io_service, ep);
-    acceptor.non_blocking(true);
-    _socket.reset(new boost::asio::local::stream_protocol::socket(io_service));
-    acceptor.accept(*_socket, ep, ec);
-    if (ec != boost::asio::error::try_again)
-    {
-	BOOST_LOG_TRIVIAL(error) << ec.message();
-	exit(1);
-    }
+    setup();
     read_dada_header();
     listen();
 }
@@ -135,7 +147,7 @@ void BufferDump<Handler>::listen()
             skip_block();
         }
 
-     
+
 
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -154,18 +166,39 @@ void BufferDump<Handler>::skip_block()
 template <typename Handler>
 bool BufferDump<Handler>::has_event() const
 {
+    boost::system::error_code ec;
+    boost::asio::local::stream_protocol::endpoint ep(_socket_name);
+    _acceptor->accept(*_socket, ep, ec);
+    if (ec && ec != boost::asio::error::try_again)
+    {
+	BOOST_LOG_TRIVIAL(error) << "Error on accept: " <<  ec.message();
+    }
+
+    auto bytes = _socket->available(ec);
+    if (bytes != 0 )
+    {
+        return true;
+    }
     return false;
 }
 
 template <typename Handler>
 void BufferDump<Handler>::get_event(Event& event)
 {
+    boost::system::error_code ec;
     boost::property_tree::ptree pt;
-    boost::asio::read(*_socket, boost::asio::buffer(
-        _event_msg_buffer, sizeof(_event_msg_buffer)));
+    //boost::asio::read(*_socket, boost::asio::buffer(
+    //    _event_msg_buffer, sizeof(_event_msg_buffer)));
+    _socket->read_some(boost::asio::buffer(_event_msg_buffer), ec);
+    if (ec && ec != boost::asio::error::eof)
+    {
+	BOOST_LOG_TRIVIAL(error) << "Error on read: " << ec.message();
+    }
     std::string event_string(_event_msg_buffer);
+    std::stringstream event_stream;
+    event_stream << event_string;
     BOOST_LOG_TRIVIAL(info) << "Getting Event information...";
-    boost::property_tree::json_parser::read_json(event_string, pt);
+    boost::property_tree::json_parser::read_json(event_stream, pt);
     event.utc_start = pt.get<long double>("utc_start");
     event.utc_end = pt.get<long double>("utc_end");
     event.dm = pt.get<float>("dm");
@@ -217,6 +250,7 @@ void BufferDump<Handler>::capture(Event const& event)
     for (std::size_t ii = 0; ii < _subband_nchans; ++ii)
     {
         float channel_freq = (_centre_freq - chan_bw/2.0f) + ii * chan_bw;
+	BOOST_LOG_TRIVIAL(debug) << "Ref_freq: " << event.reference_freq << " channel_freq: " << channel_freq;
         double delay = dm_delay(event.reference_freq, channel_freq, event.dm, tsamp);
         left_edge_of_output[ii] = static_cast<std::size_t>(delay) + start_sample;
         right_edge_of_output[ii] = static_cast<std::size_t>(delay) + end_sample;

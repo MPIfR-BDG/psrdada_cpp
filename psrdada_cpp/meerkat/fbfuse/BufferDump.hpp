@@ -40,6 +40,7 @@ class BufferDump
 
     private:
         void listen();
+	void setup();
         void capture(const Event&);
         void read_dada_header();
         void skip_block();
@@ -64,6 +65,8 @@ class BufferDump
         std::size_t _sample_clock_start;
         std::size_t _sample_clock;
         long double _sync_time;
+	boost::asio::io_service _io_service;
+	std::unique_ptr<boost::asio::local::stream_protocol::acceptor> _acceptor;
         std::unique_ptr<boost::asio::local::stream_protocol::socket> _socket;
 };
 
