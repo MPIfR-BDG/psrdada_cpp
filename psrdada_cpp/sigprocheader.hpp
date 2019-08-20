@@ -49,7 +49,7 @@ public:
     SigprocHeader();
     ~SigprocHeader();
     void write_header(RawBytes& block,PsrDadaHeader ph);
-    void write_header(char* ptr,FilHead& header);
+    void write_header(char*& ptr,FilHead& header, std::size_t size);
     void read_header(std::ifstream &infile, FilHead &header);
     void read_header(std::stringstream &infile, FilHead &header);
     std::size_t header_size() const;

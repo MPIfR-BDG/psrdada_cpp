@@ -41,6 +41,7 @@ namespace psrdada_cpp {
         if (it == header.end())
         {
             _header_size = 0;
+	    BOOST_LOG_TRIVIAL(info) << "HEADER_END not found";
             throw std::runtime_error("No HEADER_END in string detected");
         }
         _header_size = std::distance(header.begin(),it) + sentinel.size(); 
@@ -80,6 +81,15 @@ namespace psrdada_cpp {
                 return true;
             }
             ++_filenum;
+        // Update time information
+            SigprocHeader sh;
+            FilHead fh;
+            std::stringstream instream;
+            instream.write(_header, _header_size);
+	    BOOST_LOG_TRIVIAL(debug) << "Update header paramters....";
+            sh.read_header(instream, fh);
+            fh.tstart = fh.tstart + (((_filesize/(fh.nbits/8))/(fh.nchans)) * fh.tsamp)/(86400.0);
+            sh.write_header(_header, fh, _header_size);
             _outfile.write(_header, _header_size);
             _outfile.write(current_ptr,block.total_bytes() - left_size);
             block.used_bytes(block.total_bytes());

@@ -40,15 +40,23 @@ TEST_F(TestFileWriterTest, test_filesize)
     DadaDB dada_buffer(8, 10240, 4, 4096);
     dada_buffer.create();
 
+    {
     //Setup write clients
     MultiLog log("Output buffer");
     DadaOutputStream outstream(dada_buffer.key(), log);
 
     // Setup RawBytes to write
     char* hdr_ptr = new char[4096];
+    std::memset(hdr_ptr, 0, 4096);
     RawBytes header(hdr_ptr, 4096, 4096, false);
-    const char* hdrstr = "HEADER_START and HEADER_END";
-    std::memcpy(hdr_ptr, hdrstr,27); 
+    std::ifstream file("header.txt");
+    std::string str((std::istreambuf_iterator<char>(file)),
+                        std::istreambuf_iterator<char>());
+    const char* hdrstr = str.c_str();
+    //const char* hdrstr = "HEADER_START and HEADER_END";
+    std::memcpy(hdr_ptr, hdrstr,277); 
+
+    file.close();
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
     // Write data to the buffer
@@ -92,9 +100,11 @@ TEST_F(TestFileWriterTest, test_filesize)
         fstream.seekg(0, std::ios::end);
         int filSize = fstream.tellg();
         fstream.close();
-        ASSERT_EQ(filSize, 15387);
+        ASSERT_EQ(filSize, 15637);
     }    
- 
+
+    } 
+    dada_buffer.destroy();
 }
 
 TEST_F(TestFileWriterTest, test_number_of_files)
@@ -104,15 +114,23 @@ TEST_F(TestFileWriterTest, test_number_of_files)
     DadaDB dada_buffer(8, 10240, 4, 4096);
     dada_buffer.create();
 
+    {
     //Setup write clients
     MultiLog log("Output buffer");
     DadaOutputStream outstream(dada_buffer.key(), log);
 
-    // Setup RawBytes to write
+    // Sigproc Header
     char* hdr_ptr = new char[4096];
-    const char* hdrstr = "HEADER_START and HEADER_END";
-    std::memcpy(hdr_ptr, hdrstr,27); 
-    RawBytes header(hdr_ptr, 4096, 4096, false); 
+    std::memset(hdr_ptr, 0, 4096);
+    std::ifstream file("header.txt");
+    std::string str((std::istreambuf_iterator<char>(file)),
+                        std::istreambuf_iterator<char>());
+    const char* hdrstr = str.c_str();
+    std::memcpy(hdr_ptr, hdrstr,277);
+    RawBytes header(hdr_ptr, 4096, 4096, false);
+
+    file.close();
+    // Setup RawBytes to write
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
     // Write data to the buffer
@@ -167,6 +185,8 @@ TEST_F(TestFileWriterTest, test_number_of_files)
 
     ASSERT_EQ(filenames.size(),4);
 
+    }
+    dada_buffer.destroy();
 }
 
 TEST_F(TestFileWriterTest, test_exception)
@@ -175,6 +195,7 @@ TEST_F(TestFileWriterTest, test_exception)
 /* Setup  the Dada buffers and write to them */
     DadaDB dada_buffer(8, 10240, 4, 4096);
     dada_buffer.create();
+    {
 
     //Setup write clients
     MultiLog log("Output buffer");
@@ -182,6 +203,7 @@ TEST_F(TestFileWriterTest, test_exception)
 
     // Setup RawBytes to write
     char* hdr_ptr = new char[4096];
+    std::memset(hdr_ptr, 0, 4096);
     RawBytes header(hdr_ptr, 4096, 4096, false);
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
@@ -204,20 +226,9 @@ TEST_F(TestFileWriterTest, test_exception)
     ASSERT_ANY_THROW(testfiles.init(header_block));
     header_stream.release();
 
-    // Read Client
-    for (std::uint8_t jj = 0; jj < 8 ; ++jj )
-    {
-        auto& data_stream = client.data_stream();
-        if (data_stream.at_end())
-        {
-            BOOST_LOG_TRIVIAL(info) << "Reached end of data";
-            break;
-        }
-        auto& data_block = data_stream.next();
-        testfiles(data_block);
-        data_stream.release();
     }
-
+    dada_buffer.destroy();
+    
 }
 
 

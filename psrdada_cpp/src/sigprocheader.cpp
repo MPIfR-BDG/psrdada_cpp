@@ -35,7 +35,7 @@ namespace psrdada_cpp
 
     void SigprocHeader::write_header(RawBytes& block, PsrDadaHeader ph)
     {
-	    auto ptr = block.ptr();
+	auto ptr = block.ptr();
         header_write(ptr,"HEADER_START");
         header_write<std::uint32_t>(ptr,"telescope_id",0);
         header_write<std::uint32_t>(ptr,"machine_id",11);
@@ -65,25 +65,26 @@ namespace psrdada_cpp
         _header_size = std::distance(block.ptr(),ptr);
     }
 
-    void SigprocHeader::write_header(char* ptr, FilHead& ph)
+    void SigprocHeader::write_header(char*& ptr, FilHead& ph, std::size_t size)
     {
+	auto new_ptr = ptr;
         header_write(ptr,"HEADER_START");
-        header_write<std::uint32_t>(ptr,"telescope_id",0);
-        header_write<std::uint32_t>(ptr,"machine_id",11);
-        header_write<std::uint32_t>(ptr,"data_type",1);
-        header_write<std::uint32_t>(ptr,"barycentric",0);
-        header_write(ptr,"source_name",ph.source);
-        header_write<double>(ptr,"src_raj",ph.ra);
-        header_write<double>(ptr, "src_dej",ph.dec);
-        header_write<std::uint32_t>(ptr,"nbits",ph.nbits);
-        header_write<std::uint32_t>(ptr,"nifs",1);
-        header_write<std::uint32_t>(ptr,"nchans",ph.nchans);
-        header_write<std::uint32_t>(ptr, "ibeam", ph.ibeam);
-        header_write<double>(ptr,"fch1", ph.fch1);
-        header_write<double>(ptr,"foff",ph.foff);
-        header_write<double>(ptr,"tstart",ph.tstart);
-        header_write<double>(ptr,"tsamp",ph.tsamp);
-        header_write(ptr,"HEADER_END");
+        header_write<std::uint32_t>(new_ptr,"telescope_id",0);
+        header_write<std::uint32_t>(new_ptr,"machine_id",11);
+        header_write<std::uint32_t>(new_ptr,"data_type",1);
+        header_write<std::uint32_t>(new_ptr,"barycentric",0);
+        header_write(new_ptr,"source_name",ph.source);
+        header_write<double>(new_ptr,"src_raj",ph.ra);
+        header_write<double>(new_ptr, "src_dej",ph.dec);
+        header_write<std::uint32_t>(new_ptr,"nbits",ph.nbits);
+        header_write<std::uint32_t>(new_ptr,"nifs",1);
+        header_write<std::uint32_t>(new_ptr,"nchans",ph.nchans);
+        header_write<std::uint32_t>(new_ptr, "ibeam", ph.ibeam);
+        header_write<double>(new_ptr,"fch1", ph.fch1);
+        header_write<double>(new_ptr,"foff",ph.foff);
+        header_write<double>(new_ptr,"tstart",ph.tstart);
+        header_write<double>(new_ptr,"tsamp",ph.tsamp);
+        header_write(new_ptr,"HEADER_END");
     }
 
     std::size_t SigprocHeader::header_size() const
@@ -96,7 +97,7 @@ namespace psrdada_cpp
         std::string read_param;
 	    char field[60];
 
-	    int fieldlength;
+	    int fieldlength=0;
 
         while(true) {
             infile.read((char *)&fieldlength, sizeof(int));
@@ -142,7 +143,7 @@ namespace psrdada_cpp
         std::string read_param;
 	    char field[60];
 
-	    int fieldlength;
+	    std::int32_t fieldlength = 0;
 
         while(true) {
             infile.read((char *)&fieldlength, sizeof(int));
@@ -152,7 +153,7 @@ namespace psrdada_cpp
 
             if (read_param == "HEADER_END") break;		// finish reading the header when its end is reached
             else if (read_param == "rawdatafile") {
-                infile.read((char *)&fieldlength, sizeof(int));		// reads the length of the raw data file name
+                infile.read((char *)&fieldlength, sizeof(int));
                 infile.read(field, fieldlength * sizeof(char));
                 field[fieldlength] = '\0';
                 header.rawfile = field;
@@ -181,6 +182,7 @@ namespace psrdada_cpp
             else if (read_param == "tsamp")		infile.read((char *)&header.tsamp, sizeof(double));
             else if (read_param == "nifs")		infile.read((char *)&header.nifs, sizeof(int));
         }
+        std::cout << "Reached here" << "\n";
     }
 
 } // namespace psrdada_cpp
