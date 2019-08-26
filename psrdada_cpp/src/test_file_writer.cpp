@@ -88,9 +88,11 @@ namespace psrdada_cpp {
             instream.write(_header, _header_size);
 	    BOOST_LOG_TRIVIAL(debug) << "Update header paramters....";
             sh.read_header(instream, fh);
-            fh.tstart = fh.tstart + (((_filesize/(fh.nbits/8))/(fh.nchans)) * fh.tsamp)/(86400.0);
-            sh.write_header(_header, fh, _header_size);
-            _outfile.write(_header, _header_size);
+            fh.tstart = fh.tstart + (((_filesize/(fh.nbits/8.0))/(fh.nchans)) * fh.tsamp)/(86400.0);
+	    std::memset(_header,0,4096);
+            sh.write_header(_header, fh);
+            _outfile.write(_header, sh.header_size());
+	    _header_size = sh.header_size();
             _outfile.write(current_ptr,block.total_bytes() - left_size);
             block.used_bytes(block.total_bytes());
             _wsize += block.total_bytes() - left_size;

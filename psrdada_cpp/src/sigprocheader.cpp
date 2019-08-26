@@ -65,19 +65,19 @@ namespace psrdada_cpp
         _header_size = std::distance(block.ptr(),ptr);
     }
 
-    void SigprocHeader::write_header(char*& ptr, FilHead& ph, std::size_t size)
+    void SigprocHeader::write_header(char*& ptr, FilHead& ph)
     {
-	auto new_ptr = ptr;
-        header_write(ptr,"HEADER_START");
-        header_write<std::uint32_t>(new_ptr,"telescope_id",0);
-        header_write<std::uint32_t>(new_ptr,"machine_id",11);
-        header_write<std::uint32_t>(new_ptr,"data_type",1);
-        header_write<std::uint32_t>(new_ptr,"barycentric",0);
+	char* new_ptr = ptr;
+        header_write(new_ptr,"HEADER_START");
+        header_write<std::uint32_t>(new_ptr,"telescope_id",ph.telescopeid);
+        header_write<std::uint32_t>(new_ptr,"machine_id",ph.machineid);
+        header_write<std::uint32_t>(new_ptr,"data_type",ph.datatype);
+        header_write<std::uint32_t>(new_ptr,"barycentric",ph.barycentric);
         header_write(new_ptr,"source_name",ph.source);
         header_write<double>(new_ptr,"src_raj",ph.ra);
         header_write<double>(new_ptr, "src_dej",ph.dec);
         header_write<std::uint32_t>(new_ptr,"nbits",ph.nbits);
-        header_write<std::uint32_t>(new_ptr,"nifs",1);
+        header_write<std::uint32_t>(new_ptr,"nifs",ph.nifs);
         header_write<std::uint32_t>(new_ptr,"nchans",ph.nchans);
         header_write<std::uint32_t>(new_ptr, "ibeam", ph.ibeam);
         header_write<double>(new_ptr,"fch1", ph.fch1);
@@ -85,6 +85,7 @@ namespace psrdada_cpp
         header_write<double>(new_ptr,"tstart",ph.tstart);
         header_write<double>(new_ptr,"tsamp",ph.tsamp);
         header_write(new_ptr,"HEADER_END");
+	_header_size = (std::size_t) (new_ptr - ptr);
     }
 
     std::size_t SigprocHeader::header_size() const
@@ -118,23 +119,24 @@ namespace psrdada_cpp
                 field[fieldlength] = '\0';
                 header.source = field;
             }
-            else if (read_param == "machine_id")	infile.read((char *)&header.machineid, sizeof(int));
-            else if (read_param == "telescope_id")	infile.read((char *)&header.telescopeid, sizeof(int));
+            else if (read_param == "machine_id")	infile.read((char *)&header.machineid, sizeof(uint32_t));
+            else if (read_param == "telescope_id")	infile.read((char *)&header.telescopeid, sizeof(uint32_t));
             else if (read_param == "src_raj")	infile.read((char *)&header.ra, sizeof(double));
             else if (read_param == "src_dej")	infile.read((char *)&header.dec, sizeof(double));
             else if (read_param == "az_start")	infile.read((char *)&header.az, sizeof(double));
             else if (read_param == "za_start")	infile.read((char *)&header.za, sizeof(double));
-            else if (read_param == "data_type")	infile.read((char *)&header.datatype, sizeof(int));
+            else if (read_param == "data_type")	infile.read((char *)&header.datatype, sizeof(uint32_t));
+            else if (read_param == "barycentric")	infile.read((char *)&header.barycentric, sizeof(uint32_t));
             else if (read_param == "refdm")		infile.read((char *)&header.rdm, sizeof(double));
-            else if (read_param == "nchans")	infile.read((char *)&header.nchans, sizeof(int));
+            else if (read_param == "nchans")	infile.read((char *)&header.nchans, sizeof(uint32_t));
             else if (read_param == "fch1")		infile.read((char *)&header.fch1, sizeof(double));
             else if (read_param == "foff")		infile.read((char *)&header.foff, sizeof(double));
-            else if (read_param == "nbeams")	infile.read((char *)&header.nbeams, sizeof(int));
-            else if (read_param == "ibeam")		infile.read((char *)&header.ibeam, sizeof(int));
-            else if (read_param == "nbits")		infile.read((char *)&header.nbits, sizeof(int));
+            else if (read_param == "nbeams")	infile.read((char *)&header.nbeams, sizeof(uint32_t));
+            else if (read_param == "ibeam")		infile.read((char *)&header.ibeam, sizeof(uint32_t));
+            else if (read_param == "nbits")		infile.read((char *)&header.nbits, sizeof(uint32_t));
             else if (read_param == "tstart")	infile.read((char *)&header.tstart, sizeof(double));
             else if (read_param == "tsamp")		infile.read((char *)&header.tsamp, sizeof(double));
-            else if (read_param == "nifs")		infile.read((char *)&header.nifs, sizeof(int));
+            else if (read_param == "nifs")		infile.read((char *)&header.nifs, sizeof(uint32_t));
         }
     }
 
@@ -171,6 +173,7 @@ namespace psrdada_cpp
             else if (read_param == "az_start")	infile.read((char *)&header.az, sizeof(double));
             else if (read_param == "za_start")	infile.read((char *)&header.za, sizeof(double));
             else if (read_param == "data_type")	infile.read((char *)&header.datatype, sizeof(int));
+            else if (read_param == "barycentric")	infile.read((char *)&header.barycentric, sizeof(int));
             else if (read_param == "refdm")		infile.read((char *)&header.rdm, sizeof(double));
             else if (read_param == "nchans")	infile.read((char *)&header.nchans, sizeof(int));
             else if (read_param == "fch1")		infile.read((char *)&header.fch1, sizeof(double));
@@ -182,7 +185,6 @@ namespace psrdada_cpp
             else if (read_param == "tsamp")		infile.read((char *)&header.tsamp, sizeof(double));
             else if (read_param == "nifs")		infile.read((char *)&header.nifs, sizeof(int));
         }
-        std::cout << "Reached here" << "\n";
     }
 
 } // namespace psrdada_cpp
