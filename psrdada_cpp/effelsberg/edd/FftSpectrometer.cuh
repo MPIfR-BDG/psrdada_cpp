@@ -20,7 +20,7 @@ public:
     typedef uint64_t RawVoltageType;
     typedef float UnpackedVoltageType;
     typedef float2 ChannelisedVoltageType;
-    typedef int8_t IntegratedPowerType;
+    typedef float IntegratedPowerType;
 
 public:
     FftSpectrometer(
@@ -30,6 +30,7 @@ public:
         std::size_t nbits,
         float input_level,
         float output_level,
+
         HandlerType& handler);
     ~FftSpectrometer();
 
@@ -63,16 +64,18 @@ private:
     std::size_t _fft_length;
     std::size_t _naccumulate;
     std::size_t _nbits;
+    float _scaling;
+    float _offset;
     HandlerType& _handler;
     cufftHandle _fft_plan;
     int _nchans;
     int _call_count;
     std::unique_ptr<Unpacker> _unpacker;
-    std::unique_ptr<DetectorAccumulator<int8_t> > _detector;
+    std::unique_ptr<DetectorAccumulator<IntegratedPowerType> > _detector;
     DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
     DoubleDeviceBuffer<IntegratedPowerType> _power_db;
     thrust::device_vector<UnpackedVoltageType> _unpacked_voltage;
-    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
+//    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
     DoublePinnedHostBuffer<IntegratedPowerType> _host_power_db;
     cudaStream_t _h2d_stream;
     cudaStream_t _proc_stream;

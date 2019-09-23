@@ -40,9 +40,9 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     BOOST_LOG_TRIVIAL(debug) << "Calculating scales and offsets";
     float dof = 2 * _naccumulate;
     float scale = std::pow(input_level * std::sqrt(static_cast<float>(_nchans)), 2);
-    float offset = scale * dof;
-    float scaling = scale * std::sqrt(2 * dof) / output_level;
-    BOOST_LOG_TRIVIAL(debug) << "Correction factors for 8-bit conversion: offset = " << offset << ", scaling = " << scaling;
+    _offset = scale * dof;
+    _scaling = scale * std::sqrt(2 * dof) / output_level;
+    BOOST_LOG_TRIVIAL(debug) << "Correction factors for 8-bit conversion: offset = " << _offset << ", scaling = " << _scaling;
     BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan";
     int n[] = {static_cast<int>(_fft_length)};
     CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length,
@@ -51,10 +51,11 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
     _raw_voltage_db.resize(n64bit_words);
     BOOST_LOG_TRIVIAL(debug) << "Input voltages size (in 64-bit words): " << _raw_voltage_db.size();
-    _unpacked_voltage.resize(nsamps_per_buffer);
-    BOOST_LOG_TRIVIAL(debug) << "Unpacked voltages size (in samples): " << _unpacked_voltage.size();
-    _channelised_voltage.resize(_nchans * batch);
-    BOOST_LOG_TRIVIAL(debug) << "Channelised voltages size: " << _channelised_voltage.size();
+    //_unpacked_voltage.resize(nsamps_per_buffer);
+    _unpacked_voltage.resize(_nchans * batch * 2);
+    //BOOST_LOG_TRIVIAL(debug) << "Unpacked voltages size (in samples): " << _unpacked_voltage.size();
+    //_channelised_voltage.resize(_nchans * batch);
+    //BOOST_LOG_TRIVIAL(debug) << "Channelised voltages size: " << _channelised_voltage.size();
     _power_db.resize(_nchans * batch / _naccumulate);
     BOOST_LOG_TRIVIAL(debug) << "Powers size: " << _power_db.size();
     _host_power_db.resize(_power_db.size());
@@ -63,8 +64,8 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     CUDA_ERROR_CHECK(cudaStreamCreate(&_d2h_stream));
     CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
     _unpacker.reset(new Unpacker(_proc_stream));
-    _detector.reset(new DetectorAccumulator<int8_t>(_nchans, _naccumulate,
-        scaling, offset, _proc_stream));
+    //_detector.reset(new DetectorAccumulator<IntegratedPowerType>(_nchans, _naccumulate,
+    //    _scaling, offset, _proc_stream));
 }
 
 template <class HandlerType>
@@ -99,12 +100,20 @@ void FftSpectrometer<HandlerType>::process(
     }
     BOOST_LOG_TRIVIAL(debug) << "Performing FFT";
     UnpackedVoltageType* _unpacked_voltage_ptr = thrust::raw_pointer_cast(_unpacked_voltage.data());
-    ChannelisedVoltageType* _channelised_voltage_ptr = thrust::raw_pointer_cast(_channelised_voltage.data());
+    ChannelisedVoltageType* _channelised_voltage_ptr = (ChannelisedVoltageType*) thrust::raw_pointer_cast(_unpacked_voltage.data());
+
     CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan,
         (cufftReal*) _unpacked_voltage_ptr,
         (cufftComplex*) _channelised_voltage_ptr));
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-    _detector->detect(_channelised_voltage, detected);
+    //_detector->detect(_channelised_voltage, detected);
+
+      int nsamps = _unpacked_voltage.size() / 2 / _nchans; // div 2 because float2 to float
+
+      kernels::detect_and_accumulate<float> <<<1024, 1024, 0, _proc_stream>>>(
+          _channelised_voltage_ptr, thrust::raw_pointer_cast(detected.data()), _nchans, nsamps, _naccumulate, _scaling, _offset, 0, 0);
+
+
 }
 
 template <class HandlerType>
