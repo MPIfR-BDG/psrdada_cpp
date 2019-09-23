@@ -30,7 +30,16 @@ public:
     Unpacker(Unpacker const&) = delete;
 
     template <int Nbits>
-    void unpack(InputType const& input, OutputType& output);
+    void unpack(const uint64_t*  input, float* output, size_t size);
+
+    template <int Nbits>
+    void unpack(InputType const& input, OutputType& output) 
+    {
+      InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data());
+      OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data());
+      unpack<Nbits>(input_ptr, output_ptr, input.size());
+    }
+
 
 private:
     cudaStream_t _stream;

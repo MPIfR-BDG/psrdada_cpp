@@ -122,31 +122,21 @@ Unpacker::~Unpacker()
 }
 
 template <>
-void Unpacker::unpack<12>(InputType const& input, OutputType& output)
+void Unpacker::unpack<12>(const uint64_t* input, float* output, size_t size)
 {
     BOOST_LOG_TRIVIAL(debug) << "Unpacking 12-bit data";
-    //std::size_t output_size = input.size() * 16 / 3;
-    //BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
-    //output.resize(output_size);
-    int nblocks = input.size() / EDD_NTHREADS_UNPACK;
-    InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data());
-    OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data());
+    int nblocks = size / EDD_NTHREADS_UNPACK;
     kernels::unpack_edd_12bit_to_float32<<< nblocks, EDD_NTHREADS_UNPACK, 0, _stream>>>(
-            input_ptr, output_ptr, input.size());
+            input, output, size);
 }
 
 template <>
-void Unpacker::unpack<8>(InputType const& input, OutputType& output)
+void Unpacker::unpack<8>(const uint64_t* input, float* output, size_t size)
 {
     BOOST_LOG_TRIVIAL(debug) << "Unpacking 8-bit data";
-    //std::size_t output_size = input.size() * 8;
-    //BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
-    //output.resize(output_size);
-    int nblocks = input.size() / EDD_NTHREADS_UNPACK;
-    InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data());
-    OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data());
+    int nblocks = size / EDD_NTHREADS_UNPACK;
     kernels::unpack_edd_8bit_to_float32<<< nblocks, EDD_NTHREADS_UNPACK, 0, _stream>>>(
-            input_ptr, output_ptr, input.size());
+            input, output, size);
 }
 
 } //namespace edd
