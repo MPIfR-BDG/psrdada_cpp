@@ -150,7 +150,8 @@ int main(int argc, char **argv) {
     thrust::device_vector<cufftComplex> input_dummy_data_freq(nFreqs);
     thrust::device_vector<float> tmp(dadaBufferLayout.sizeOfData() * 8 / input_bit_depth);
     thrust::device_vector<uint32_t> packed_data(tmp.size() * 8 / 32);
-    input_dummy_data_freq[nFreqs / 50] = make_cuComplex(50.f, 0.0f);
+    input_dummy_data_freq[nFreqs / 3] = make_cuComplex(50.f, 0.0f);
+    input_dummy_data_freq[nFreqs / 2] = make_cuComplex(20.f, 0.0f);
 
     cufftHandle plan;
     cufftPlan1d(&plan, tmp.size(), CUFFT_C2R, 1);
