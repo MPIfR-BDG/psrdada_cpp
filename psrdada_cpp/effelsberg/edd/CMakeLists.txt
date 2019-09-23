@@ -24,11 +24,11 @@ install(TARGETS fft_spectrometer DESTINATION bin)
 
 #Gated FFT spectrometer interface
 cuda_add_executable(gated_spectrometer src/GatedSpectrometer_cli.cu)
-target_link_libraries(gated_spectrometer ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} -lcublas)
+target_link_libraries(gated_spectrometer ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 install(TARGETS gated_spectrometer DESTINATION bin)
 
 cuda_add_executable(VLBI src/VLBI_cli.cu)
-target_link_libraries(VLBI ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} -lcublas)
+target_link_libraries(VLBI ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 install(TARGETS VLBI DESTINATION bin)
 
 cuda_add_executable(vdif_send src/vdif_send.cu)
