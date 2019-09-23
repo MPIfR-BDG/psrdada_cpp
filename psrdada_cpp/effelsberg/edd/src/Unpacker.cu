@@ -125,9 +125,9 @@ template <>
 void Unpacker::unpack<12>(InputType const& input, OutputType& output)
 {
     BOOST_LOG_TRIVIAL(debug) << "Unpacking 12-bit data";
-    std::size_t output_size = input.size() * 16 / 3;
-    BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
-    output.resize(output_size);
+    //std::size_t output_size = input.size() * 16 / 3;
+    //BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
+    //output.resize(output_size);
     int nblocks = input.size() / EDD_NTHREADS_UNPACK;
     InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data());
     OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data());
@@ -139,9 +139,9 @@ template <>
 void Unpacker::unpack<8>(InputType const& input, OutputType& output)
 {
     BOOST_LOG_TRIVIAL(debug) << "Unpacking 8-bit data";
-    std::size_t output_size = input.size() * 8;
-    BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
-    output.resize(output_size);
+    //std::size_t output_size = input.size() * 8;
+    //BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to " << output_size << " elements";
+    //output.resize(output_size);
     int nblocks = input.size() / EDD_NTHREADS_UNPACK;
     InputType::value_type const* input_ptr = thrust::raw_pointer_cast(input.data());
     OutputType::value_type* output_ptr = thrust::raw_pointer_cast(output.data());
