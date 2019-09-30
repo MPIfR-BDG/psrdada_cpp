@@ -40,15 +40,23 @@ TEST_F(TestFileWriterTest, test_filesize)
     DadaDB dada_buffer(8, 10240, 4, 4096);
     dada_buffer.create();
 
+    {
     //Setup write clients
     MultiLog log("Output buffer");
     DadaOutputStream outstream(dada_buffer.key(), log);
 
     // Setup RawBytes to write
     char* hdr_ptr = new char[4096];
+    std::memset(hdr_ptr, 0, 4096);
     RawBytes header(hdr_ptr, 4096, 4096, false);
+    std::ifstream file("header.txt");
+    std::string str((std::istreambuf_iterator<char>(file)),
+                        std::istreambuf_iterator<char>());
+    const char* hdrstr = str.c_str();
     //const char* hdrstr = "HEADER_START and HEADER_END";
-    //std::memcpy(hdr_ptr, hdrstr,27); 
+    std::memcpy(hdr_ptr, hdrstr,277); 
+
+    file.close();
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
     // Write data to the buffer
@@ -63,8 +71,6 @@ TEST_F(TestFileWriterTest, test_filesize)
     MultiLog log1("input stream");
     std::string filename("Test_file");
     TestFileWriter testfiles(filename,15360);
-    SigprocHeader sh;
-    testfiles.header(sh);
 
     DadaReadClient client(dada_buffer.key(), log1);
     auto& header_stream = client.header_stream();
@@ -94,9 +100,11 @@ TEST_F(TestFileWriterTest, test_filesize)
         fstream.seekg(0, std::ios::end);
         int filSize = fstream.tellg();
         fstream.close();
-        ASSERT_EQ(filSize, 15360);
+        ASSERT_EQ(filSize, 15637);
     }    
- 
+
+    } 
+    dada_buffer.destroy();
 }
 
 TEST_F(TestFileWriterTest, test_number_of_files)
@@ -106,14 +114,23 @@ TEST_F(TestFileWriterTest, test_number_of_files)
     DadaDB dada_buffer(8, 10240, 4, 4096);
     dada_buffer.create();
 
+    {
     //Setup write clients
     MultiLog log("Output buffer");
     DadaOutputStream outstream(dada_buffer.key(), log);
 
-    // Setup RawBytes to write
+    // Sigproc Header
     char* hdr_ptr = new char[4096];
-    RawBytes header(hdr_ptr, 4096, 4096, false); 
-    SigprocHeader sh;
+    std::memset(hdr_ptr, 0, 4096);
+    std::ifstream file("header.txt");
+    std::string str((std::istreambuf_iterator<char>(file)),
+                        std::istreambuf_iterator<char>());
+    const char* hdrstr = str.c_str();
+    std::memcpy(hdr_ptr, hdrstr,277);
+    RawBytes header(hdr_ptr, 4096, 4096, false);
+
+    file.close();
+    // Setup RawBytes to write
     char* data_ptr = new char[10240];
     RawBytes data(data_ptr, 10240, 10240, false);
     // Write data to the buffer
@@ -128,7 +145,6 @@ TEST_F(TestFileWriterTest, test_number_of_files)
     MultiLog log1("input stream");
     std::string filename("Fil_file");
     TestFileWriter testfiles(filename,20480);
-    testfiles.header(sh);
     
     DadaReadClient client(dada_buffer.key(), log1);
     auto& header_stream = client.header_stream();
@@ -169,7 +185,53 @@ TEST_F(TestFileWriterTest, test_number_of_files)
 
     ASSERT_EQ(filenames.size(),4);
 
+    }
+    dada_buffer.destroy();
 }
+
+TEST_F(TestFileWriterTest, test_exception)
+/* Test whether the files that are written are of the correct size */
+{
+/* Setup  the Dada buffers and write to them */
+    DadaDB dada_buffer(8, 10240, 4, 4096);
+    dada_buffer.create();
+    {
+
+    //Setup write clients
+    MultiLog log("Output buffer");
+    DadaOutputStream outstream(dada_buffer.key(), log);
+
+    // Setup RawBytes to write
+    char* hdr_ptr = new char[4096];
+    std::memset(hdr_ptr, 0, 4096);
+    RawBytes header(hdr_ptr, 4096, 4096, false);
+    char* data_ptr = new char[10240];
+    RawBytes data(data_ptr, 10240, 10240, false);
+    // Write data to the buffer
+    outstream.init(header);
+    for (std::uint32_t ii =0 ; ii < 8; ++ii)
+    {
+        outstream(data);
+    }
+    
+
+    // Write data to file
+    MultiLog log1("input stream");
+    std::string filename("Test_file");
+    TestFileWriter testfiles(filename,15360);
+
+    DadaReadClient client(dada_buffer.key(), log1);
+    auto& header_stream = client.header_stream();
+    auto& header_block = header_stream.next();
+    ASSERT_ANY_THROW(testfiles.init(header_block));
+    header_stream.release();
+
+    }
+    dada_buffer.destroy();
+    
+}
+
+
 
 } //namespace test
 } //namespace tuse

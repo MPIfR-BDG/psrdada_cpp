@@ -14,7 +14,7 @@ PsrDadaHeader::~PsrDadaHeader()
 {
 }
 
-void PsrDadaHeader::from_bytes(RawBytes& block)
+void PsrDadaHeader::from_bytes(RawBytes& block, std::uint32_t beamnum)
 {
     std::vector<char> buf(DADA_HDR_SIZE);
     std::copy(block.ptr(),block.ptr()+block.total_bytes(),buf.begin());
@@ -25,12 +25,17 @@ void PsrDadaHeader::from_bytes(RawBytes& block)
     set_nchans(atoi(get_value("NCHAN ",header).c_str()));
     set_nbits(atoi(get_value("NBIT ",header).c_str()));
     set_tsamp(atof(get_value("TSAMP ",header).c_str()));
-    set_source(get_value("SOURCE ",header));
-    set_ra(get_value("RA ",header));
-    set_dec(get_value("DEC ",header));
+    set_beam(atoi(get_value("IBEAM" + std::to_string(beamnum) + " ", header).c_str()));
+    set_source(get_value("SOURCE" + std::to_string(beamnum) + " ",header));
+    set_ra(get_value("RA" + std::to_string(beamnum) + " ",header));
+    set_dec(get_value("DEC" + std::to_string(beamnum) + " ",header));
     set_telescope(get_value("TELESCOPE ",header));
     set_instrument(get_value("INSTRUMENT ",header));
-    set_tstart(atof(get_value("MJD ",header).c_str()));
+    // Getting the correct MJD
+    double sync_mjd = atof(get_value("SYNC_TIME_MJD", header).c_str());
+    double sample_clock = atof(get_value("SAMPLE_CLOCK", header).c_str());
+    double sample_clock_start = atof(get_value("SAMPLE_CLOCK_START", header).c_str());
+    set_tstart(sync_mjd + (double)(sample_clock_start/sample_clock/86400.0));
     return;
 }
 
@@ -68,6 +73,11 @@ std::uint32_t PsrDadaHeader::nbits()
 double PsrDadaHeader::tsamp()
 {
     return _tsamp;
+}
+
+std::uint32_t PsrDadaHeader::beam()
+{
+    return _beam;
 }
 
 std::string PsrDadaHeader::ra() 
@@ -123,6 +133,11 @@ void PsrDadaHeader::set_nbits(std::uint32_t nbits)
 void PsrDadaHeader::set_tsamp(double tsamp)
 {
     _tsamp = tsamp;
+}
+
+void PsrDadaHeader::set_beam(std::uint32_t beam)
+{
+    _beam = beam;
 }
 
 void PsrDadaHeader::set_ra(std::string ra)

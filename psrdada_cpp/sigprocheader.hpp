@@ -33,14 +33,15 @@ namespace psrdada_cpp
         double tstart;                  // observation start time in MJD format
         double za;                      // zenith angle in deg
 
-        int datatype;                  // data type ID
-        int ibeam;                      // beam number
-        int machineid;
-        int nbeams;
-        int nbits;
-        int nchans;
-        int nifs;
-        int telescopeid;
+        uint32_t datatype;                  // data type ID
+	uint32_t barycentric;                // barucentric flag
+        uint32_t ibeam;                      // beam number
+        uint32_t machineid;
+        uint32_t nbeams;
+        uint32_t nbits;
+        uint32_t nchans;
+        uint32_t nifs;
+        uint32_t telescopeid;
     };
 
 class SigprocHeader
@@ -49,8 +50,9 @@ public:
     SigprocHeader();
     ~SigprocHeader();
     void write_header(RawBytes& block,PsrDadaHeader ph);
+    void write_header(char*& ptr,FilHead& header);
     void read_header(std::ifstream &infile, FilHead &header);
-
+    void read_header(std::stringstream &infile, FilHead &header);
     std::size_t header_size() const;
 
 private:

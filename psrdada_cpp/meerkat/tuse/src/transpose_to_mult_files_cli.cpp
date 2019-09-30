@@ -96,27 +96,26 @@ int main(int argc, char** argv)
 
         std::uint32_t ii;
         std::vector<std::shared_ptr<TestFileWriter>> files;
+        std::vector<std::shared_ptr<PsrDadaToSigprocHeader<TestFileWriter>>> ptos;
         for (ii=0; ii < nbeams; ++ii)
         {
           std::string filename = "beam" + std::to_string(ii) + ".fil";
           files.emplace_back(std::make_shared<TestFileWriter>(filename, filesize));
         }
-        meerkat::tuse::TransposeToDada<TestFileWriter> transpose(nbeams,files);
+        for (ii=0; ii < nbeams; ++ii)
+        {
+            ptos.emplace_back(std::make_shared<PsrDadaToSigprocHeader<TestFileWriter>>(ii, *files[ii]));
+        }
+        meerkat::tuse::TransposeToDada<PsrDadaToSigprocHeader<TestFileWriter>> transpose(nbeams, ptos);
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
         transpose.set_nfreq(nfreq);
         transpose.set_ngroups(ngroups);
         transpose.set_nbeams(nbeams);
-        PsrDadaToSigprocHeader<decltype(transpose)> ptos(transpose);
-
-        for (ii=0; ii < nbeams; ++ii)
-        {
-            (*files[ii]).header(ptos.header());
-        }
 
 
         MultiLog log1("instream");
-        DadaInputStream<decltype(ptos)> input(input_key,log1,ptos);
+        DadaInputStream<decltype(transpose)> input(input_key,log1,transpose);
         input.start();
       /* End Application Code */
 

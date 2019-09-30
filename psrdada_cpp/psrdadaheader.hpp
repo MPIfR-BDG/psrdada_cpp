@@ -47,7 +47,7 @@ public:
     /**
      * @brief: Get values from given key words
      */
-    void from_bytes(RawBytes& block);
+    void from_bytes(RawBytes& block, std::uint32_t beamnum);
 
     /**
      * @ All getters for Sigproc header
@@ -74,6 +74,8 @@ public:
 
     std::uint32_t nchans();
 
+    std::uint32_t beam();
+
     /**
      * @brief: All the setters
      */
@@ -84,6 +86,8 @@ public:
     void set_nbits(std::uint32_t nbits);
 
     void set_tsamp(double tsamp);
+
+    void set_beam(std::uint32_t beam);
 
     void set_ra(std::string ra);
 
@@ -117,6 +121,7 @@ private:
     std::uint32_t _npol;
     std::uint32_t _nbits;
     double _tsamp;
+    std::uint32_t _beam;
     std::string _source_name;
     std::string _ra;
     std::string _dec;

@@ -7,11 +7,12 @@
 namespace psrdada_cpp {
 
     template <class HandlerType>
-    PsrDadaToSigprocHeader<HandlerType>::PsrDadaToSigprocHeader(HandlerType& handler)
-    : _handler(handler)
+    PsrDadaToSigprocHeader<HandlerType>::PsrDadaToSigprocHeader(std::uint32_t beamnum, HandlerType& handler)
+    : _handler(handler),
+      _beamnum(beamnum)
     {
+        _optr = new char[4096];
     }
-
     template <class HandlerType>
     PsrDadaToSigprocHeader<HandlerType>::~PsrDadaToSigprocHeader()
     {
@@ -20,14 +21,13 @@ namespace psrdada_cpp {
     template <class HandlerType>
     void PsrDadaToSigprocHeader<HandlerType>::init(RawBytes& block)
     {
-        SigprocHeader h;
+        SigprocHeader& h = header();
         PsrDadaHeader ph;
-        ph.from_bytes(block);
-        std::memset(block.ptr(), 0, block.total_bytes());
-        h.write_header(block,ph);
-        header(h);
-        block.used_bytes(block.total_bytes());
-        _handler.init(block);
+        RawBytes outblock(_optr,block.total_bytes(),0, false);
+        ph.from_bytes(block, _beamnum);
+        h.write_header(outblock,ph);
+        outblock.used_bytes(outblock.total_bytes());
+        _handler.init(outblock);
     }
 
     template <class HandlerType>

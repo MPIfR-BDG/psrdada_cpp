@@ -94,21 +94,27 @@ int main(int argc, char** argv)
 
        /* Setting up the pipeline based on the type of sink*/
         std::vector<std::shared_ptr<NullSink>> nullsinks;
+        std::vector<std::shared_ptr<PsrDadaToSigprocHeader<NullSink>>> ptos;
         std::uint32_t ii;
         for (ii=0; ii < nbeams; ++ii)
         {
             nullsinks.emplace_back(std::make_shared<NullSink>());
         }
-        meerkat::tuse::TransposeToDada<NullSink> transpose(nbeams,std::move(nullsinks));
+        for (ii=0; ii < nbeams; ++ii)
+        {
+            ptos.emplace_back(std::make_shared<PsrDadaToSigprocHeader<NullSink>>(ii, *nullsinks[ii]));
+        }
+        meerkat::tuse::TransposeToDada<PsrDadaToSigprocHeader<NullSink>> transpose(nbeams, std::move(ptos));
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
         transpose.set_nfreq(nfreq);
         transpose.set_ngroups(ngroups);
         transpose.set_nbeams(nbeams);
 
-        PsrDadaToSigprocHeader<decltype(transpose)> ptos(transpose);
+
+
         MultiLog log1("instream");
-        DadaInputStream<decltype(ptos)> input(input_key,log1,ptos);
+        DadaInputStream<decltype(transpose)> input(input_key,log1,transpose);
 
         input.start();
 

@@ -92,6 +92,36 @@ bool BeamBandpassGenerator<Handler>::operator()(RawBytes& block)
             }
         }
     }
+            
+    /*for (unsigned int heap_group_idx = 0; heap_group_idx < nheap_groups; ++heap_group_idx)
+    {
+        std::size_t input_idx_0 = heap_group_idx * bftf;
+        for (unsigned int beam_idx = 0; beam_idx < _nbeams; ++beam_idx)
+        {
+            std::size_t input_idx_1 = input_idx_0 + beam_idx * ftf;
+            std::size_t output_idx_0 = beam_idx * total_nchans;
+            for (unsigned int subband_idx = 0; subband_idx < _nsubbands; ++subband_idx)
+            {
+                std::size_t input_idx_2 = input_idx_1 + subband_idx * tf;
+                std::size_t output_idx_1 = output_idx_0 + subband_idx * _nchans_per_subband;
+                for (unsigned int chan_idx = 0; chan_idx < _nchans_per_subband; ++chan_idx)
+                {
+                    std::size_t input_idx_3 = input_idx_2 + chan_idx;
+                    std::size_t output_idx_2 = output_idx_1 + chan_idx;
+                    auto& sums = _calculation_buffer[output_idx_2];
+                    for (unsigned int samp_idx = 0; samp_idx < nsamps_per_heap; ++samp_idx)
+                    {
+                        std::size_t input_idx_4 = input_idx_3 + samp_idx * f;
+                        float value = static_cast<float>(block.ptr()[input_idx_4]);
+                        sums.sum += value;
+                        sums.sum_of_squares += value * value;
+                    }
+
+                }
+            }
+        }
+    }*/
+
     ++_naccumulated;
     _count += total_nsamps;
     BOOST_LOG_TRIVIAL(debug) << "Nblocks accumulated = " << _naccumulated;

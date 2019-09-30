@@ -13,7 +13,7 @@ class PsrDadaToSigprocHeader
 {
 
 public:
-    PsrDadaToSigprocHeader(HandlerType& handler);
+    PsrDadaToSigprocHeader(std::uint32_t beamnum, HandlerType& handler);
     ~PsrDadaToSigprocHeader();
 
     /**
@@ -48,8 +48,10 @@ public:
     SigprocHeader& header();
 
 private:
-    HandlerType _handler;
+    HandlerType& _handler;
+    std::uint32_t _beamnum;
     SigprocHeader _sh;
+    char* _optr;
 
 };
 
