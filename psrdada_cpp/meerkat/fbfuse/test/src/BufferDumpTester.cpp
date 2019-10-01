@@ -47,25 +47,25 @@ void send_json(std::size_t starttime, std::size_t endtime, float dm, float ref_f
 { 
     try
     {
-	 boost::asio::io_service io_service;
-         boost::asio::local::stream_protocol::socket socket(io_service);
-	 boost::asio::local::stream_protocol::endpoint ep("/tmp/buffer_dump_test.sock");
-	 socket.connect(ep);
-	 //Send the message
-	 std::stringstream event_string; 
-	 get_json(event_string, starttime, endtime, dm, ref_freq, trig_id);
-	 BOOST_LOG_TRIVIAL(debug) << "Sending Trigger...";
-         send(socket, event_string.str());
-	 socket.close();
-	 io_service.stop();
+        boost::asio::io_service io_service;
+        boost::asio::local::stream_protocol::socket socket(io_service);
+        boost::asio::local::stream_protocol::endpoint ep("/tmp/buffer_dump_test.sock");
+        socket.connect(ep);
+        //Send the message
+        std::stringstream event_string; 
+        get_json(event_string, starttime, endtime, dm, ref_freq, trig_id);
+        BOOST_LOG_TRIVIAL(debug) << "Sending Trigger...";
+        send(socket, event_string.str());
+        socket.close();
+        io_service.stop();
     }
     catch(std::exception& e)
     {
-	BOOST_LOG_TRIVIAL(error) << "Error in send_json";
+        BOOST_LOG_TRIVIAL(error) << "Error in send_json";
         BOOST_LOG_TRIVIAL(error) << e.what();
-	exit(1);
+        exit(1);
     }
-	
+
     return;
 }
 
@@ -150,7 +150,7 @@ TEST_F(BufferDumpTester, read_event)
     std::size_t nblocks = 64;
     std::size_t block_size = nchans * nantennas * ngroups * 256 * sizeof(unsigned);
 
-    float cfreq = 1284e6;
+    float cfreq = 862.68e6;
     float bw = 856e6 / (total_nchans / nchans);
     float max_fill_level = 0.8;
 
@@ -186,7 +186,12 @@ TEST_F(BufferDumpTester, read_event)
    
     std::this_thread::sleep_for(std::chrono::seconds(10));
     // Generate a trigger //
-    send_json(5, 7, 10.0, 1712e6, 1);
+    send_json(1, 1.5, 100.0, 869.375e6, 1);
+
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+
+    // Generate second trigger to make sure that it works the second time
+    send_json(2.0, 2.5, 100.0, 869.375e6, 1);
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
 
