@@ -16,7 +16,7 @@ set(psrdada_cpp_src
     src/multilog.cpp
     src/raw_bytes.cpp
     src/simple_file_writer.cpp
-    src/simple_shm_writer.cpp	
+    src/simple_shm_writer.cpp
     src/test_file_writer.cpp
     src/sigprocheader.cpp
     src/psrdadaheader.cpp
@@ -79,4 +79,8 @@ install (TARGETS ${CMAKE_PROJECT_NAME}
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib)
 install(FILES ${psrdada_cpp_inc} DESTINATION include/psrdada_cpp)
+
 add_subdirectory(meerkat)
+
+add_subdirectory(test)
+
