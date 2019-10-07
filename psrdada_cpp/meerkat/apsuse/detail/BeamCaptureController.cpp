@@ -47,12 +47,6 @@ void BeamCaptureController<FileWritersType>::setup()
     _acceptor.reset(new boost::asio::local::stream_protocol::acceptor(_io_service, ep));
     _acceptor->non_blocking(true);
     _socket.reset(new boost::asio::local::stream_protocol::socket(_io_service));
-    _acceptor->accept(*_socket, ep, ec);
-    if (ec && ec != boost::asio::error::try_again)
-    {
-        BOOST_LOG_TRIVIAL(error) << "Error on accept: " << ec.message();
-        throw std::runtime_error(ec.message());
-    }
 }
 
 template <typename FileWritersType>
@@ -206,6 +200,7 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
                                     << metadata.dec;
         }
     }
+    _socket->close();
 }
 
 template <typename FileWritersType>
