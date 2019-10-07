@@ -1,4 +1,5 @@
 #include "psrdada_cpp/meerkat/apsuse/BeamCaptureController.hpp"
+#include "psrdada_cpp/sigprocheader.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/foreach.hpp>
@@ -10,23 +11,26 @@
 
 using namespace boost::property_tree;
 
+namespace psrdada_cpp {
+namespace meerkat {
+namespace apsuse {
 
 template <typename FileWritersType>
-BeamCaptureController::BeamCaptureController(
+BeamCaptureController<FileWritersType>::BeamCaptureController(
     std::string const& socket_name,
-    HeaderConvertersType& header_converters,
     FileWritersType& file_writers)
-    , _socket_name(socket_name)
+    : _socket_name(socket_name)
     , _file_writers(file_writers)
     , _socket(nullptr)
     , _nbeams(file_writers.size())
+    , _stop(false)
 {
     std::memset(_msg_buffer, 0, sizeof(_msg_buffer));
 }
 
 
 template <typename FileWritersType>
-BeamCaptureController::~BeamCaptureController()
+BeamCaptureController<FileWritersType>::~BeamCaptureController()
 {
     if (_socket)
     {
@@ -35,7 +39,7 @@ BeamCaptureController::~BeamCaptureController()
 }
 
 template <typename FileWritersType>
-void BeamCaptureController::setup()
+void BeamCaptureController<FileWritersType>::setup()
 {
     boost::system::error_code ec;
     ::unlink(_socket_name.c_str()); // Remove previous binding.
@@ -52,31 +56,32 @@ void BeamCaptureController::setup()
 }
 
 template <typename FileWritersType>
-void BeamCaptureController::start()
+void BeamCaptureController<FileWritersType>::start()
 {
     BOOST_LOG_TRIVIAL(info) << "Starting BeamCaptureController "
                             << "instance (listenting on socket '"
                             << _socket_name << "')";
+    _stop = false;
     setup();
     // This needs to run in a thread...
-    _listner_thread.reset(new std::thread(this->listen))
+    _listner_thread = std::thread(&BeamCaptureController<FileWritersType>::listen, this);
 }
 
 template <typename FileWritersType>
-void BeamCaptureController::stop()
+void BeamCaptureController<FileWritersType>::stop()
 {
     BOOST_LOG_TRIVIAL(info) << "Stopping BeamCaptureController "
                             << "instance (listenting on socket '"
                             << _socket_name << "')";
     _stop = true;
-    if (_listner_thread->joinable())
+    if (_listner_thread.joinable())
     {
-        _listner_thread->join();
+        _listner_thread.join();
     }
 }
 
 template <typename FileWritersType>
-void BeamCaptureController::listen()
+void BeamCaptureController<FileWritersType>::listen()
 {
     while (!_stop)
     {
@@ -107,7 +112,7 @@ void BeamCaptureController::listen()
                 // the start of a new write.
                 disable_writers();
 
-                if (message.beam_metadata.size() > _nbeams)
+                if (message.beams.size() > _nbeams)
                 {
                     BOOST_LOG_TRIVIAL(error) << "Too many beams specified in control message. "
                                              << "Expected <= " << _nbeams << " beams.";
@@ -115,7 +120,7 @@ void BeamCaptureController::listen()
                 }
 
                 SigprocHeader parser;
-                for (auto const& beam: message.beam_metadata)
+                for (auto const& beam: message.beams)
                 {
                     if (beam.idx >= _nbeams)
                     {
@@ -123,11 +128,11 @@ void BeamCaptureController::listen()
                                                  << " >= number of beams, ignoring entry";
                         continue;
                     }
-                    auto& header = file_writers[beam.idx]->header();
+                    auto& header = _file_writers[beam.idx]->header();
                     header.ra = parser.hhmmss_to_double(beam.ra);
                     header.dec = parser.hhmmss_to_double(beam.dec);
-                    file_writers[beam.idx]->tag(beam.name);
-                    file_writers[beam.idx]->enable();
+                    _file_writers[beam.idx]->tag(beam.name);
+                    _file_writers[beam.idx]->enable();
                 }
             }
         }
@@ -136,7 +141,7 @@ void BeamCaptureController::listen()
 }
 
 template <typename FileWritersType>
-void BeamCaptureController::get_message(Message& message)
+void BeamCaptureController<FileWritersType>::get_message(Message& message)
 {
 
     /*
@@ -184,7 +189,7 @@ void BeamCaptureController::get_message(Message& message)
     message.command = pt.get<std::string>("command");
     BOOST_LOG_TRIVIAL(info) << "Recieved command: '" << message.command << "'";
 
-    if (message.command)
+    if (message.command == "start")
     {
         BOOST_LOG_TRIVIAL(info) << "Index     Name    RA    Dec";
         BOOST_FOREACH(ptree::value_type& beam, pt.get_child("beam_parameters"))
@@ -204,7 +209,7 @@ void BeamCaptureController::get_message(Message& message)
 }
 
 template <typename FileWritersType>
-void BeamCaptureController::has_message() const
+bool BeamCaptureController<FileWritersType>::has_message() const
 {
     boost::system::error_code ec;
     boost::asio::local::stream_protocol::endpoint ep(_socket_name);
@@ -223,7 +228,7 @@ void BeamCaptureController::has_message() const
 }
 
 template <typename FileWritersType>
-void BeamCaptureController::disable_writers()
+void BeamCaptureController<FileWritersType>::disable_writers()
 {
     for (auto& writer_ptr: _file_writers)
     {
@@ -232,7 +237,7 @@ void BeamCaptureController::disable_writers()
 }
 
 template <typename FileWritersType>
-void BeamCaptureController::enable_writers()
+void BeamCaptureController<FileWritersType>::enable_writers()
 {
     for (auto& writer_ptr: _file_writers)
     {
@@ -240,3 +245,6 @@ void BeamCaptureController::enable_writers()
     }
 }
 
+} // apsuse
+} // meerkat
+} // psrdada_cpp

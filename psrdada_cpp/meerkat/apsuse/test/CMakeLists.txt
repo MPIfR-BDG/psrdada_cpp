@@ -8,5 +8,5 @@ set(
     src/gtest_apsuse.cpp
 )
 add_executable(gtest_apsuse ${gtest_apsuse_src} )
-target_link_libraries(gtest_apsuse ${PSRDADA_CPP_MEERKAT_APSUSE_LIBRARIES})
+target_link_libraries(gtest_apsuse ${PSRDADA_CPP_LIBRARIES})
 add_test(gtest_apsuse gtest_apsuse --test_data "${CMAKE_CURRENT_LIST_DIR}/data")

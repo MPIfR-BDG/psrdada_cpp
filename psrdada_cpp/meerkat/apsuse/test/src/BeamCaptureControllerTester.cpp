@@ -1,5 +1,6 @@
 #include "psrdada_cpp/meerkat/apsuse/test/BeamCaptureControllerTester.hpp"
 #include "psrdada_cpp/meerkat/apsuse/BeamCaptureController.hpp"
+#include "psrdada_cpp/sigproc_file_writer.hpp"
 #include "psrdada_cpp/common.hpp"
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -33,12 +34,11 @@ void build_start_message(Message& message, std::size_t nbeams)
     message.command = "start";
     for (int beam_idx = 0; beam_idx < nbeams; ++beam_idx)
     {
-        BeamMetadata metadata;
         message.beams.emplace_back();
         auto& metadata = message.beams.back();
         metadata.idx = beam_idx;
         std::stringstream name;
-        name << "cfbf" << std::setw(5) << std::setfill('0') << beam_idx << std::setfill('');
+        name << "cfbf" << std::setw(5) << std::setfill('0') << beam_idx << std::setfill(' ');
         metadata.name = name.str();
         std::stringstream ra;
         ra << beam_idx << ":00:00.00";
@@ -57,22 +57,22 @@ void build_stop_message(Message& message)
 void build_json(std::stringstream& ss, Message const& message)
 {
     boost::property_tree::ptree root;
-    root.put(message.command);
+    root.put("command", message.command);
     if (message.command == "start")
     {
         boost::property_tree::ptree all_beam_parameters;
         for (auto const& beam: message.beams)
         {
             boost::property_tree::ptree beam_parameters;
-            beam_parameters.put<std::size_t>(beam.idx);
-            beam_parameters.put<std::string>(beam.name);
-            beam_parameters.put<std::string>(beam.ra);
-            beam_parameters.put<std::string>(beam.dec);
+            beam_parameters.put<std::size_t>("idx", beam.idx);
+            beam_parameters.put<std::string>("name", beam.name);
+            beam_parameters.put<std::string>("ra", beam.ra);
+            beam_parameters.put<std::string>("dec", beam.dec);
             all_beam_parameters.push_back(std::make_pair("", beam_parameters));
         }
         root.add_child("beam_parameters", all_beam_parameters);
     }
-    boost::property_tree::json_parser::write_json(ss, pt);
+    boost::property_tree::json_parser::write_json(ss, root);
     return;
 }
 
@@ -189,7 +189,10 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
     // than to update internal counters in the writer.
     for (int ii=0; ii<nblocks; ++ii)
     {
-        writer(data_block);
+	for (auto& writer_ptr: writers)
+	{ 
+            writer_ptr->operator()(data_block);
+        }
     }
 
     // Test that nothing has happened...
@@ -205,11 +208,14 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
 
     for (int ii=0; ii<nblocks; ++ii)
     {
-        writer(data_block);
+        for (auto& writer_ptr: writers)
+        {
+            writer_ptr->operator()(data_block);
+        }
     }
 
     Message stop_message;
-    build_stop_message(stop_message, nwriters);
+    build_stop_message(stop_message);
     send_message(stop_message, socket_name);
 
     // Again wait for the message to take effect
@@ -218,7 +224,10 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
     // These writes should not produce any output
     for (int ii=0; ii<nblocks; ++ii)
     {
-        writer(data_block);
+        for (auto& writer_ptr: writers)
+        {
+            writer_ptr->operator()(data_block);
+        }
     }
 
     // What is the actual test here?
