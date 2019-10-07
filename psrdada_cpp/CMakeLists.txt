@@ -13,11 +13,13 @@ set(psrdada_cpp_src
     src/dada_output_stream.cpp
     src/dada_read_client.cpp
     src/dada_write_client.cpp
+    src/file_output_stream.cpp
     src/multilog.cpp
     src/raw_bytes.cpp
     src/simple_file_writer.cpp
     src/simple_shm_writer.cpp
     src/test_file_writer.cpp
+    src/sigproc_file_writer.cpp
     src/sigprocheader.cpp
     src/psrdadaheader.cpp
     src/file_to_dada_cli.cpp
@@ -31,6 +33,7 @@ set(psrdada_cpp_inc
   dada_read_client.hpp
   dada_junk_source.hpp
   dada_null_sink.hpp
+  file_output_stream.hpp
   multilog.hpp
   common.hpp
   dada_write_client.hpp
@@ -39,6 +42,7 @@ set(psrdada_cpp_inc
   simple_file_writer.hpp
   simple_shm_writer.hpp
   test_file_writer.hpp
+  sigproc_file_writer.hpp
   sigprocheader.hpp
   psrdadaheader.hpp
   psrdada_to_sigproc_header.hpp

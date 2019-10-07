@@ -22,8 +22,8 @@ private:
      */
     enum State
     {
-        ENABLED;
-        DISABLED;
+        ENABLED,
+        DISABLED
     };
 
 public:
@@ -82,7 +82,7 @@ public:
      *
      * @return     The size in bytes.
      */
-    std::size_t const& max_filesize() const;
+    std::size_t max_filesize() const;
 
     /**
      * @brief      Init function for use in handler chains
@@ -135,14 +135,18 @@ public:
     FilHead& header();
 
 private:
+    void new_stream();
+
+private:
     std::size_t _max_filesize;
-    WriterState _state;
+    State _state;
     std::string _tag;
     std::string _outdir;
     std::string _extension;
     std::size_t _total_bytes;
     bool _new_stream_required;
-    std::unqiue_ptr<FileStream> _stream;
+    FilHead _header;
+    std::unique_ptr<FileStream> _stream;
 };
 }//psrdada_cpp
 

@@ -62,7 +62,7 @@ bool SigprocFileWriter::operator()(RawBytes& block)
 {
     if (_state == ENABLED)
     {
-        if ((_outfile == nullptr) || _new_stream_required)
+        if ((_stream == nullptr) || _new_stream_required)
         {
             new_stream();
         }
@@ -70,12 +70,12 @@ bool SigprocFileWriter::operator()(RawBytes& block)
     }
     else if (_state == DISABLED)
     {
-        if (_outfile != nullptr)
+        if (_stream != nullptr)
         {
-            _outfile.reset(nullptr)
+            _stream.reset(nullptr);
         }
     }
-    total_bytes += block.used_bytes();
+    _total_bytes += block.used_bytes();
 }
 
 void SigprocFileWriter::new_stream()
@@ -93,7 +93,7 @@ void SigprocFileWriter::new_stream()
     std::time_t unix_time = static_cast<std::time_t>((_header.tstart - 40587.0) * 86400.0);
     struct std::tm * ptm = std::gmtime(&unix_time);
     base_filename << std::put_time(ptm, "%Y-%m-%d-%H:%M:%S");
-    if (_tag)
+    if (_tag != "")
     {
         base_filename << "_" << _tag;
     }
@@ -123,7 +123,7 @@ void SigprocFileWriter::new_stream()
                     temp_header, std::default_delete<char[]>());
                 return header_ptr;
             }
-            ))
+            ));
     _new_stream_required = false;
 }
 

@@ -1,9 +1,9 @@
 #ifndef PSRDADA_CPP_FILE_OUTPUT_STREAM_HPP
 #define PSRDADA_CPP_FILE_OUTPUT_STREAM_HPP
 
-#include "psrdada_cpp/common.h"
+#include "psrdada_cpp/common.hpp"
 #include <fstream>
-#include <function>
+#include <functional>
 
 namespace psrdada_cpp {
 
@@ -96,4 +96,4 @@ private:
 
 }
 
-#endif PSRDADA_CPP_FILE_OUTPUT_STREAM_HPP
+#endif //PSRDADA_CPP_FILE_OUTPUT_STREAM_HPP

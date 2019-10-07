@@ -1,5 +1,5 @@
 #include "psrdada_cpp/file_output_stream.hpp"
-#include "psrdada_cpp/common.h"
+#include "psrdada_cpp/common.hpp"
 
 namespace psrdada_cpp {
 

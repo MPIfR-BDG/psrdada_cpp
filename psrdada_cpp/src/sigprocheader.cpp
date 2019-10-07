@@ -9,7 +9,6 @@ namespace psrdada_cpp
 {
 
     SigprocHeader::SigprocHeader()
-    :
     {
     }
 

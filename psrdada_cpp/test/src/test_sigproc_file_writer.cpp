@@ -24,7 +24,6 @@ void TestSigprocFileWriter::TearDown()
 
 void populate_header(FilHead& header)
 {
-    FilHead header;
     header.rawfile = "test.fil";
     header.source = "J0000+0000";
     header.az = 0.0;
@@ -73,7 +72,7 @@ TEST_F(TestSigprocFileWriter, test_filesize)
     populate_header(header);
 
     SigprocFileWriter writer;
-    writer.enable()
+    writer.enable();
     writer.max_filesize(desired_size);
     writer.tag("test");
     writer.directory("/tmp");
@@ -85,16 +84,16 @@ TEST_F(TestSigprocFileWriter, test_filesize)
     RawBytes data_block(data_ptr, block_size, block_size);
 
     SigprocHeader parser;
-    std::size_t header_size = parser.write_header(header_block, header);
+    std::size_t header_size = parser.write_header(header_ptr, header);
 
     writer.init(header_block);
     for (int ii=0; ii<nblocks; ++ii)
     {
-        writer(block);
+        writer(data_block);
     }
 
     writer.disable();
-    writer(block);
+    writer(data_block);
 
     ASSERT_TRUE(is_file_valid("/tmp/2019-10-02-00:00:00_test_0.fil", desired_size + header_size));
     ASSERT_TRUE(is_file_valid("/tmp/2019-10-02-00:00:00_test_4096.fil", desired_size + header_size));
