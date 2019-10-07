@@ -10,10 +10,9 @@ namespace psrdada_cpp
 
     SigprocHeader::SigprocHeader()
     :
-    _header_size(0)
     {
     }
-    
+
     SigprocHeader::~SigprocHeader()
     {
     }
@@ -27,22 +26,22 @@ namespace psrdada_cpp
 	    ptr += len;
     }
 
-     void SigprocHeader::header_write(char*& ptr, std::string const& str, std::string const& name)
+    void SigprocHeader::header_write(char*& ptr, std::string const& str, std::string const& name)
     {
 	    header_write(ptr,str);
 	    header_write(ptr,name);
     }
 
-    void SigprocHeader::write_header(RawBytes& block, PsrDadaHeader ph)
+    std::size_t SigprocHeader::write_header(RawBytes& block, PsrDadaHeader ph)
     {
-	auto ptr = block.ptr();
+	    auto ptr = block.ptr();
         header_write(ptr,"HEADER_START");
         header_write<std::uint32_t>(ptr,"telescope_id",0);
         header_write<std::uint32_t>(ptr,"machine_id",11);
         header_write<std::uint32_t>(ptr,"data_type",1);
         header_write<std::uint32_t>(ptr,"barycentric",0);
         header_write(ptr,"source_name",ph.source_name());
-        // RA DEC 
+        // RA DEC
         auto ra_val = ph.ra();
         auto dec_val = ph.dec();
     	std::vector<std::string> ra_s;
@@ -62,12 +61,12 @@ namespace psrdada_cpp
         header_write<double>(ptr,"tstart",ph.tstart());
         header_write<double>(ptr,"tsamp",ph.tsamp());
         header_write(ptr,"HEADER_END");
-        _header_size = std::distance(block.ptr(),ptr);
+        return std::distance(block.ptr(),ptr);
     }
 
-    void SigprocHeader::write_header(char*& ptr, FilHead& ph)
+    std::size_t SigprocHeader::write_header(char*& ptr, FilHead& ph)
     {
-	char* new_ptr = ptr;
+	    char* new_ptr = ptr;
         header_write(new_ptr,"HEADER_START");
         header_write<std::uint32_t>(new_ptr,"telescope_id",ph.telescopeid);
         header_write<std::uint32_t>(new_ptr,"machine_id",ph.machineid);
@@ -85,15 +84,11 @@ namespace psrdada_cpp
         header_write<double>(new_ptr,"tstart",ph.tstart);
         header_write<double>(new_ptr,"tsamp",ph.tsamp);
         header_write(new_ptr,"HEADER_END");
-	_header_size = (std::size_t) (new_ptr - ptr);
+	    return (std::size_t) (new_ptr - ptr);
     }
 
-    std::size_t SigprocHeader::header_size() const
+    void SigprocHeader::read_header(std::ifstream &infile, FilHead &header)
     {
-	    return _header_size;
-    }
-
-    void SigprocHeader::read_header(std::ifstream &infile, FilHead &header) {
 
         std::string read_param;
 	    char field[60];
@@ -140,7 +135,8 @@ namespace psrdada_cpp
         }
     }
 
-    void SigprocHeader::read_header(std::stringstream &infile, FilHead &header) {
+    void SigprocHeader::read_header(std::stringstream &infile, FilHead &header)
+    {
 
         std::string read_param;
 	    char field[60];
@@ -185,6 +181,13 @@ namespace psrdada_cpp
             else if (read_param == "tsamp")		infile.read((char *)&header.tsamp, sizeof(double));
             else if (read_param == "nifs")		infile.read((char *)&header.nifs, sizeof(int));
         }
+    }
+
+    void SigprocHeader::read_header(RawBytes& block, FilHead& header)
+    {
+        std::stringstream instream;
+        instream.write(block.ptr(), block.used_bytes());
+        read_header(instream, header);
     }
 
 } // namespace psrdada_cpp

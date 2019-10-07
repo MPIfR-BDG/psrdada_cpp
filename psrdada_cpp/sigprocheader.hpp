@@ -34,7 +34,7 @@ namespace psrdada_cpp
         double za;                      // zenith angle in deg
 
         uint32_t datatype;                  // data type ID
-	uint32_t barycentric;                // barucentric flag
+        uint32_t barycentric;                // barucentric flag
         uint32_t ibeam;                      // beam number
         uint32_t machineid;
         uint32_t nbeams;
@@ -49,14 +49,13 @@ class SigprocHeader
 public:
     SigprocHeader();
     ~SigprocHeader();
-    void write_header(RawBytes& block,PsrDadaHeader ph);
-    void write_header(char*& ptr,FilHead& header);
+    std::size_t write_header(RawBytes& block, PsrDadaHeader ph);
+    std::size_t write_header(char*& ptr, FilHead& header); //should be const on FilHead
     void read_header(std::ifstream &infile, FilHead &header);
     void read_header(std::stringstream &infile, FilHead &header);
-    std::size_t header_size() const;
+    void read_header(RawBytes& block, FilHead &header);
 
 private:
-    std::size_t _header_size;
     /*
      * @brief write string to the header
      */
