@@ -15,6 +15,8 @@ public:
     NullableHandler(NullableHandler const&) = delete;
     ~NullableHandler();
     bool is_nulled() const;
+    void unnull();
+    void null();
 
 private:
     NullSink _null;

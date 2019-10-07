@@ -16,3 +16,22 @@ bool NullableHandler<Handler>::is_nulled() const
 {
     return (this->handler_idx() == 1);
 }
+
+
+template <typename Handler>
+void NullableHandler<Handler>::unnull()
+{
+    if (is_nulled())
+    {
+        this->toggle();
+    }
+}
+
+template <typename Handler>
+void NullableHandler<Handler>::null()
+{
+    if (!is_nulled())
+    {
+        this->toggle();
+    }
+}
