@@ -176,9 +176,10 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
         throw std::runtime_error(ec.message());
     }
     std::string message_string(_msg_buffer);
+    std::memset(_msg_buffer, 0, sizeof(_msg_buffer));
     std::stringstream message_stream;
     message_stream << message_string;
-    BOOST_LOG_TRIVIAL(info) << "Getting Event information...";
+    BOOST_LOG_TRIVIAL(info) << "Received string: " << message_stream.str();
     boost::property_tree::json_parser::read_json(message_stream, pt);
     message.command = pt.get<std::string>("command");
     BOOST_LOG_TRIVIAL(info) << "Recieved command: '" << message.command << "'";

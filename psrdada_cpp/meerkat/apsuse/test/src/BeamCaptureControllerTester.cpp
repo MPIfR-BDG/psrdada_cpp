@@ -88,7 +88,8 @@ void send_message(Message const& message, std::string const& socket_name)
         std::stringstream message_string;
         build_json(message_string, message);
         BOOST_LOG_TRIVIAL(debug) << "Sending message: " << message_string.str();
-        send(socket, message_string.str());
+        message_string << "\r\n"; 
+       send(socket, message_string.str());
         socket.close();
         io_service.stop();
     }
