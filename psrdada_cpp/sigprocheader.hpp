@@ -54,6 +54,7 @@ public:
     void read_header(std::ifstream &infile, FilHead &header);
     void read_header(std::stringstream &infile, FilHead &header);
     void read_header(RawBytes& block, FilHead &header);
+    double hhmmss_to_double(std::string const& val);
 
 private:
     /*

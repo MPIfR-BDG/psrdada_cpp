@@ -189,4 +189,25 @@ namespace psrdada_cpp
         read_header(instream, header);
     }
 
+    double SigprocHeader::hhmmss_to_double(std::string const& hhmmss_string)
+    {
+        std::stringstream stream(hhmmss_string);
+        std::string hh, mm, ss;
+        std::getline(stream, hh, ':');
+        std::getline(stream, mm, ':');
+        std::getline(stream, ss, ':');
+        double hh_d = std::stod(hh);
+        double mm_d = std::stod(mm);
+        double ss_d = std::stod(ss);
+        double val = 10000 * std::abs(hh_d) + 100 * mm_d + ss_d;
+        if (hh_d < 0)
+        {
+            return -1 * val;
+        }
+        else
+        {
+            return val;
+        }
+    }
+
 } // namespace psrdada_cpp
