@@ -56,8 +56,8 @@ namespace psrdada_cpp {
         {
             _outfile.write(block.ptr(), block.used_bytes());
             //This is specifying the number of bytes read.
-            block.used_bytes(block.total_bytes());
             _wsize += block.used_bytes();
+            block.used_bytes(block.total_bytes());
         }
         else
         {
