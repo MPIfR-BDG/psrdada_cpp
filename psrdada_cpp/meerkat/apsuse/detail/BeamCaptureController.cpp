@@ -34,6 +34,7 @@ BeamCaptureController<FileWritersType>::~BeamCaptureController()
 {
     if (_socket)
     {
+        BOOST_LOG_TRIVIAL(debug) << "Closing message capture socket";
         (*_socket).close();
     }
 }
@@ -77,9 +78,10 @@ void BeamCaptureController<FileWritersType>::stop()
 template <typename FileWritersType>
 void BeamCaptureController<FileWritersType>::listen()
 {
+    BOOST_LOG_TRIVIAL(debug) << "Listening for control messages...";
     while (!_stop)
     {
-        BOOST_LOG_TRIVIAL(info) << "Looking for messages...";
+        //BOOST_LOG_TRIVIAL(debug) << "Looking for messages...";
         if (has_message())
         {
             BOOST_LOG_TRIVIAL(info) << "Received control message";
@@ -132,6 +134,7 @@ void BeamCaptureController<FileWritersType>::listen()
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+    BOOST_LOG_TRIVIAL(debug) << "Control message listening loop complete.";
 }
 
 template <typename FileWritersType>
