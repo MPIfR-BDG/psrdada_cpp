@@ -191,23 +191,33 @@ namespace psrdada_cpp
 
     double SigprocHeader::hhmmss_to_double(std::string const& hhmmss_string)
     {
-        std::stringstream stream(hhmmss_string);
-        std::string hh, mm, ss;
-        std::getline(stream, hh, ':');
-        std::getline(stream, mm, ':');
-        std::getline(stream, ss, ':');
-        double hh_d = std::stod(hh);
-        double mm_d = std::stod(mm);
-        double ss_d = std::stod(ss);
-        double val = 10000 * std::abs(hh_d) + 100 * mm_d + ss_d;
-        if (hh_d < 0)
+        try
         {
-            return -1 * val;
+            std::stringstream stream(hhmmss_string);
+            std::string hh, mm, ss;
+            std::getline(stream, hh, ':');
+            std::getline(stream, mm, ':');
+            std::getline(stream, ss, ':');
+            double hh_d = std::stod(hh);
+            double mm_d = std::stod(mm);
+            double ss_d = std::stod(ss);
+            double val = 10000 * std::abs(hh_d) + 100 * mm_d + ss_d;
+            if (hh_d < 0)
+            {
+                return -1 * val;
+            }
+            else
+            {
+                return val;
+            }
         }
-        else
+        catch (std::exception& e)
         {
-            return val;
+            BOOST_LOG_TRIVIAL(error) << "Error while converting "
+                                     << hhmmss_string << " to sigproc format: "
+                                     << e.what();
         }
+
     }
 
 } // namespace psrdada_cpp
