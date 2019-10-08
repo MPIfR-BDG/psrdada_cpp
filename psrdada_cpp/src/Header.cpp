@@ -55,6 +55,15 @@ std::size_t Header::get<std::size_t>(char const* key) const
 }
 
 template <>
+std::string Header::get<std::string>(char const* key) const
+{
+    fetch_header_string(key);
+    std::string value = std::string(_buffer);
+    BOOST_LOG_TRIVIAL(info) << key << " = " << value;
+    return value;
+}
+
+template <>
 void Header::set<long double>(char const* key, long double value)
 {
     ascii_header_set(this->_header.ptr(), key, "%Lf", value);
@@ -64,6 +73,12 @@ template <>
 void Header::set<std::size_t>(char const* key, std::size_t value)
 {
     ascii_header_set(this->_header.ptr(), key, "%" PRId64, value);
+}
+
+template <>
+void Header::set<std::size_t>(char const* key, std::string value)
+{
+    ascii_header_set(this->_header.ptr(), key, "%s", value.c_str());
 }
 
 } //namespace psrdada_cpp
