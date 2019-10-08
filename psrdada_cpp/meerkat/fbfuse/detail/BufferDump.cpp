@@ -1,5 +1,5 @@
 #include "psrdada_cpp/meerkat/fbfuse/BufferDump.hpp"
-#include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
+#include "psrdada_cpp/Header.hpp"
 #include "psrdada_cpp/raw_bytes.hpp"
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>

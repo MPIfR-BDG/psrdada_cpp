@@ -1,4 +1,4 @@
-#include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
+#include "psrdada_cpp/Header.hpp"
 #include "ascii_header.h"
 #include "inttypes.h"
 #include <cstring>
@@ -23,7 +23,7 @@ void Header::purge()
     std::memset(static_cast<void*>(_header.ptr()), 0, _header.total_bytes());
 }
 
-void Header::fetch_header_string(char const* key)
+void Header::fetch_header_string(char const* key) const
 {
 
     if (ascii_header_get(_header.ptr(), key, "%s", _buffer) == -1)
@@ -39,7 +39,7 @@ void Header::fetch_header_string(char const* key)
 }
 
 template <>
-long double Header::get<long double>(char const* key)
+long double Header::get<long double>(char const* key) const
 {
     fetch_header_string(key);
     long double value = std::strtold(_buffer, NULL);
@@ -48,7 +48,7 @@ long double Header::get<long double>(char const* key)
 }
 
 template <>
-std::size_t Header::get<std::size_t>(char const* key)
+std::size_t Header::get<std::size_t>(char const* key) const
 {
   fetch_header_string(key);
     std::size_t value = std::strtoul(_buffer, NULL, 0);

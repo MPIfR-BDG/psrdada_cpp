@@ -14,6 +14,7 @@ set(psrdada_cpp_src
     src/dada_read_client.cpp
     src/dada_write_client.cpp
     src/file_output_stream.cpp
+    src/Header.cpp
     src/multilog.cpp
     src/raw_bytes.cpp
     src/simple_file_writer.cpp
@@ -34,6 +35,7 @@ set(psrdada_cpp_inc
   dada_junk_source.hpp
   dada_null_sink.hpp
   file_output_stream.hpp
+  Header.hpp
   multilog.hpp
   common.hpp
   dada_write_client.hpp

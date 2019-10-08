@@ -2,7 +2,7 @@
 #include "psrdada_cpp/meerkat/fbfuse/fbfuse_constants.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
 #include "psrdada_cpp/meerkat/fbfuse/DelayEngineSimulator.cuh"
-#include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
+#include "psrdada_cpp/Header.hpp"
 #include "psrdada_cpp/dada_null_sink.hpp"
 #include "psrdada_cpp/dada_read_client.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"

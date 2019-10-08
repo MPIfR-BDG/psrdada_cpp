@@ -38,7 +38,7 @@ public:
      * @return     The value corresponding to the given key
      */
     template <typename T>
-    T get(char const* key);
+    T get(char const* key) const;
 
     /**
      * @brief      Set a value in the header
@@ -59,7 +59,7 @@ public:
     void purge();
 
 private:
-    void fetch_header_string(char const* key);
+    void fetch_header_string(char const* key) const;
 
 private:
     RawBytes& _header;

@@ -1,5 +1,5 @@
 #include "psrdada_cpp/meerkat/fbfuse/Pipeline.cuh"
-#include "psrdada_cpp/meerkat/fbfuse/Header.hpp"
+#include "psrdada_cpp/Header.hpp"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include "ascii_header.h"
 #include "cuda.h"
