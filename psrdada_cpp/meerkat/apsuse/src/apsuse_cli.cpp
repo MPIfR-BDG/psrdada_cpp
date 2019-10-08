@@ -5,7 +5,7 @@
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/sigproc_file_writer.hpp"
-#include "psrdada_cpp/psrdada_to_sigproc_header.hpp"
+#include "psrdada_cpp/header_converter.hpp"
 #include "boost/program_options.hpp"
 #include <memory>
 #include <fstream>
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
        /* Setting up the pipeline based on the type of sink*/
         std::uint32_t ii;
         std::vector<std::shared_ptr<SigprocFileWriter>> files;
-        std::vector<std::shared_ptr<PsrDadaToSigprocHeader<SigprocFileWriter>>> ptos;
+        std::vector<std::shared_ptr<HeaderConverter<SigprocFileWriter>>> ptos;
         for (ii=0; ii < nbeams; ++ii)
         {
             files.emplace_back(std::make_shared<SigprocFileWriter>());
@@ -114,10 +114,29 @@ int main(int argc, char** argv)
         }
         for (ii=0; ii < nbeams; ++ii)
         {
-            //The beam number here is completely irrelvant
-            ptos.emplace_back(std::make_shared<PsrDadaToSigprocHeader<SigprocFileWriter>>(0, *files[ii]));
+            ptos.emplace_back(std::make_shared<HeaderConverter<SigprocFileWriter>>(
+                [](RawBytes& input, RawBytes& output)
+                {
+                    Header header(input);
+                    PsrDadaHeader ph;
+                    ph.set_bw(header.get<long double>("BW"));
+                    ph.set_freq(header.get<long double>("FREQ"));
+                    ph.set_nchans(header.get<long double>("NCHAN"));
+                    ph.set_nbits(header.get<long double>("NBIT"));
+                    ph.set_tsamp(header.get<long double>("TSAMP"));
+                    ph.set_source(header.get<long double>("SOURCE"));
+                    ph.set_telescope(header.get<long double>("TELESCOPE"));
+                    ph.set_instrument(header.get<long double>("INSTRUMENT"));
+                    long double sync_mjd = header.get<long double>("SYNC_TIME_MJD");
+                    long double sample_clock = header.get<long double>("SAMPLE_CLOCK");
+                    long double sample_clock_start = header.get<long double>("SAMPLE_CLOCK_START");
+                    ph.set_tstart(sync_mjd + (long double)(sample_clock_start / sample_clock / 86400.0));
+                    SigprocHeader sh;
+                    sh.write_header(output, ph);
+                },
+                *files[ii]));
         }
-        meerkat::tuse::TransposeToDada<PsrDadaToSigprocHeader<SigprocFileWriter>> transpose(nbeams, ptos);
+        meerkat::tuse::TransposeToDada<HeaderConverter<SigprocFileWriter>> transpose(nbeams, ptos);
         transpose.set_nsamples(nsamples);
         transpose.set_nchans(nchans);
         transpose.set_nfreq(nfreq);
