@@ -60,7 +60,7 @@ int main(int argc, char** argv)
         ("nfreq,f", po::value<std::uint32_t>(&nfreq)->required(),
             "The number of frequency blocks in the stream")
         ("size,s", po::value<std::size_t>(&filesize)->required(),
-            "Size of each filterbank file to be written")
+            "Maximum size of each filterbank file to be written (will be rounded up to a whole number of samples)")
         ("socket", po::value<std::string>(&socket_name)
             ->default_value("/tmp/apsuse_capture.sock"),
             "The name of the control socket for enabling/disabling file writing")
@@ -95,15 +95,11 @@ int main(int argc, char** argv)
         }
 
         /*Check the size of the file*/
+        // NOTE: We are assuming 8-bit data here.
 
-        if ( filesize < nsamples * nchans * nfreq * ngroups )
-        {
-            throw std::runtime_error(std::string("Incorrect size of file. File size has to be greater than size of data per beam in one DADA block"));
-        }
-
-       /* Application Code */
-
-        MultiLog log("outstream");
+        filesize = (nchans * nfreq) * static_cast<std::size_t>((filesize / (nchans * nfreq)) + 0.5f);
+        std::cout << "File size rounded up to " << filesize << " bytes ("
+                  << filesize/(nchans * nfreq) << " samples)";
 
        /* Setting up the pipeline based on the type of sink*/
         std::uint32_t ii;
@@ -127,9 +123,9 @@ int main(int argc, char** argv)
         transpose.set_nfreq(nfreq);
         transpose.set_ngroups(ngroups);
         transpose.set_nbeams(nbeams);
-        MultiLog log1("instream");
+        MultiLog log("instream");
         meerkat::apsuse::BeamCaptureController<decltype(files)> controller(socket_name, files);
-        DadaInputStream<decltype(transpose)> input(input_key, log1, transpose);
+        DadaInputStream<decltype(transpose)> input(input_key, log, transpose);
         input.start();
       /* End Application Code */
 
