@@ -178,6 +178,7 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
         BOOST_LOG_TRIVIAL(error) << "Error on read: " << ec.message();
         throw std::runtime_error(ec.message());
     }
+    _socket->close();
     std::string message_string(_msg_buffer);
     std::memset(_msg_buffer, 0, sizeof(_msg_buffer));
     std::stringstream message_stream;
@@ -204,7 +205,6 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
                                     << metadata.dec;
         }
     }
-    _socket->close();
 }
 
 template <typename FileWritersType>

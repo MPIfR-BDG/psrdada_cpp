@@ -1,9 +1,10 @@
+#include "psrdada_cpp/meerkat/apsuse/BeamCaptureController.hpp"
 #include "psrdada_cpp/meerkat/tuse/transpose_to_dada.hpp"
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
-#include "psrdada_cpp/test_file_writer.hpp"
+#include "psrdada_cpp/sigproc_file_writer.hpp"
 #include "psrdada_cpp/psrdada_to_sigproc_header.hpp"
 #include "boost/program_options.hpp"
 #include <memory>
@@ -31,8 +32,9 @@ int main(int argc, char** argv)
         std::uint32_t nbeams;
         std::uint32_t ngroups;
         std::size_t filesize;
-
-        std::string filename;
+        std::string socket_name;
+        std::string directory;
+        std::string log_level;
         /*
          * Define and parse the program options
          */
@@ -58,7 +60,19 @@ int main(int argc, char** argv)
         ("nfreq,f", po::value<std::uint32_t>(&nfreq)->required(),
             "The number of frequency blocks in the stream")
         ("size,s", po::value<std::size_t>(&filesize)->required(),
-            "Size of each filterbank file to be written");
+            "Size of each filterbank file to be written")
+        ("socket", po::value<std::string>(&socket_name)
+            ->default("/tmp/apsuse_capture.sock"),
+            "The name of the control socket for enabling/disabling file writing")
+        ("dir,d", po::value<std::string>(&directory)->required(),
+            "The output directory to which files will be written")
+        ("log_level", po::value<std::string>()
+            ->default_value("info")
+            ->notifier([](std::string level)
+                {
+                    set_log_level(level);
+                }),
+            "The logging level to use (debug, info, warning, error)");
 
         /* Catch Error and program description */
         po::variables_map vm;
@@ -92,11 +106,6 @@ int main(int argc, char** argv)
         MultiLog log("outstream");
 
        /* Setting up the pipeline based on the type of sink*/
-
-
-        BeamCaptureController controller<>(socket_name, ptos, files);
-
-
         std::uint32_t ii;
         std::vector<std::shared_ptr<SigprocFileWriter>> files;
         std::vector<std::shared_ptr<PsrDadaToSigprocHeader<SigprocFileWriter>>> ptos;
@@ -105,10 +114,7 @@ int main(int argc, char** argv)
             files.emplace_back(std::make_shared<SigprocFileWriter>());
             SigprocFileWriter& writer = (*files.back());
             writer.max_filesize(filesize);
-
-            //TODO: Add these parameters
-            writer.tag(...);
-            writer.directory(...);
+            writer.directory(directory);
         }
         for (ii=0; ii < nbeams; ++ii)
         {

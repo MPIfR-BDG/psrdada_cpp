@@ -88,7 +88,7 @@ void send_message(Message const& message, std::string const& socket_name)
         std::stringstream message_string;
         build_json(message_string, message);
         BOOST_LOG_TRIVIAL(debug) << "Sending message: " << message_string.str();
-        message_string << "\r\n"; 
+        message_string << "\r\n";
        send(socket, message_string.str());
         socket.close();
         io_service.stop();
@@ -111,7 +111,7 @@ void populate_header(FilHead& header)
     header.foff = -0.03;
     header.ra = 0.0;
     header.rdm = 0.0;
-    header.tsamp = 0.000064;
+    header.tsamp = 1.0;
     header.tstart = 58758.0; //corresponds to 2019-10-02-00:00:00
     header.za = 0.0;
     header.datatype = 1;
@@ -191,7 +191,7 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
     for (int ii=0; ii<nblocks; ++ii)
     {
 	for (auto& writer_ptr: writers)
-	{ 
+	{
             writer_ptr->operator()(data_block);
         }
     }
@@ -232,8 +232,7 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
     }
 
     // What is the actual test here?
-
-
+    controller.stop();
     delete[] header_ptr;
     delete[] data_ptr;
 }
