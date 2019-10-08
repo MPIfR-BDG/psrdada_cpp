@@ -76,7 +76,7 @@ void Header::set<std::size_t>(char const* key, std::size_t value)
 }
 
 template <>
-void Header::set<std::size_t>(char const* key, std::string value)
+void Header::set<std::string>(char const* key, std::string value)
 {
     ascii_header_set(this->_header.ptr(), key, "%s", value.c_str());
 }
