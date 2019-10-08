@@ -4,8 +4,6 @@
 #include <cstring>
 
 namespace psrdada_cpp {
-namespace meerkat {
-namespace fbfuse {
 
 Header::Header(RawBytes& header)
     : _header(header)
@@ -68,6 +66,4 @@ void Header::set<std::size_t>(char const* key, std::size_t value)
     ascii_header_set(this->_header.ptr(), key, "%" PRId64, value);
 }
 
-} //namespace fbfuse
-} //namespace meerkat
 } //namespace psrdada_cpp

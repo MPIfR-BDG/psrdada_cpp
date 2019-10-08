@@ -3,6 +3,7 @@
 
 #include "psrdada_cpp/raw_bytes.hpp"
 #include "psrdada_cpp/common.hpp"
+#include <functional>
 
 namespace psrdada_cpp {
 
@@ -11,7 +12,7 @@ template <class HandlerType>
 class HeaderConverter
 {
 public:
-    typedef std::functional<void(RawBytes&, RawBytes&)> HeaderParserType;
+    typedef std::function<void(RawBytes&, RawBytes&)> HeaderParserType;
 
 public:
     HeaderConverter(HeaderParserType parser, HandlerType& handler);
