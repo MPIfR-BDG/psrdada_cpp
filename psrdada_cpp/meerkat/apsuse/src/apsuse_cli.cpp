@@ -3,6 +3,7 @@
 #include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/cli_utils.hpp"
 #include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/Header.hpp"
 #include "psrdada_cpp/dada_input_stream.hpp"
 #include "psrdada_cpp/sigproc_file_writer.hpp"
 #include "psrdada_cpp/header_converter.hpp"
