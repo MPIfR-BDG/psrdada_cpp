@@ -31,7 +31,7 @@ private:
 
 } //psrdada_cpp
 
-#include "psrdada_cpp/detail/ascii_to_sigproc_header.cpp"
+#include "psrdada_cpp/detail/header_converter.cpp"
 #endif //PSRDADA_CPP_HEADER_CONVERTER_HPP
 
 
