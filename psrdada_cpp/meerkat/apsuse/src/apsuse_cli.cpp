@@ -146,9 +146,19 @@ int main(int argc, char** argv)
         MultiLog log("instream");
         meerkat::apsuse::BeamCaptureController<decltype(files)> controller(socket_name, files);
         DadaInputStream<decltype(transpose)> input(input_key, log, transpose);
-        input.start();
+        controller.start();
+        try
+        {
+            input.start();
+        }
+        catch (std::exception& e)
+        {
+            std::cerr << "Caught exception in main thread: " << e.what() << std::endl;
+            controller.stop();
+            throw e;
+        }
+        controller.stop();
       /* End Application Code */
-
   }
   catch(std::exception& e)
   {
