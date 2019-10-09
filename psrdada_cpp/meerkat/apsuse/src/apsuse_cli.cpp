@@ -97,9 +97,8 @@ int main(int argc, char** argv)
 
         /*Check the size of the file*/
         // NOTE: We are assuming 8-bit data here.
-
-        filesize = (nchans * nfreq) * static_cast<std::size_t>((filesize / (nchans * nfreq)) + 0.5f);
-        std::cout << "File size rounded up to " << filesize << " bytes ("
+        filesize = (nchans * nfreq) * static_cast<std::size_t>(filesize / (nchans * nfreq));
+        std::cout << "File size rounded down to " << filesize << " bytes ("
                   << filesize/(nchans * nfreq) << " samples)";
 
        /* Setting up the pipeline based on the type of sink*/

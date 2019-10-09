@@ -74,6 +74,11 @@ FileStream::FileStream(
     {
         throw std::runtime_error("The number of bytes per file must be greater than zero");
     }
+    BOOST_LOG_TRIVIAL(info) << "Creating output file stream with parameters,\n"
+                            << "Output directory: " << _directory << "\n"
+                            << "Base filename: " << _base_filename << "\n"
+                            << "Extension: " << _extension << "\n"
+                            << "Number of bytes per file: " << _bytes_per_file;
 }
 
 FileStream::~FileStream()

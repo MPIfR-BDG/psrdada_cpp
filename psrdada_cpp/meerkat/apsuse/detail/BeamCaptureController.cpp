@@ -128,6 +128,7 @@ void BeamCaptureController<FileWritersType>::listen()
                     header.ra = parser.hhmmss_to_double(beam.ra);
                     header.dec = parser.hhmmss_to_double(beam.dec);
                     _file_writers[beam.idx]->tag(beam.name);
+                    BOOST_LOG_TRIVIAL(info) << "Enabling file writing for beam " << beam.name;
                     _file_writers[beam.idx]->enable();
                 }
             }
@@ -183,14 +184,14 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
     std::memset(_msg_buffer, 0, sizeof(_msg_buffer));
     std::stringstream message_stream;
     message_stream << message_string;
-    BOOST_LOG_TRIVIAL(info) << "Received string: " << message_stream.str();
+    BOOST_LOG_TRIVIAL(debug) << "Received string: " << message_stream.str();
     boost::property_tree::json_parser::read_json(message_stream, pt);
     message.command = pt.get<std::string>("command");
     BOOST_LOG_TRIVIAL(info) << "Recieved command: '" << message.command << "'";
-
     if (message.command == "start")
     {
-        BOOST_LOG_TRIVIAL(info) << "Index     Name    RA    Dec";
+        BOOST_LOG_TRIVIAL(info) << "Received parameters for the following beams: \n"
+                                << "Index     Name    RA    Dec";
         BOOST_FOREACH(ptree::value_type& beam, pt.get_child("beam_parameters"))
         {
             BeamMetadata metadata;
@@ -229,6 +230,7 @@ bool BeamCaptureController<FileWritersType>::has_message() const
 template <typename FileWritersType>
 void BeamCaptureController<FileWritersType>::disable_writers()
 {
+    BOOST_LOG_TRIVIAL(info) << "Disabling all output file writers";
     for (auto& writer_ptr: _file_writers)
     {
         writer_ptr->disable();
@@ -238,6 +240,7 @@ void BeamCaptureController<FileWritersType>::disable_writers()
 template <typename FileWritersType>
 void BeamCaptureController<FileWritersType>::enable_writers()
 {
+    BOOST_LOG_TRIVIAL(info) << "Enabling all output file writers";
     for (auto& writer_ptr: _file_writers)
     {
         writer_ptr->enable();
