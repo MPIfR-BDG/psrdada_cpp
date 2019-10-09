@@ -1,5 +1,6 @@
 #include "psrdada_cpp/file_output_stream.hpp"
 #include "psrdada_cpp/common.hpp"
+#include <iomanip>
 
 namespace psrdada_cpp {
 
@@ -107,8 +108,8 @@ void FileStream::new_file()
 {
     std::stringstream full_path;
     full_path << _directory << "/" << _base_filename
-              << "_" << _total_bytes_written
-              << _extension;
+              << "_" << std::setfill('0') << std::setw(16) << _total_bytes_written
+              << std::setfill(' ') << _extension;
     std::size_t header_bytes;
     BOOST_LOG_TRIVIAL(debug) << "Retrieving updated header";
     // The callback needs to guarantee the lifetime of the returned pointer here
