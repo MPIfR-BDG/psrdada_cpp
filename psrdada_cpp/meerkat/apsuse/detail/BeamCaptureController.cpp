@@ -190,8 +190,7 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
     BOOST_LOG_TRIVIAL(info) << "Recieved command: '" << message.command << "'";
     if (message.command == "start")
     {
-        BOOST_LOG_TRIVIAL(info) << "Received parameters for the following beams: \n"
-                                << "Index     Name    RA    Dec";
+        BOOST_LOG_TRIVIAL(info) << "Received parameters for the following beams (index, name, RA, Dec)";
         BOOST_FOREACH(ptree::value_type& beam, pt.get_child("beam_parameters"))
         {
             BeamMetadata metadata;
