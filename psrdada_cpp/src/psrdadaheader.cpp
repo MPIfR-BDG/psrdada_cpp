@@ -7,6 +7,20 @@
 namespace psrdada_cpp{
 
 PsrDadaHeader::PsrDadaHeader()
+: _bw(0.0)
+, _freq(0.0)
+, _nchans(0)
+, _ndim(0)
+, _npol(0)
+, _nbits(0)
+, _tsamp(0.0)
+, _beam(0)
+, _source_name("unset")
+, _ra("00:00:00.000")
+, _dec("00:00:00.000")
+, _telescope("unset")
+, _instrument("unset")
+, _mjd(0.0)
 {
 }
 
@@ -39,7 +53,7 @@ void PsrDadaHeader::from_bytes(RawBytes& block, std::uint32_t beamnum)
     return;
 }
 
-std::string PsrDadaHeader::get_value(std::string name,std::stringstream& header)
+std::string PsrDadaHeader::get_value(std::string name,std::stringstream& header) const
 {
     size_t position = header.str().find(name);
     if (position!=std::string::npos)
@@ -48,69 +62,69 @@ std::string PsrDadaHeader::get_value(std::string name,std::stringstream& header)
         std::string value;
         header >> value;
         return value;
-    } 
-    else 
+    }
+    else
     {
       return "";
     }
 }
 
-double PsrDadaHeader::bw()
+double PsrDadaHeader::bw() const
 {
     return _bw;
 }
 
-double PsrDadaHeader::freq()
+double PsrDadaHeader::freq() const
 {
     return _freq;
 }
 
-std::uint32_t PsrDadaHeader::nbits()
+std::uint32_t PsrDadaHeader::nbits() const
 {
     return _nbits;
 }
 
-double PsrDadaHeader::tsamp()
+double PsrDadaHeader::tsamp() const
 {
     return _tsamp;
 }
 
-std::uint32_t PsrDadaHeader::beam()
+std::uint32_t PsrDadaHeader::beam() const
 {
     return _beam;
 }
 
-std::string PsrDadaHeader::ra() 
+std::string PsrDadaHeader::ra() const
 {
     return _ra;
 }
 
-std::string PsrDadaHeader::dec() 
+std::string PsrDadaHeader::dec() const
 {
     return _dec;
 }
 
-std::string PsrDadaHeader::telescope()
+std::string PsrDadaHeader::telescope() const
 {
     return _telescope;
 }
 
-std::string PsrDadaHeader::instrument()
+std::string PsrDadaHeader::instrument() const
 {
     return _instrument;
 }
 
-std::string PsrDadaHeader::source_name()
+std::string PsrDadaHeader::source_name() const
 {
     return _source_name;
 }
 
-std::uint32_t PsrDadaHeader::nchans()
+std::uint32_t PsrDadaHeader::nchans() const
 {
     return _nchans;
 }
 
-double PsrDadaHeader::tstart()
+double PsrDadaHeader::tstart() const
 {
     return _mjd;
 }
