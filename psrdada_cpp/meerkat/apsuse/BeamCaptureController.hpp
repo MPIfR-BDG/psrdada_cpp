@@ -46,12 +46,12 @@ private:
 private:
     std::string _socket_name;
     FileWritersType& _file_writers;
+    std::unique_ptr<boost::asio::local::stream_protocol::socket> _socket;
     std::size_t _nbeams;
     bool _stop;
     char _msg_buffer[1<<16];
     boost::asio::io_service _io_service;
     std::unique_ptr<boost::asio::local::stream_protocol::acceptor> _acceptor;
-    std::unique_ptr<boost::asio::local::stream_protocol::socket> _socket;
     std::thread _listner_thread;
 
 };

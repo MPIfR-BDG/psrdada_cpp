@@ -76,6 +76,7 @@ bool SigprocFileWriter::operator()(RawBytes& block)
         }
     }
     _total_bytes += block.used_bytes();
+    return false;
 }
 
 void SigprocFileWriter::new_stream()

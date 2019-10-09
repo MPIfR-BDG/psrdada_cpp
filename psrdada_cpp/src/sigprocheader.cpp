@@ -213,9 +213,10 @@ namespace psrdada_cpp
         }
         catch (std::exception& e)
         {
-            BOOST_LOG_TRIVIAL(error) << "Error while converting "
-                                     << hhmmss_string << " to sigproc format: "
-                                     << e.what();
+	    std::stringstream error_msg;
+            error_msg << "Error while converting " << hhmmss_string << " to sigproc format: " << e.what();
+    	    BOOST_LOG_TRIVIAL(error) << error_msg.str();
+            throw std::runtime_error(error_msg.str());
         }
 
     }

@@ -48,7 +48,7 @@ namespace psrdada_cpp {
         _handler.init(header_block);
 
         SigprocHeader sigheader;
-        FilHead filheader = {"","",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        FilHead filheader = {"","",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         _filestream.seekg(0, _filestream.beg);
         sigheader.read_header(_filestream, filheader);
 

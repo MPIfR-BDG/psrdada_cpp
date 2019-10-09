@@ -24,13 +24,13 @@ namespace psrdada_cpp {
         bool operator()(RawBytes&);
 
     private:
-        std::ofstream _outfile;
-        char* _header;
         std::string _basefilename;
-        std::size_t _header_size;
+        char* _header;
         std::size_t _filesize;
         std::size_t _filenum;
         std::size_t _wsize;
+        std::ofstream _outfile;
+        std::size_t _header_size;
     };
 }//psrdada_cpp
 

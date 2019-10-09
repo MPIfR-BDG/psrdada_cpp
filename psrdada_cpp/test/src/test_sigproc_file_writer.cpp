@@ -57,7 +57,7 @@ bool is_file_valid(std::string const& name, std::size_t expected_size)
     }
     else
     {
-        return (buffer.st_size == expected_size);
+        return (std::size_t(buffer.st_size) == expected_size);
     }
 }
 

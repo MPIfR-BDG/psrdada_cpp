@@ -45,12 +45,13 @@ public:
     bool operator()(RawBytes&);
 
 private:
-    Handler& _handler;
+    
     unsigned int _nbeams;
     unsigned int _nchans_per_subband;
     unsigned int _nsubbands;
     unsigned int _heap_size;
     unsigned int _nbuffer_acc;
+    Handler& _handler;
     std::size_t _naccumulated;
     std::size_t _count;
     std::vector<ChannelSums> _calculation_buffer;
