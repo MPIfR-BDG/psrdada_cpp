@@ -179,32 +179,58 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
         BOOST_LOG_TRIVIAL(error) << "Error on read: " << ec.message();
         throw std::runtime_error(ec.message());
     }
-    _socket->close();
-    std::string message_string(_msg_buffer);
-    std::memset(_msg_buffer, 0, sizeof(_msg_buffer));
-    std::stringstream message_stream;
-    message_stream << message_string;
-    BOOST_LOG_TRIVIAL(debug) << "Received string: " << message_stream.str();
-    boost::property_tree::json_parser::read_json(message_stream, pt);
-    message.command = pt.get<std::string>("command");
-    BOOST_LOG_TRIVIAL(info) << "Recieved command: '" << message.command << "'";
-    if (message.command == "start")
+
+    bool success = false;
+
+    try
     {
-        BOOST_LOG_TRIVIAL(info) << "Received parameters for the following beams (index, name, RA, Dec)";
-        BOOST_FOREACH(ptree::value_type& beam, pt.get_child("beam_parameters"))
+        std::string message_string(_msg_buffer);
+        std::memset(_msg_buffer, 0, sizeof(_msg_buffer));
+        std::stringstream message_stream;
+        message_stream << message_string;
+        BOOST_LOG_TRIVIAL(debug) << "Received string: " << message_stream.str();
+        boost::property_tree::json_parser::read_json(message_stream, pt);
+        message.command = pt.get<std::string>("command");
+        BOOST_LOG_TRIVIAL(info) << "Recieved command: '" << message.command << "'";
+        if (message.command == "start")
         {
-            BeamMetadata metadata;
-            metadata.idx = beam.second.get<std::size_t>("idx");
-            metadata.name = beam.second.get<std::string>("name");
-            metadata.ra = beam.second.get<std::string>("ra");
-            metadata.dec = beam.second.get<std::string>("dec");
-            message.beams.push_back(metadata);
-            BOOST_LOG_TRIVIAL(info) << metadata.idx << "\t"
-                                    << metadata.name << "\t"
-                                    << metadata.ra << "\t"
-                                    << metadata.dec;
+            BOOST_LOG_TRIVIAL(info) << "Received parameters for the following beams (index, name, RA, Dec)";
+            BOOST_FOREACH(ptree::value_type& beam, pt.get_child("beam_parameters"))
+            {
+                BeamMetadata metadata;
+                metadata.idx = beam.second.get<std::size_t>("idx");
+                metadata.name = beam.second.get<std::string>("name");
+                metadata.ra = beam.second.get<std::string>("ra");
+                metadata.dec = beam.second.get<std::string>("dec");
+                message.beams.push_back(metadata);
+                BOOST_LOG_TRIVIAL(info) << metadata.idx << "\t"
+                                        << metadata.name << "\t"
+                                        << metadata.ra << "\t"
+                                        << metadata.dec;
+            }
         }
+        success = true;
     }
+    catch (std::exception& e)
+    {
+        boost::property_tree::ptree response;
+        std::stringstream response_stream;
+        response.put<std::string>("response", "fail");
+        response.put<std::string>("error", e.what());
+        boost::property_tree::json_parser::read_json(response_stream, response);
+        response_stream << "\n";
+        _socket->write(boost::asio::buffer(response_stream.str().c_str()));
+        _socket.close();
+        throw std::runtime_error(ec.message());
+    }
+
+    boost::property_tree::ptree response;
+    std::stringstream response_stream;
+    response.put<std::string>("response", "success");
+    boost::property_tree::json_parser::read_json(response_stream, response);
+    response_stream << "\n";
+    _socket->write(boost::asio::buffer(response_stream.str().c_str()));
+    _socket.close();
 }
 
 template <typename FileWritersType>
