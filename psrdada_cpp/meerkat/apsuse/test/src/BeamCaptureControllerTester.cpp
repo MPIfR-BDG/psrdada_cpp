@@ -154,7 +154,7 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
 
     FileWritersType writers;
 
-    for (int ii = 0; ii < nwriters; ++ii)
+    for (std::size_t ii = 0; ii < nwriters; ++ii)
     {
         writers.emplace_back(std::make_shared<SigprocFileWriter>());
         auto& writer = *(writers.back());
@@ -170,7 +170,6 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
 
     std::size_t nblocks = 5;
     std::size_t block_size = 2000;
-    std::size_t desired_size = 1<<12;
     FilHead header;
     populate_header(header);
     char* header_ptr = new char[4096];
@@ -178,7 +177,7 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
     char* data_ptr = new char[block_size];
     RawBytes data_block(data_ptr, block_size, block_size);
     SigprocHeader parser;
-    std::size_t header_size = parser.write_header(header_ptr, header);
+    parser.write_header(header_ptr, header);
 
     for (auto& writer_ptr: writers)
     {
@@ -188,7 +187,7 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
     // At this stage the writers should all be disabled
     // so the following call should have no effect other
     // than to update internal counters in the writer.
-    for (int ii=0; ii<nblocks; ++ii)
+    for (std::size_t ii=0; ii<nblocks; ++ii)
     {
 	for (auto& writer_ptr: writers)
 	{
@@ -207,7 +206,7 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
     // Use 1 second (overkill)
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-    for (int ii=0; ii<nblocks; ++ii)
+    for (std::size_t ii = 0; ii < nblocks; ++ii)
     {
         for (auto& writer_ptr: writers)
         {
@@ -223,7 +222,7 @@ TEST_F(BeamCaptureControllerTester, do_nothing)
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     // These writes should not produce any output
-    for (int ii=0; ii<nblocks; ++ii)
+    for (std::size_t ii=0; ii<nblocks; ++ii)
     {
         for (auto& writer_ptr: writers)
         {

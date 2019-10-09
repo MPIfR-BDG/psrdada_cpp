@@ -54,7 +54,7 @@ TEST_F(TestFileWriterTest, test_filesize)
                         std::istreambuf_iterator<char>());
     const char* hdrstr = str.c_str();
     //const char* hdrstr = "HEADER_START and HEADER_END";
-    std::memcpy(hdr_ptr, hdrstr,277); 
+    std::memcpy(hdr_ptr, hdrstr,277);
 
     file.close();
     char* data_ptr = new char[10240];
@@ -65,7 +65,7 @@ TEST_F(TestFileWriterTest, test_filesize)
     {
         outstream(data);
     }
-    
+
 
     // Write data to file
     MultiLog log1("input stream");
@@ -101,9 +101,9 @@ TEST_F(TestFileWriterTest, test_filesize)
         int filSize = fstream.tellg();
         fstream.close();
         ASSERT_EQ(filSize, 15637);
-    }    
+    }
 
-    } 
+    }
     dada_buffer.destroy();
 }
 
@@ -139,13 +139,13 @@ TEST_F(TestFileWriterTest, test_number_of_files)
     {
         outstream(data);
     }
-    
+
 
     // Write data to file
     MultiLog log1("input stream");
     std::string filename("Fil_file");
     TestFileWriter testfiles(filename,20480);
-    
+
     DadaReadClient client(dada_buffer.key(), log1);
     auto& header_stream = client.header_stream();
     auto& header_block = header_stream.next();
@@ -183,7 +183,7 @@ TEST_F(TestFileWriterTest, test_number_of_files)
 
     globfree(&glob_result);
 
-    ASSERT_EQ(filenames.size(),4);
+    ASSERT_EQ(filenames.size(), std::size_t(4));
 
     }
     dada_buffer.destroy();
@@ -213,7 +213,7 @@ TEST_F(TestFileWriterTest, test_exception)
     {
         outstream(data);
     }
-    
+
 
     // Write data to file
     MultiLog log1("input stream");
@@ -228,7 +228,7 @@ TEST_F(TestFileWriterTest, test_exception)
 
     }
     dada_buffer.destroy();
-    
+
 }
 
 

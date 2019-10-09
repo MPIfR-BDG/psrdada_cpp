@@ -87,9 +87,9 @@ TEST_F(BeamBandpassGeneratorTester, mean_equals_channel_id_var_zero)
 
     std::vector<ChannelStatistics> expectation(
         nbeams * nsubbands * nchans_per_subband);
-    for (int jj = 0; jj < nbeams; ++jj)
+    for (unsigned int jj = 0; jj < nbeams; ++jj)
     {
-        for (int kk = 0; kk < nchans_per_subband * nsubbands; ++kk)
+        for (unsigned int kk = 0; kk < nchans_per_subband * nsubbands; ++kk)
         {
             expectation[jj * nchans_per_subband * nsubbands + kk].mean = static_cast<float>(kk);
             expectation[jj * nchans_per_subband * nsubbands + kk].variance = 0.0f;
@@ -102,13 +102,13 @@ TEST_F(BeamBandpassGeneratorTester, mean_equals_channel_id_var_zero)
     std::vector<char> buffer(bytes, 0);
     const unsigned int nsamps_per_heap = heap_size / nchans_per_subband;
     RawBytes block(buffer.data(), bytes, bytes);
-    for (int ii = 0; ii< bytes; ii += heap_size * nsubbands)
+    for (unsigned int ii = 0; ii< bytes; ii += heap_size * nsubbands)
     {
-        for (int subband_idx = 0; subband_idx < nsubbands; ++subband_idx)
+        for (unsigned int subband_idx = 0; subband_idx < nsubbands; ++subband_idx)
         {
-            for (int samp_idx = 0; samp_idx < nsamps_per_heap; ++samp_idx)
+            for (unsigned int samp_idx = 0; samp_idx < nsamps_per_heap; ++samp_idx)
             {
-                for (int chan_idx = 0; chan_idx < nchans_per_subband; ++chan_idx)
+                for (unsigned int chan_idx = 0; chan_idx < nchans_per_subband; ++chan_idx)
                 {
                     std::size_t index = ii + subband_idx * heap_size + samp_idx * nchans_per_subband + chan_idx;
                     buffer[index] = subband_idx * nchans_per_subband + chan_idx;

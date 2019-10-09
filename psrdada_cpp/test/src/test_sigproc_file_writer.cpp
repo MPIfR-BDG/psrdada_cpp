@@ -87,7 +87,7 @@ TEST_F(TestSigprocFileWriter, test_filesize)
     std::size_t header_size = parser.write_header(header_ptr, header);
 
     writer.init(header_block);
-    for (int ii=0; ii<nblocks; ++ii)
+    for (std::size_t ii = 0; ii < nblocks; ++ii)
     {
         writer(data_block);
     }
