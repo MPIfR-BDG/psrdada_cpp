@@ -42,7 +42,7 @@ struct TestHandler
         std::vector<ChannelStatistics> stats(stats_ptr,
             stats_ptr + block.used_bytes() / sizeof(ChannelStatistics));
         ASSERT_EQ(stats.size(), _expectation.size());
-        for (int ii = 0; ii < stats.size(); ++ii)
+        for (std::size_t ii = 0; ii < stats.size(); ++ii)
         {
             EXPECT_NEAR(stats[ii].mean, _expectation[ii].mean, 0.0001f);
             EXPECT_NEAR(stats[ii].variance, _expectation[ii].variance, 0.0001f);
