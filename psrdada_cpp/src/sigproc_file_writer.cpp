@@ -93,7 +93,13 @@ void SigprocFileWriter::new_stream()
     // Get UTC time string
     std::time_t unix_time = static_cast<std::time_t>((_header.tstart - 40587.0) * 86400.0);
     struct std::tm * ptm = std::gmtime(&unix_time);
-    base_filename << std::put_time(ptm, "%Y-%m-%d-%H:%M:%S");
+
+    // Swapped out put_time call for strftime due to put_time
+    // causing compiler bugs prior to g++ 5.x
+    char formatted_time[80];
+    strftime (formatted_time, 80, "%Y-%m-%d-%H:%M:%S", ptm);
+    base_filename << formatted_time;
+
     if (_tag != "")
     {
         base_filename << "_" << _tag;
