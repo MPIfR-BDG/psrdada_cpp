@@ -31,11 +31,11 @@ void send(boost::asio::local::stream_protocol::socket & socket, const std::strin
     }
 }
 
-void get_json(std::stringstream& ss, std::size_t starttime, std::size_t endtime, float dm, float ref_freq, std::size_t trig_id )
+void get_json(std::stringstream& ss, long double starttime, long double endtime, float dm, float ref_freq, std::size_t trig_id )
 {
     boost::property_tree::ptree pt;
-    pt.put<std::size_t>("utc_start", starttime);
-    pt.put<std::size_t>("utc_end", endtime);
+    pt.put<long double>("utc_start", starttime);
+    pt.put<long double>("utc_end", endtime);
     pt.put<float>("dm", dm);
     pt.put<float>("reference_freq", ref_freq);
     pt.put<float>("trigger_id", trig_id);
@@ -43,7 +43,7 @@ void get_json(std::stringstream& ss, std::size_t starttime, std::size_t endtime,
     return;
 }
 
-void send_json(std::size_t starttime, std::size_t endtime, float dm, float ref_freq, std::size_t trig_id)
+void send_json(long double starttime, long double endtime, float dm, float ref_freq, std::size_t trig_id)
 { 
     try
     {
@@ -122,8 +122,8 @@ TEST_F(BufferDumpTester, do_nothing)
     }
 
     NullSink sink;
-    DadaReadClient reader(buffer.key(), log);
-    BufferDump<decltype(sink)> dumper(reader, sink, "/tmp/buffer_dump_test.sock",
+    //DadaReadClient reader(buffer.key(), log);
+    BufferDump<decltype(sink)> dumper(buffer.key(), log, sink, "/tmp/buffer_dump_test.sock",
                                       max_fill_level, nantennas, nchans,
                                       total_nchans, cfreq, bw );
 
@@ -174,8 +174,8 @@ TEST_F(BufferDumpTester, read_event)
     }
 
     NullSink sink;
-    DadaReadClient reader(buffer.key(), log);
-    BufferDump<decltype(sink)> dumper(reader, sink, "/tmp/buffer_dump_test.sock",
+    //DadaReadClient reader(buffer.key(), log);
+    BufferDump<decltype(sink)> dumper(buffer.key(), log, sink, "/tmp/buffer_dump_test.sock",
                                       max_fill_level, nantennas, nchans,
                                       total_nchans, cfreq, bw );
 
@@ -186,12 +186,12 @@ TEST_F(BufferDumpTester, read_event)
    
     std::this_thread::sleep_for(std::chrono::seconds(10));
     // Generate a trigger //
-    send_json(1, 1.5, 100.0, 869.375e6, 1);
+    send_json(0.5, 0.7, 100.0, 869.375e6, 1);
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
 
     // Generate second trigger to make sure that it works the second time
-    send_json(2.0, 2.5, 100.0, 869.375e6, 1);
+    send_json(1.0, 1.2, 200.0, 869.375e6, 2);
 
     std::this_thread::sleep_for(std::chrono::seconds(10));
 

@@ -20,16 +20,14 @@ namespace
 }
 
 
-
-typedef boost::asio::detail::socket_option::integer<SOL_SOCKET, SO_RCVTIMEO> rcv_timeout_option;
-
 namespace psrdada_cpp{
 namespace meerkat {
 namespace fbfuse{
 
     template <typename Handler>
         BufferDump<Handler>::BufferDump(
-                DadaReadClient& client,
+                key_t key,
+                MultiLog& log,
                 Handler& handler,
                 std::string socket_name,
                 float max_fill_level,
@@ -38,8 +36,7 @@ namespace fbfuse{
                 std::size_t total_nchannels,
                 float centre_freq,
                 float bandwidth)
-        : _client(client)
-          , _handler(handler)
+          : _handler(handler)
           , _socket_name(socket_name)
           , _max_fill_level(max_fill_level)
           , _nantennas(nantennas)
@@ -51,6 +48,8 @@ namespace fbfuse{
           , _stop(false)
           , _socket(nullptr)
     {
+
+        _client.reset(new DadaReadClient(key, log));
         std::memset(_event_msg_buffer, 0, sizeof(_event_msg_buffer));
         std::memset(_header_buffer, 0, sizeof(_header_buffer));
     }
@@ -72,18 +71,8 @@ namespace fbfuse{
             ::unlink(_socket_name.c_str()); // Remove previous binding.
             boost::asio::local::stream_protocol::endpoint ep(_socket_name);
             _acceptor.reset(new boost::asio::local::stream_protocol::acceptor(_io_service,ep));
-            //boost::asio::local::stream_protocol::acceptor acceptor(_io_service, ep);
             _acceptor->non_blocking(true);
             _socket.reset(new boost::asio::local::stream_protocol::socket(_io_service));
-            //_socket->open();
-            //_socket->non_blocking(true);
-            //_socket->bind(ep, ec);
-            _acceptor->accept(*_socket, ep, ec);
-            if (ec && ec != boost::asio::error::try_again)
-            {
-                BOOST_LOG_TRIVIAL(error) << "Error on accept: " << ec.message();
-                exit(1);
-            }
             return;
         }
 
@@ -107,7 +96,7 @@ namespace fbfuse{
         void BufferDump<Handler>::read_dada_header()
         {
             BOOST_LOG_TRIVIAL(info) << "Parsing DADA buffer header";
-            auto& header_block = _client.header_stream().next();
+            auto& header_block = _client->header_stream().next();
             Header parser(header_block);
             _sample_clock_start = parser.get<std::size_t>("SAMPLE_CLOCK_START");
             _sample_clock = parser.get<std::size_t>("SAMPLE_CLOCK");
@@ -116,7 +105,7 @@ namespace fbfuse{
             BOOST_LOG_TRIVIAL(info) << "Parsed SAMPLE_CLOCK = " << _sample_clock;
             BOOST_LOG_TRIVIAL(info) << "Parsed SYNC_TIME = " << _sync_time;
             std::memcpy(_header_buffer, header_block.ptr(), sizeof(_header_buffer));
-            _client.header_stream().release();
+            _client->header_stream().release();
             BOOST_LOG_TRIVIAL(info) << "Parsing complete";
         }
 
@@ -141,9 +130,9 @@ namespace fbfuse{
                     }
                     capture(event);
                 }
-                while (_client.data_buffer_percent_full() > _max_fill_level)
+                while (_client->data_buffer_percent_full() > _max_fill_level)
                 {
-                    BOOST_LOG_TRIVIAL(debug) << "DADA buffer fill level = " << _client.data_buffer_percent_full() << "%";
+                    BOOST_LOG_TRIVIAL(debug) << "DADA buffer fill level = " << _client->data_buffer_percent_full() << "%";
                     skip_block();
                 }
 
@@ -157,8 +146,8 @@ namespace fbfuse{
         void BufferDump<Handler>::skip_block()
         {
             BOOST_LOG_TRIVIAL(debug) << "Skipping DADA block";
-            _client.data_stream().next();
-            _client.data_stream().release();
+            _client->data_stream().next();
+            _client->data_stream().release();
             _current_block_idx += 1;
             BOOST_LOG_TRIVIAL(debug) << "Current block IDX = " << _current_block_idx;
         }
@@ -211,6 +200,7 @@ namespace fbfuse{
                 << "DM: " << event.dm << "\n"
                 << "REF FREQ: " << event.reference_freq << "\n"
                 << "TRIGGER_ID: " << event.trigger_id;
+            std::memset(_event_msg_buffer, 0, 4096);
             _socket->close(ec);
             if (ec)
             {
@@ -244,7 +234,7 @@ namespace fbfuse{
             _tmp_buffer.resize(nelements);
 
 
-            std::size_t block_bytes = _client.data_buffer_size();
+            std::size_t block_bytes = _client->data_buffer_size();
             std::size_t heap_group_bytes = _nantennas * _subband_nchans * 256 * sizeof(unsigned);
 
             if (block_bytes % heap_group_bytes != 0)
@@ -283,7 +273,7 @@ namespace fbfuse{
             while (_current_block_idx <= end_block_idx)
             {
                 BOOST_LOG_TRIVIAL(debug) << "Extracting data from block " << _current_block_idx;
-                RawBytes& block = _client.data_stream().next();
+                RawBytes& block = _client->data_stream().next();
                 std::size_t block_start = _current_block_idx * samples_per_block;
                 std::size_t block_end = (_current_block_idx + 1) * samples_per_block;
                 for (std::size_t chan_idx = 0; chan_idx < _subband_nchans; ++chan_idx)
@@ -331,7 +321,7 @@ namespace fbfuse{
                         }
                     }
                 }
-                _client.data_stream().release();
+                _client->data_stream().release();
                 _current_block_idx += 1;
             }
             BOOST_LOG_TRIVIAL(debug) << "Updating header";

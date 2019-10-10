@@ -52,7 +52,8 @@ namespace psrdada_cpp {
         _filestream.seekg(0, _filestream.beg);
         sigheader.read_header(_filestream, filheader);
 
-        if ((_nbytes / filheader.nbits / 8) % filheader.nchans != 0) {
+        if ( _nbytes/(filheader.nbits/8) % filheader.nchans != 0) {
+            BOOST_LOG_TRIVIAL(info) << "nbits:" << filheader.nbits ;
             throw std::logic_error("Number of samples to stream to a block has to be a multiple of the number of channels");
         }
 
@@ -94,7 +95,7 @@ namespace psrdada_cpp {
                     _stop = true;
                     break;
                 }
-                std::this_thread::sleep_until(streamstart + std::chrono::milliseconds(static_cast<int>(streamcount * blocktime * 1000.0f)));
+                //std::this_thread::sleep_until(streamstart + std::chrono::milliseconds(static_cast<int>(streamcount * blocktime * 1000.0f)));
             }
             data_block.~RawBytes();
         }

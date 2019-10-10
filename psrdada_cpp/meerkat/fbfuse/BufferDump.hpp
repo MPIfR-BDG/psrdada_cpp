@@ -2,6 +2,7 @@
 #define PSRDADA_CPP_MEERKAT_BUFFERDUMP_HPP
 
 #include "psrdada_cpp/common.hpp"
+#include "psrdada_cpp/multilog.hpp"
 #include "psrdada_cpp/dada_read_client.hpp"
 #include <boost/asio.hpp>
 #include <string>
@@ -49,7 +50,8 @@ namespace fbfuse {
         {
             public:
                 BufferDump(
-                        DadaReadClient& client,
+                        key_t key,
+                        MultiLog& log,
                         Handler& handler,
                         std::string socket_name,
                         float max_fill_level,
@@ -72,7 +74,7 @@ namespace fbfuse {
                 void get_event(Event& event);
 
             private:
-                DadaReadClient& _client;
+                std::unique_ptr<DadaReadClient> _client;
                 Handler& _handler;
                 std::string _socket_name;
                 float _max_fill_level;
