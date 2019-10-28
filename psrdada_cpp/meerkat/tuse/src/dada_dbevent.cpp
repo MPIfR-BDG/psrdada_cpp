@@ -112,7 +112,7 @@ typedef struct {
 
 } event_t;
 
-#define  DADA_DBEVENT_INIT { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+#define  DADA_DBEVENT_INIT { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 
 static int sort_events (const void *p1, const void *p2)
 {
