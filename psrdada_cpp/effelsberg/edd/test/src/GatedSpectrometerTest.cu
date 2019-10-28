@@ -53,7 +53,7 @@ TEST(GatedSpectrometer, BitManipulationMacros) {
 TEST(GatedSpectrometer, GatingKernel)
 {
   size_t blockSize = 1024;
-  size_t nBlocks = 16;
+  size_t nBlocks = 16 * 1024;
 
   thrust::device_vector<float> G0(blockSize * nBlocks);
   thrust::device_vector<float> G1(blockSize * nBlocks);
@@ -77,7 +77,7 @@ TEST(GatedSpectrometer, GatingKernel)
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
           G0.size(), blockSize, 0, 1,
-          0, thrust::raw_pointer_cast(baseLine.data()), 
+          0, thrust::raw_pointer_cast(baseLine.data()),
           thrust::raw_pointer_cast(_nG0.data()),
           thrust::raw_pointer_cast(_nG1.data())
           );
@@ -119,7 +119,6 @@ TEST(GatedSpectrometer, GatingKernel)
     EXPECT_EQ(*minmax.first, 42);
     EXPECT_EQ(*minmax.second, 42);
 
-
     EXPECT_EQ(_nG0[0], 0u);
     EXPECT_EQ(_nG1[0], G1.size());
   }
@@ -128,8 +127,9 @@ TEST(GatedSpectrometer, GatingKernel)
 
 TEST(GatedSpectrometer, countBitSet) {
   size_t nBlocks = 100000;
-  thrust::device_vector<uint64_t> _sideChannelData(nBlocks);
-  thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0);
+  int nSideChannels = 4;
+  thrust::device_vector<uint64_t> _sideChannelData(nBlocks * nSideChannels);
+  thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0L);
   const uint64_t *sideCD =
       (uint64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
 
@@ -140,6 +140,7 @@ TEST(GatedSpectrometer, countBitSet) {
   psrdada_cpp::effelsberg::edd::
       countBitSet<<<1, 1024>>>(
     sideCD, nBlocks, 0, 1, 0, thrust::raw_pointer_cast(res.data()));
+
   EXPECT_EQ(res[0], 0u);
 
   res[0] = 0;
@@ -150,20 +151,22 @@ TEST(GatedSpectrometer, countBitSet) {
 
   // test mult side channels w stride.
   res[0] = 0;
-  int nSideChannels = 4;
-  thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0);
+
+  thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0L);
   for (size_t i = 2; i < _sideChannelData.size(); i += nSideChannels)
     _sideChannelData[i] = 1L;
   psrdada_cpp::effelsberg::edd::countBitSet<<<1, 1024>>>(
     sideCD, nBlocks, 0, nSideChannels, 3,
     thrust::raw_pointer_cast(res.data()));
-  EXPECT_EQ(res[0], 0u);
+  cudaDeviceSynchronize();
+  EXPECT_EQ(0U, res[0]);
 
   res[0] = 0;
   psrdada_cpp::effelsberg::edd::countBitSet<<<1, 1024>>>(
     sideCD, nBlocks, 0, nSideChannels, 2,
     thrust::raw_pointer_cast(res.data()));
-  EXPECT_EQ(res[0], nBlocks / nSideChannels);
+  cudaDeviceSynchronize();
+  EXPECT_EQ(nBlocks, res[0]);
 }
 
 
@@ -177,7 +180,7 @@ TEST(GatedSpectrometer, array_sum) {
   ////zero pad input array
   //if (inputLength % (2 * NTHREADS) != 0)
   //  dataLength = (inputLength / (2 * NTHREADS) + 1) * 2 * NTHREADS;
-  thrust::device_vector<float> data(dataLength); 
+  thrust::device_vector<float> data(dataLength);
   thrust::fill(data.begin(), data.begin() + inputLength, 1);
   //thrust::fill(data.begin() + inputLength, data.end(), 0);
   thrust::device_vector<float> blr(NTHREADS * 2);

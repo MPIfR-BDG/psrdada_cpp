@@ -82,10 +82,10 @@ __global__ void countBitSet(const uint64_t *sideChannelData, size_t N, size_t
 {
   // really not optimized reduction, but here only trivial array sizes.
   // run only in one block!
-  __shared__ size_t x[1024];
-  size_t ls = 0;
+  __shared__ uint64_t x[1024];
+  uint64_t ls = 0;
 
-  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
+  for (uint64_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
        i += blockDim.x * gridDim.x) {
     ls += TEST_BIT(sideChannelData[i * noOfSideChannels + selectedSideChannel], bitpos);
   }
