@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
     // convert from 8 bit unsigned to 8 bit signed
     uint8_t *A_unsigned = reinterpret_cast<uint8_t*>(thrust::raw_pointer_cast(output.data()));
     int8_t *A_signed = reinterpret_cast<int8_t*>(thrust::raw_pointer_cast(output.data()));
-    for(int i = 0; i < output.size() * 4; i++)
+    for(size_t i = 0; i < output.size() * 4; i++)
     {
       int f = A_unsigned[i];
       A_signed[i] = f - 128;

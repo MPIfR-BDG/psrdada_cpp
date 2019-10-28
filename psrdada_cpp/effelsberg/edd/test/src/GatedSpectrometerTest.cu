@@ -68,6 +68,8 @@ TEST(GatedSpectrometer, GatingKernel)
 
   // everything to G0
   {
+    thrust::fill(_nG0.begin(), _nG0.end(), 0);
+    thrust::fill(_nG1.begin(), _nG1.end(), 0);
     baseLine[0] = 0.;
     const uint64_t *sideCD =
         (uint64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
@@ -89,11 +91,13 @@ TEST(GatedSpectrometer, GatingKernel)
     EXPECT_EQ(*minmax.second, 0);
 
     EXPECT_EQ(_nG0[0], G0.size());
-    EXPECT_EQ(_nG1[0], 0);
+    EXPECT_EQ(_nG1[0], 0u);
   }
 
   // everything to G1 // with baseline -5
   {
+    thrust::fill(_nG0.begin(), _nG0.end(), 0);
+    thrust::fill(_nG1.begin(), _nG1.end(), 0);
     baseLine[0] = -5. * G0.size();
     thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 1L);
     const uint64_t *sideCD =
@@ -116,8 +120,8 @@ TEST(GatedSpectrometer, GatingKernel)
     EXPECT_EQ(*minmax.second, 42);
 
 
-    EXPECT_EQ(_nG0[0], G0.size());
-    EXPECT_EQ(_nG1[0], 0);
+    EXPECT_EQ(_nG0[0], 0u);
+    EXPECT_EQ(_nG1[0], G1.size());
   }
 }
 

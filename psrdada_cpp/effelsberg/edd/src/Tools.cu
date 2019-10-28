@@ -74,7 +74,7 @@ uint32_t bitMask(uint32_t firstBit, uint32_t lastBit) {
 void setBitsWithValue(uint32_t &target, uint32_t firstBit, uint32_t lastBit,
                       uint32_t value) {
   // check if value is larger than bit range
-  if (value > (1 << (lastBit + 1 - firstBit))) {
+  if (value > (1u << (lastBit + 1u - firstBit))) {
     BOOST_LOG_TRIVIAL(error)
         << "value: " << value << ", 1 << (last-bit - firstbit) "
         << (1 << (lastBit - firstBit)) << ", bitrange: " << lastBit - firstBit

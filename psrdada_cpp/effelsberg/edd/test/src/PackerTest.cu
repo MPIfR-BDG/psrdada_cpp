@@ -21,7 +21,7 @@ class PackerTest: public ::testing::Test
       maxV = 2;
 
       srand (time(NULL));
-      for (int i =0; i < input.size(); i++)
+      for (size_t i =0; i < input.size(); i++)
       {
         input[i] = ((float(rand()) / RAND_MAX) - 0.5) * 2.5 * (maxV-minV) + maxV + minV;
       }
@@ -47,7 +47,7 @@ class PackerTest: public ::testing::Test
       float step = (maxV - minV) /  ((1 << bit_depth) - 1);
 
       const size_t nbp = 32 / bit_depth;
-      for(int i = 0; i < input.size() / nbp; i++)
+      for(size_t i = 0; i < input.size() / nbp; i++)
       {
           uint32_t of = output[i];
           for (size_t j =0; j< nbp; j++)
@@ -76,7 +76,7 @@ TEST_F(PackerTest, 2bit)
   float L4 = minV + 3 * step;
 
   const size_t nbp = 16; // 16 samples per output value
-  for(int i = 0; i < input.size() / nbp; i++)
+  for(size_t i = 0; i < input.size() / nbp; i++)
   {
       uint32_t of = output[i];
       for (size_t j =0; j< nbp; j++)
@@ -84,13 +84,13 @@ TEST_F(PackerTest, 2bit)
         uint32_t a = ((of >> (j *2)) & 3);
         int k = i * nbp + j;
         if (input[k] >= L4)
-          EXPECT_EQ(a, 3);
+          EXPECT_EQ(a, 3u);
         else if (input[k] >= L3)
-          EXPECT_EQ(a, 2);
+          EXPECT_EQ(a, 2u);
         else if (input[k] >= L2)
-          EXPECT_EQ(a, 1);
+          EXPECT_EQ(a, 1u);
         else
-          EXPECT_EQ(a, 0);
+          EXPECT_EQ(a, 0u);
       }
   }
 }

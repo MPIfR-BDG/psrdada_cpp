@@ -22,13 +22,13 @@ TEST(BitManipulation, setBitsWithValue)
 {
 	uint32_t data = 0;
 	setBitsWithValue(data, 0, 2, 3);
-	EXPECT_EQ(data, 3);
+	EXPECT_EQ(data, 3u);
 
 	setBitsWithValue(data, 2, 4, 3);
-	EXPECT_EQ(data, 15);
+	EXPECT_EQ(data, 15u);
 
-	EXPECT_EQ(3, getBitsValue(data, 1, 2));
-	EXPECT_EQ(1, getBitsValue(data, 3, 12));
+	EXPECT_EQ(3u, getBitsValue(data, 1, 2));
+	EXPECT_EQ(1u, getBitsValue(data, 3, 12));
 
 }
 
@@ -43,36 +43,36 @@ TEST(VDIFHeader, getSetWord0)
 	header.setValid();
 	EXPECT_TRUE(header.isValid());
 
-	EXPECT_EQ(header.getSecondsFromReferenceEpoch(), 0);
+	EXPECT_EQ(header.getSecondsFromReferenceEpoch(), 0u);
 	header.setSecondsFromReferenceEpoch(12345);
-	EXPECT_EQ(header.getSecondsFromReferenceEpoch(), 12345);
+	EXPECT_EQ(header.getSecondsFromReferenceEpoch(), 12345u);
 }
 
 TEST(VDIFHeader, getSetWord1)
 {
 	VDIFHeader header;
 
-	EXPECT_EQ(header.getReferenceEpoch(), 0);
+	EXPECT_EQ(header.getReferenceEpoch(), 0u);
 	header.setReferenceEpoch(16);
-	EXPECT_EQ(header.getReferenceEpoch(), 16);
+	EXPECT_EQ(header.getReferenceEpoch(), 16u);
 
-	EXPECT_EQ(header.getDataFrameNumber(), 0);
+	EXPECT_EQ(header.getDataFrameNumber(), 0u);
 	header.setDataFrameNumber(5);
-	EXPECT_EQ(header.getDataFrameNumber(), 5);
+	EXPECT_EQ(header.getDataFrameNumber(), 5u);
 }
 
 TEST(VDIFHeader, getSetWord2)
 {
 	VDIFHeader header;
-	EXPECT_EQ(header.getVersionNumber(), 1);
+	EXPECT_EQ(header.getVersionNumber(), 1u);
 
-	EXPECT_EQ(header.getDataFrameLength(), 0);
+	EXPECT_EQ(header.getDataFrameLength(), 0u);
 	header.setDataFrameLength(1024);
-	EXPECT_EQ(header.getDataFrameLength(), 1024);
+	EXPECT_EQ(header.getDataFrameLength(), 1024u);
 
-	EXPECT_EQ(header.getNumberOfChannels(), 0);
+	EXPECT_EQ(header.getNumberOfChannels(), 0u);
 	header.setNumberOfChannels(10);
-	EXPECT_EQ(header.getNumberOfChannels(), 10);
+	EXPECT_EQ(header.getNumberOfChannels(), 10u);
 
 }
 
@@ -85,17 +85,17 @@ TEST(VDIFHeader, getSetWord3)
 	EXPECT_FALSE(header.isRealDataType());
 	EXPECT_TRUE(header.isComplexDataType());
 
-	EXPECT_EQ(header.getBitsPerSample(), 0);
+	EXPECT_EQ(header.getBitsPerSample(), 0u);
 	header.setBitsPerSample(13);
-	EXPECT_EQ(header.getBitsPerSample(), 13);
+	EXPECT_EQ(header.getBitsPerSample(), 13u);
 
-	EXPECT_EQ(header.getThreadId(), 0);
+	EXPECT_EQ(header.getThreadId(), 0u);
 	header.setThreadId(23);
-	EXPECT_EQ(header.getThreadId(), 23);
+	EXPECT_EQ(header.getThreadId(), 23u);
 
-	EXPECT_EQ(header.getStationId(), 0);
+	EXPECT_EQ(header.getStationId(), 0u);
 	header.setStationId(42);
-	EXPECT_EQ(header.getStationId(), 42);
+	EXPECT_EQ(header.getStationId(), 42u);
 }
 
 TEST(VDIFHeader, testTimeStampConversion)
@@ -107,16 +107,16 @@ TEST(VDIFHeader, testTimeStampConversion)
   EXPECT_EQ(currentTime, header.getTimestamp()) << "Reference epoch: " << header.getReferenceEpoch() << " + " << header.getSecondsFromReferenceEpoch() << " s";
 
   header.setTimeReferencesFromTimestamp(946684800);
-  EXPECT_EQ(0, header.getReferenceEpoch());
-  EXPECT_EQ(0, header.getSecondsFromReferenceEpoch());
+  EXPECT_EQ(0u, header.getReferenceEpoch());
+  EXPECT_EQ(0u, header.getSecondsFromReferenceEpoch());
 
   header.setTimeReferencesFromTimestamp(962409600);
-  EXPECT_EQ(1, header.getReferenceEpoch());
-  EXPECT_EQ(0, header.getSecondsFromReferenceEpoch());
+  EXPECT_EQ(1u, header.getReferenceEpoch());
+  EXPECT_EQ(0u, header.getSecondsFromReferenceEpoch());
 
   header.setTimeReferencesFromTimestamp(962409600 + 100);
-  EXPECT_EQ(1, header.getReferenceEpoch());
-  EXPECT_EQ(100, header.getSecondsFromReferenceEpoch());
+  EXPECT_EQ(1u, header.getReferenceEpoch());
+  EXPECT_EQ(100u, header.getSecondsFromReferenceEpoch());
 }
 
 //int main(int argc, char **argv) {
