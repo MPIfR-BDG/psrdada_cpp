@@ -13,9 +13,9 @@ class DadaBufferLayout
 {
   private:
     size_t _bufferSize;
+    key_t _input_key;
     size_t _heapSize;
     size_t _nSideChannels;
-    key_t _input_key;
 
     size_t _sideChannelSize;
     size_t _nHeaps;
