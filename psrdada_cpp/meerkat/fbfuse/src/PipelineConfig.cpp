@@ -1,5 +1,6 @@
 #include "psrdada_cpp/meerkat/fbfuse/PipelineConfig.hpp"
 #include <fstream>
+#include <cmath>
 
 namespace psrdada_cpp {
 namespace meerkat {
