@@ -1,6 +1,7 @@
 # project name and specify the minumum cmake version.
 project (psrdada_cpp CXX)
 cmake_minimum_required (VERSION 3.0)
+enable_testing()
 
 # The version number.
 set (psrdada_cpp_VERSION_MAJOR 0)
