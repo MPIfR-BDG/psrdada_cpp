@@ -67,7 +67,7 @@ void build_json(std::stringstream& ss, Message const& message)
             boost::property_tree::ptree beam_parameters;
             beam_parameters.put<std::size_t>("idx", beam.idx);
             beam_parameters.put<std::string>("name", beam.name);
-            beam_parameters.put<std::string>("source", beam.source_name)
+            beam_parameters.put<std::string>("source", beam.source_name);
             beam_parameters.put<std::string>("ra", beam.ra);
             beam_parameters.put<std::string>("dec", beam.dec);
             all_beam_parameters.push_back(std::make_pair("", beam_parameters));
