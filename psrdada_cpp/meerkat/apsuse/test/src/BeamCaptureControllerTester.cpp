@@ -46,6 +46,7 @@ void build_start_message(Message& message, std::size_t nbeams)
         std::stringstream dec;
         dec << "-" << beam_idx*2 << ":00:00.00";
         metadata.dec = dec.str();
+        metadata.source_name = "test_source";
     }
 }
 
@@ -66,6 +67,7 @@ void build_json(std::stringstream& ss, Message const& message)
             boost::property_tree::ptree beam_parameters;
             beam_parameters.put<std::size_t>("idx", beam.idx);
             beam_parameters.put<std::string>("name", beam.name);
+            beam_parameters.put<std::string>("source", beam.source_name)
             beam_parameters.put<std::string>("ra", beam.ra);
             beam_parameters.put<std::string>("dec", beam.dec);
             all_beam_parameters.push_back(std::make_pair("", beam_parameters));
@@ -89,7 +91,7 @@ void send_message(Message const& message, std::string const& socket_name)
         build_json(message_string, message);
         BOOST_LOG_TRIVIAL(debug) << "Sending message: " << message_string.str();
         message_string << "\r\n";
-       send(socket, message_string.str());
+        send(socket, message_string.str());
         socket.close();
         io_service.stop();
     }
