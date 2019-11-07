@@ -127,6 +127,7 @@ void BeamCaptureController<FileWritersType>::listen()
                     auto& header = _file_writers[beam.idx]->header();
                     header.ra = parser.hhmmss_to_double(beam.ra);
                     header.dec = parser.hhmmss_to_double(beam.dec);
+                    header.source = beam.source_name;
                     _file_writers[beam.idx]->tag(beam.name);
                     BOOST_LOG_TRIVIAL(info) << "Enabling file writing for beam " << beam.name;
                     _file_writers[beam.idx]->enable();
@@ -152,18 +153,21 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
              {
                "idx": 0,
                "name": "cfbf00000",
+               "source-name": "PSRJ1821+3244",
                "ra": "00:00:00.00",
                "dec": "00:00:00.00"
              },
              {
                "idx": 1,
                "name": "cfbf00001",
+               "source-name": "PSRJ1823+3244",
                "ra": "01:00:00.00",
                "dec": "01:00:00.00"
              },
              {
                "idx": 2,
                "name": "cfbf00002",
+               "source-name": "PSRJ1824+3244",
                "ra": "02:00:00.00",
                "dec": "02:00:00.00"
              }
@@ -198,11 +202,13 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
                 BeamMetadata metadata;
                 metadata.idx = beam.second.get<std::size_t>("idx");
                 metadata.name = beam.second.get<std::string>("name");
+                metadata.source_name = beam.second.get<std::string>("source");
                 metadata.ra = beam.second.get<std::string>("ra");
                 metadata.dec = beam.second.get<std::string>("dec");
                 message.beams.push_back(metadata);
                 BOOST_LOG_TRIVIAL(info) << metadata.idx << "\t"
                                         << metadata.name << "\t"
+                                        << metadata.source_name << "\t"
                                         << metadata.ra << "\t"
                                         << metadata.dec;
             }

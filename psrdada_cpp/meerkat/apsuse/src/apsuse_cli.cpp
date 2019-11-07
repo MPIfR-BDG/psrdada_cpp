@@ -125,9 +125,7 @@ int main(int argc, char** argv)
                     ph.set_nbits(header.get<long double>("NBIT"));
                     ph.set_tsamp(header.get<long double>("TSAMP"));
                     ph.set_source(header.get<std::string>("SOURCE"));
-                    ph.set_telescope(header.get<std::string>("TELESCOPE"));
-                    ph.set_instrument(header.get<std::string>("INSTRUMENT"));
-                    long double sync_mjd = header.get<long double>("SYNC_TIME_MJD");
+                    long double sync_mjd = header.get<long double>("SYNC_TIME");
                     long double sample_clock = header.get<long double>("SAMPLE_CLOCK");
                     long double sample_clock_start = header.get<long double>("SAMPLE_CLOCK_START");
                     ph.set_tstart(sync_mjd + (long double)(sample_clock_start / sample_clock / 86400.0));
