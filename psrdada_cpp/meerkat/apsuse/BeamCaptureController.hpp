@@ -21,6 +21,7 @@ struct BeamMetadata
 struct Message
 {
     std::string command;
+    std::string directory;
     std::vector<BeamMetadata> beams;
 };
 

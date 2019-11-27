@@ -65,7 +65,7 @@ int main(int argc, char** argv)
         ("socket", po::value<std::string>(&socket_name)
             ->default_value("/tmp/apsuse_capture.sock"),
             "The name of the control socket for enabling/disabling file writing")
-        ("dir,d", po::value<std::string>(&directory)->required(),
+        ("dir,d", po::value<std::string>(&directory)->default_value("./"),
             "The output directory to which files will be written")
         ("log_level", po::value<std::string>()
             ->default_value("info")
@@ -125,7 +125,8 @@ int main(int argc, char** argv)
                     ph.set_nbits(header.get<long double>("NBIT"));
                     ph.set_tsamp(header.get<long double>("TSAMP"));
                     ph.set_source(header.get<std::string>("SOURCE"));
-                    long double sync_mjd = header.get<long double>("SYNC_TIME");
+                    long double sync_time = header.get<long double>("SYNC_TIME");
+                    long double sync_mjd = (sync_time / 86400.0) + 40587.0;
                     long double sample_clock = header.get<long double>("SAMPLE_CLOCK");
                     long double sample_clock_start = header.get<long double>("SAMPLE_CLOCK_START");
                     ph.set_tstart(sync_mjd + (long double)(sample_clock_start / sample_clock / 86400.0));

@@ -32,6 +32,7 @@ void send(boost::asio::local::stream_protocol::socket & socket, const std::strin
 void build_start_message(Message& message, std::size_t nbeams)
 {
     message.command = "start";
+    message.directory = "./"
     for (std::size_t beam_idx = 0; beam_idx < nbeams; ++beam_idx)
     {
         message.beams.emplace_back();
@@ -59,6 +60,7 @@ void build_json(std::stringstream& ss, Message const& message)
 {
     boost::property_tree::ptree root;
     root.put("command", message.command);
+    root.put("directory", message.directory);
     if (message.command == "start")
     {
         boost::property_tree::ptree all_beam_parameters;

@@ -20,9 +20,33 @@ namespace psrdada_cpp
 {
 
     struct FilHead {
+
+        FilHead()
+        : rawfile("unset")
+        , source("unset")
+        , az(0.0)
+        , dec(0.0)
+        , fch1(0.0)
+        , foff(0.0)
+        , ra(0.0)
+        , rdm(0.0)
+        , tsamp(0.0)
+        , tstart(0.0)
+        , za(0.0)
+        , datatype(0)
+        , barycentric(0)
+        , ibeam(0)
+        , machineid(0)
+        , nbeams(0)
+        , nbits(0)
+        , nchans(0)
+        , nifs(0)
+        , telescopeid(0)
+        {}
+        ~FilHead(){};
+
         std::string rawfile;
         std::string source;
-
         double az;                      // azimuth angle in deg
         double dec;                     // source declination
         double fch1;                    // frequency of the top channel in MHz
