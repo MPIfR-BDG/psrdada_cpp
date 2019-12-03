@@ -38,7 +38,7 @@ namespace psrdada_cpp {
             throw std::runtime_error("Stream is already running");
         }
         _running = true;
-        
+
         // Get the header
         char* header_ptr = new char[4096];
         char* data_ptr = new char[_nbytes];
@@ -48,7 +48,7 @@ namespace psrdada_cpp {
         _handler.init(header_block);
 
         SigprocHeader sigheader;
-        FilHead filheader = {"","",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        FilHead filheader;
         _filestream.seekg(0, _filestream.beg);
         sigheader.read_header(_filestream, filheader);
 
@@ -70,11 +70,11 @@ namespace psrdada_cpp {
         streamstart = std::chrono::steady_clock::now();
         while (!_stop) {
             BOOST_LOG_TRIVIAL(info) << "Reading data from the file";
-            BOOST_LOG_TRIVIAL(info) << "Streaming " << _nbytes << "B every " << blocktime << "s (" << static_cast<float>(_nbytes) / 1024.0f / 1024.0f << "MiBps"; 
+            BOOST_LOG_TRIVIAL(info) << "Streaming " << _nbytes << "B every " << blocktime << "s (" << static_cast<float>(_nbytes) / 1024.0f / 1024.0f << "MiBps";
             // Read data from file here
             RawBytes data_block(data_ptr, _nbytes, 0, false);
             while (!_stop)
-            { 
+            {
                 if ((static_cast<std::size_t>(_filestream.tellg()) + _nbytes) > filesize) {
                     BOOST_LOG_TRIVIAL(info) << "Will read beyond the end of file";
                     BOOST_LOG_TRIVIAL(info) << "Going to the start of the file again";

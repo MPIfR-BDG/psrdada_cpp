@@ -66,7 +66,7 @@ int main(int argc, char** argv)
             ->default_value("/tmp/apsuse_capture.sock"),
             "The name of the control socket for enabling/disabling file writing")
         ("dir,d", po::value<std::string>(&directory)->default_value("./"),
-            "The output directory to which files will be written")
+            "The default output directory to which files will be written")
         ("log_level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)
