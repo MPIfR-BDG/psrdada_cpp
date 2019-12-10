@@ -129,7 +129,7 @@ void BeamCaptureController<FileWritersType>::listen()
                     header.dec = parser.hhmmss_to_double(beam.dec);
                     header.source = beam.source_name;
                     _file_writers[beam.idx]->tag(beam.name);
-                    if (message.directory)
+                    if (!message.directory.empty())
                     {
                         _file_writers[beam.idx]->directory(message.directory);
                     }
