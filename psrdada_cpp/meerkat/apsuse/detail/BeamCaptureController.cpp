@@ -204,8 +204,8 @@ void BeamCaptureController<FileWritersType>::get_message(Message& message)
         if (message.command == "start")
         {
             //Check if there is an updated output directory for the beams
-            ptree::const_assoc_iterator directory_check = ptree.find("directory");
-            if( directory_check != ptree.not_found())
+            ptree::const_assoc_iterator directory_check = pt.find("directory");
+            if( directory_check != pt.not_found())
             {
                 message.directory = pt.get<std::string>("directory");
                 BOOST_LOG_TRIVIAL(info) << "Data will be recorded to: " << message.directory;

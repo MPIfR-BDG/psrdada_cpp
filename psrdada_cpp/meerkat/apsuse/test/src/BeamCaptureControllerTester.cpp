@@ -32,7 +32,7 @@ void send(boost::asio::local::stream_protocol::socket & socket, const std::strin
 void build_start_message(Message& message, std::size_t nbeams)
 {
     message.command = "start";
-    message.directory = "./"
+    message.directory = "./";
     for (std::size_t beam_idx = 0; beam_idx < nbeams; ++beam_idx)
     {
         message.beams.emplace_back();
