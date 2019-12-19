@@ -1,3 +1,14 @@
+# OpenMP (optional for shared memory multiprocessing)
+option(ENABLE_OPENMP "OpenMP for multithreading" ON)
+if(ENABLE_OPENMP)
+include(FindOpenMP)
+	if(OPENMP_FOUND)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+	endif(OPENMP_FOUND)
+endif(ENABLE_OPENMP)
+
 if(ENABLE_CUDA)
 
 set(PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES
@@ -9,6 +20,9 @@ set(psrdada_cpp_effelsberg_edd_src
     src/Channeliser.cu
     src/DadaBufferLayout.cpp
     src/DetectorAccumulator.cu
+    src/EDDPolnMerge.cpp
+    src/EDDRoach.cpp	
+    src/EDDRoach_merge.cpp
     src/ScaledTransposeTFtoTFT.cu
     src/Tools.cu
     src/Unpacker.cu
@@ -38,6 +52,18 @@ install(TARGETS vdif_send DESTINATION bin)
 cuda_add_executable(dada_dummy_data src/dummy_data_generator.cu)
 target_link_libraries(dada_dummy_data ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
 install(TARGETS VLBI DESTINATION bin)
+
+add_executable(edd_merge src/EDDPolnMerge_cli.cpp)
+target_link_libraries(edd_merge ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES})
+install(TARGETS edd_merge DESTINATION bin)
+
+add_executable(edd_roach src/EDDRoach_cli.cpp)
+target_link_libraries(edd_roach ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES})
+install(TARGETS edd_roach DESTINATION bin)
+
+add_executable(edd_roach_merge src/EDDRoach_merge_cli.cpp)
+target_link_libraries(edd_roach_merge ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES})
+install(TARGETS edd_roach_merge DESTINATION bin)
 
 add_subdirectory(test)
 endif(ENABLE_CUDA)
