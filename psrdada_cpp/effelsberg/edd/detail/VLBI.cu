@@ -50,6 +50,7 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
                            << _raw_voltage_db.size() << " 64-bit words,"
                            << _raw_voltage_db.size() * 64 / 8 << " bytes";
 
+  _unpacked_voltage.resize(n64bit_words * 64 / input_bitDepth );
   _packed_voltage.resize(n64bit_words * 64 / input_bitDepth * _output_bitDepth /
                          8);
 
