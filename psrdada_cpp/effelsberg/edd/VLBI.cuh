@@ -27,6 +27,7 @@ class VDIFHeaderView
   public:
     VDIFHeaderView(const uint32_t* data);
     void setDataLocation(const uint32_t* _data);
+    const uint32_t* getDataLocation() const;
     uint32_t getVersionNumber() const;
 		bool isValid() const;
 		uint32_t getSecondsFromReferenceEpoch() const;
@@ -54,6 +55,8 @@ class VDIFHeader : public VDIFHeaderView
 
 	public:
 		VDIFHeader();
+		VDIFHeader(const VDIFHeader &v);
+		VDIFHeader& operator=(const VDIFHeader& other);
 
     // return pointer to the data block for low level manipulation
 		uint32_t* getData();
