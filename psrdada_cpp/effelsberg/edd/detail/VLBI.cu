@@ -50,6 +50,7 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
                            << _raw_voltage_db.size() << " 64-bit words,"
                            << _raw_voltage_db.size() * 64 / 8 << " bytes";
 
+  _unpacked_voltage.resize(n64bit_words * 64 / input_bitDepth );
   _packed_voltage.resize(n64bit_words * 64 / input_bitDepth * _output_bitDepth /
                          8);
 
@@ -272,17 +273,22 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
       _spillOver.size(), cudaMemcpyDeviceToHost, _d2h_stream));
 
   // fill in header data
-  const size_t samplesPerDataFrame = outputBlockSize * 8 / _output_bitDepth;
-  const size_t dataFramesPerSecond = _sampleRate / samplesPerDataFrame;
+  const uint32_t samplesPerDataFrame = outputBlockSize * 8 / _output_bitDepth;
+  const uint32_t dataFramesPerSecond = _sampleRate / samplesPerDataFrame;
 
-  for (size_t i = 0; i < numberOfBlocksInOutput; i++)
+  BOOST_LOG_TRIVIAL(debug) << " Samples per data frame: " << samplesPerDataFrame; 
+  BOOST_LOG_TRIVIAL(debug) << " Dataframes per second: " << dataFramesPerSecond; 
+
+  for (uint32_t i = 0; i < numberOfBlocksInOutput; i++)
   {
-    // copy header to correct position
-      std::copy(reinterpret_cast<uint8_t *>(_vdifHeader.getData()),
+     // copy header to correct position
+    std::copy(reinterpret_cast<uint8_t *>(_vdifHeader.getData()),
         reinterpret_cast<uint8_t *>(_vdifHeader.getData()) + vlbiHeaderSize,
         _outputBuffer.a().begin() + i * (outputBlockSize + vlbiHeaderSize));
     // update header
-    size_t dataFrame = _vdifHeader.getDataFrameNumber();
+    uint32_t dataFrame = _vdifHeader.getDataFrameNumber();
+    if (i < 5)
+      BOOST_LOG_TRIVIAL(debug) << i << " Dataframe Number: " << dataFrame;
     if (dataFrame < dataFramesPerSecond)
     {
       _vdifHeader.setDataFrameNumber(dataFrame + 1);
@@ -290,7 +296,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
     else
     {
       _vdifHeader.setDataFrameNumber(0);
-    _vdifHeader.setSecondsFromReferenceEpoch(_vdifHeader.getSecondsFromReferenceEpoch() + 1);
+      _vdifHeader.setSecondsFromReferenceEpoch(_vdifHeader.getSecondsFromReferenceEpoch() + 1);
     }
   }
 

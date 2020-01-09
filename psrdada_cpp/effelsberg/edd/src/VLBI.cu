@@ -19,6 +19,10 @@ void VDIFHeaderView::setDataLocation(const uint32_t* _data) {
   data = _data;
 };
 
+const uint32_t* VDIFHeaderView::getDataLocation() const {
+	return data;
+};
+
 bool VDIFHeaderView::isValid() const {
   return (getBitsValue(data[0], 31, 31) == 0);
 }
@@ -89,6 +93,22 @@ VDIFHeader::VDIFHeader() : VDIFHeaderView(data)
 
   // set Version Number to 1
   setBitsWithValue(data[2], 29, 31, 1);
+}
+
+VDIFHeader::VDIFHeader(const VDIFHeader &v): VDIFHeaderView(data)
+{
+	for (int i = 0; i < 8; i++) {
+    data[i] = v.getDataLocation()[i];
+  }
+	setDataLocation(data);
+}
+
+VDIFHeader& VDIFHeader::operator=(const VDIFHeader& other)
+{
+	for (int i = 0; i < 8; i++) {
+    data[i] = other.getDataLocation()[i];
+  }
+	return *this;
 }
 
 uint32_t *VDIFHeader::getData() { return data; }
