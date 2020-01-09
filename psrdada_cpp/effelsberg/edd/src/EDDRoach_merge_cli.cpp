@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     {
         key_t input_key;
 	key_t output_key;
-	std::size_t npol;
+	std::size_t nchunck;
 	std::size_t nsamps_per_heap;
 
         /** Define and parse the program options
@@ -49,8 +49,8 @@ int main(int argc, char** argv)
                 }),
            "The shared memory key for the dada buffer to connect to (hex string)")
 
-        ("npol,p", po::value<std::size_t>(&npol)->default_value(2),
-            "Value of number of pol")
+        ("nchunck,p", po::value<std::size_t>(&nchunck)->default_value(2),
+            "number of incoming stream")
 
         ("nsamps_per_heap,n", po::value<std::size_t>(&nsamps_per_heap)->default_value(4096),
             "Value of samples per heap")
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
          */
         MultiLog log("edd::EDDRoach_merge");
 	DadaWriteClient output(output_key, log);
-	effelsberg::edd::EDDRoach_merge mod(nsamps_per_heap, npol, output);
+	effelsberg::edd::EDDRoach_merge mod(nsamps_per_heap, nchunck, output);
         DadaInputStream <decltype(mod)> input(input_key, log, mod);
         input.start();
         /**

@@ -12,7 +12,7 @@ namespace edd {
 class EDDRoach_merge
 {
 public:
-    EDDRoach_merge(std::size_t nsamps_per_heap, std::size_t npol, DadaWriteClient& writer);
+    EDDRoach_merge(std::size_t nsamps_per_heap, std::size_t nchunck, DadaWriteClient& writer);
     ~EDDRoach_merge();
 
     /**
@@ -38,7 +38,7 @@ public:
 
 private:
     std::size_t _nsamps_per_heap;
-    std::size_t _npol;	
+    std::size_t _nchunck;	
     DadaWriteClient& _writer;
 };
 
