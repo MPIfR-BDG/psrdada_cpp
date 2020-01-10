@@ -88,7 +88,7 @@ class VDIF_Sender
     if (block.used_bytes() == 0)
     {
       BOOST_LOG_TRIVIAL(info) << "Received empty block, exiting.";
-      return true;
+      return false;
     }
     boost::system::error_code err;
     VDIFHeaderView vdifHeader(reinterpret_cast<uint32_t*>(block.ptr()));
@@ -102,6 +102,10 @@ class VDIF_Sender
     for(char* frame_start = block.ptr(); frame_start < block.ptr() + blockSize; frame_start += vdifHeader.getDataFrameLength() * 8)
     {
       vdifHeader.setDataLocation(reinterpret_cast<uint32_t*>(frame_start));
+			// skip invalid blocks
+			if (!vdifHeader.isValid())
+				continue;
+
       uint32_t frameLength = vdifHeader.getDataFrameLength() * 8; // in units of 8 bytes
 
       socket.send_to(boost::asio::buffer(frame_start, frameLength), remote_endpoint, 0, err);

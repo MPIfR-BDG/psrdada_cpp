@@ -34,10 +34,12 @@ class VDIFHeaderView
 		uint32_t getReferenceEpoch() const;
     size_t getTimestamp() const;
 		uint32_t getDataFrameNumber() const;
+		// Length of the data frame including the header, in units of 8 bytes
 		uint32_t getDataFrameLength() const;
 		uint32_t getNumberOfChannels() const;
     bool isRealDataType() const;
 		bool isComplexDataType() const;
+		// Number of bits per sample -1 (max 32/bits per sample)
 		uint32_t getBitsPerSample() const;
 		uint32_t getThreadId() const;
 		uint32_t getStationId() const;
