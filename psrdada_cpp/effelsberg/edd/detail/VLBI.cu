@@ -37,14 +37,13 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
   BOOST_LOG_TRIVIAL(info) << "   Output data in VDIF format with "
                           << vlbiHeaderSize << "bytes header info and "
                           << _vdifHeader.getDataFrameLength() * 8
-                          << " bytes data frame length";
+                          << " bytes total data frame length";
   BOOST_LOG_TRIVIAL(debug) << "   Expecting speadheaps of size "
                            << speadHeapSize << "   byte";
-
   BOOST_LOG_TRIVIAL(debug) << "   Sample rate " << _sampleRate << " Hz";
 
   std::size_t n64bit_words = _buffer_bytes / sizeof(uint64_t);
-  BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
+  BOOST_LOG_TRIVIAL(debug) << "Allocating memory:";
   _raw_voltage_db.resize(n64bit_words);
   BOOST_LOG_TRIVIAL(debug) << "   Input voltages size : "
                            << _raw_voltage_db.size() << " 64-bit words,"
@@ -59,7 +58,7 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
   // number of vlbi frames per input block
   size_t nSamplesPerInputBlock = _packed_voltage.size() * 8 / _output_bitDepth;
   size_t frames_per_block = _packed_voltage.size() / (vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize);
-  BOOST_LOG_TRIVIAL(debug) << "   this correspoonds to " << frames_per_block << " - " << frames_per_block + 1 << " frames";
+  BOOST_LOG_TRIVIAL(debug) << "   this correspoonds to " << frames_per_block << " - " << frames_per_block + 1 << " frames.";
 
   _outputBuffer.resize((frames_per_block+1) * vdifHeader.getDataFrameLength() * 8 );
   // potetnitally invalidating the last frame
@@ -145,7 +144,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
   _raw_voltage_db.swap();
 
-  BOOST_LOG_TRIVIAL(debug) << "   block.used_bytes() = " << block.used_bytes()
+  BOOST_LOG_TRIVIAL(debug) << "  - block.used_bytes() = " << block.used_bytes()
                            << ", dataBlockBytes = " << _buffer_bytes << "\n";
 
   CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_raw_voltage_db.a_ptr()),
@@ -159,7 +158,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   // Process data
   _packed_voltage.swap();
 
-  BOOST_LOG_TRIVIAL(debug) << "Unpacking raw voltages";
+  BOOST_LOG_TRIVIAL(debug) << "  - Unpacking raw voltages";
   switch (_input_bitDepth) {
   case 8:
     _unpacker->unpack<8>(_raw_voltage_db.b(), _unpacked_voltage);
@@ -172,7 +171,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   }
 
 
-  BOOST_LOG_TRIVIAL(debug) << "Calculate baseline";
+  BOOST_LOG_TRIVIAL(debug) << "  - Calculate baseline";
   psrdada_cpp::effelsberg::edd::
       array_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(
           thrust::raw_pointer_cast(_unpacked_voltage.data()),
@@ -183,7 +182,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
           thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(),
           thrust::raw_pointer_cast(_baseLineN.data()));
 
-  BOOST_LOG_TRIVIAL(debug) << "Calculate std-dev";
+  BOOST_LOG_TRIVIAL(debug) << "  - Calculate std-dev";
   psrdada_cpp::effelsberg::edd::
       scaled_square_residual_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(
           thrust::raw_pointer_cast(_unpacked_voltage.data()),
@@ -196,13 +195,13 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
 
 
   // non linear packing
-  BOOST_LOG_TRIVIAL(debug) << "Packing data with non linear 2-bit packaging "
+  BOOST_LOG_TRIVIAL(debug) << "  - Packing data with non linear 2-bit packaging "
                               "using levels -v*sigma, 0, v*sigma with v = "
                            << _digitizer_threshold;
   _packed_voltage.b().resize(_unpacked_voltage.size() * 2 / 8);
-  BOOST_LOG_TRIVIAL(debug) << "Input size: " << _unpacked_voltage.size()
+  BOOST_LOG_TRIVIAL(debug) << "    - Input size: " << _unpacked_voltage.size()
                            << " elements";
-  BOOST_LOG_TRIVIAL(debug) << "Resizing output buffer to "
+  BOOST_LOG_TRIVIAL(debug) << "    - Resizing output buffer to "
                            << _packed_voltage.b().size() << " byte";
 
   pack2bit_nonLinear<<<128, 1024, 0, _proc_stream>>>(
@@ -213,7 +212,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
       thrust::raw_pointer_cast(_baseLineN.data()));
 
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-  BOOST_LOG_TRIVIAL(trace) << " Standard Deviation squared: " << _stdDevN[0]
+  BOOST_LOG_TRIVIAL(trace) << "    - Standard Deviation squared: " << _stdDevN[0]
                            << " "
                            << "Mean Value: "
                            << _baseLineN[0] / _unpacked_voltage.size();
@@ -224,58 +223,50 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   _outputBuffer.swap();
 
   ////////////////////////////////////////////////////////////////////////
-  BOOST_LOG_TRIVIAL(debug) << "Copy Data back to host";
+  BOOST_LOG_TRIVIAL(debug) << "  - Copy Data back to host";
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
 
   const size_t outputBlockSize = _vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize;
-
   const size_t totalSizeOfData = _packed_voltage.size() + _spillOver.size(); // current array + remaining of previous
-
   size_t numberOfBlocksInOutput = totalSizeOfData / outputBlockSize;
-
   size_t remainingBytes = outputBlockSize - _spillOver.size();
-  BOOST_LOG_TRIVIAL(debug) << "   Number of blocks in output "
+  BOOST_LOG_TRIVIAL(debug) << "    - Number of blocks in output "
                            << numberOfBlocksInOutput;
 
-  //_outputBuffer.a().resize(numberOfBlocksInOutput *
-   //                        (outputBlockSize + vlbiHeaderSize));
 
-  BOOST_LOG_TRIVIAL(debug) << "   Copying " << _spillOver.size()
+  // First copy spill-over from last block for first frame, leaving room for
+  // header of course
+  BOOST_LOG_TRIVIAL(debug) << "     - Copying " << _spillOver.size()
                            << " bytes spill over";
-  // leave room for header and fill first block of output with spill over
   std::copy(_spillOver.begin(), _spillOver.end(),
             _outputBuffer.a().begin() + vlbiHeaderSize);
 
-  BOOST_LOG_TRIVIAL(debug) << "   Copying remaining " << remainingBytes
-                           << " bytes for first block";
   // cuda memcopy remainder of first block
+  BOOST_LOG_TRIVIAL(debug) << "     - Copying remaining " << remainingBytes
+                           << " bytes for first block";
   CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_outputBuffer.a_ptr() + vlbiHeaderSize + _spillOver.size()),
                                    static_cast<void *>(_packed_voltage.a_ptr()),
                                    remainingBytes, cudaMemcpyDeviceToHost,
                                    _d2h_stream));
 
+  // cuda memcopy rest with pitch, leaving room for the header
   const size_t dpitch = outputBlockSize + vlbiHeaderSize;
   const size_t spitch = outputBlockSize;
   const size_t width = outputBlockSize;
   size_t height = numberOfBlocksInOutput-1;
-
-  BOOST_LOG_TRIVIAL(debug) << "   Copying " << height
-                           << " blocks a " << outputBlockSize << " bytes";
-  // we now have a full first block, pitch copy rest leaving room for the header
+  BOOST_LOG_TRIVIAL(debug) << "     - Copying " << height
+                           << " blocks of " << outputBlockSize << " bytes";
   CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
       (void *)(_outputBuffer.a_ptr() + outputBlockSize + 2 * vlbiHeaderSize),
       dpitch, (void *)thrust::raw_pointer_cast(_packed_voltage.a_ptr() +
                                                remainingBytes),
       spitch, width, height, cudaMemcpyDeviceToHost, _d2h_stream));
 
-
-  // new spill over
+  // copy remaing part of device to spill over
   _spillOver.resize(totalSizeOfData - numberOfBlocksInOutput * outputBlockSize);
-
   size_t offset = (numberOfBlocksInOutput-1) * outputBlockSize + remainingBytes;
-  BOOST_LOG_TRIVIAL(debug) << " New spill over size " << _spillOver.size()
+  BOOST_LOG_TRIVIAL(debug) << "     - New spill over size " << _spillOver.size()
                            << " bytes with offset " << offset;
-
   CUDA_ERROR_CHECK(cudaMemcpyAsync(
       static_cast<void *>(thrust::raw_pointer_cast(_spillOver.data())),
       static_cast<void *>(_packed_voltage.a_ptr() + offset),
@@ -295,6 +286,8 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
         reinterpret_cast<uint8_t *>(_vdifHeader.getData()) + vlbiHeaderSize,
         _outputBuffer.a().begin() + ib);
     size_t i = ib / _vdifHeader.getDataFrameLength() / 8;
+    if (i < 5)
+      BOOST_LOG_TRIVIAL(debug) << i << " Dataframe Number: " << _vdifHeader.getDataFrameNumber();
 
     // invalidate rest of data so it can be dropped later.
     // Needed so that the outpuitbuffer can have always the same size
@@ -308,18 +301,15 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
       continue;
     }
 
+    // increase dataframenumber
+    _vdifHeader.setDataFrameNumber(_vdifHeader.getDataFrameNumber() + 1);
+
     // update header
-    uint32_t dataFrame = _vdifHeader.getDataFrameNumber();
-    if (i < 5)
-      BOOST_LOG_TRIVIAL(debug) << i << " Dataframe Number: " << dataFrame;
-    if (dataFrame < dataFramesPerSecond)
-    {
-      _vdifHeader.setDataFrameNumber(dataFrame + 1);
-    }
-    else
+    if (_vdifHeader.getDataFrameNumber() >= dataFramesPerSecond)
     {
       _vdifHeader.setDataFrameNumber(0);
       _vdifHeader.setSecondsFromReferenceEpoch(_vdifHeader.getSecondsFromReferenceEpoch() + 1);
+      BOOST_LOG_TRIVIAL(debug) << i << " Beginning new second after epoch: " << _vdifHeader.getSecondsFromReferenceEpoch();
     }
   }
 
