@@ -58,13 +58,11 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
   // number of vlbi frames per input block
   size_t nSamplesPerInputBlock = _packed_voltage.size() * 8 / _output_bitDepth;
   size_t frames_per_block = _packed_voltage.size() / (vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize);
-  BOOST_LOG_TRIVIAL(debug) << "   this correspoonds to " << frames_per_block << " - " << frames_per_block + 1 << " frames.";
+  BOOST_LOG_TRIVIAL(debug) << "   this corresponds to " << frames_per_block << " - " << frames_per_block + 1 << " frames.";
 
   _outputBuffer.resize((frames_per_block+1) * vdifHeader.getDataFrameLength() * 8 );
   // potetnitally invalidating the last frame
-  BOOST_LOG_TRIVIAL(info) << "   Output data in VDIF format with " << _outputBuffer.size() << " bytes per buffer";
-
-
+  BOOST_LOG_TRIVIAL(info) << "Output data in VDIF format with " << _outputBuffer.size() << " bytes per buffer";
 
   CUDA_ERROR_CHECK(cudaStreamCreate(&_h2d_stream));
   CUDA_ERROR_CHECK(cudaStreamCreate(&_proc_stream));
@@ -233,7 +231,6 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   BOOST_LOG_TRIVIAL(debug) << "    - Number of blocks in output "
                            << numberOfBlocksInOutput;
 
-
   // First copy spill-over from last block for first frame, leaving room for
   // header of course
   BOOST_LOG_TRIVIAL(debug) << "     - Copying " << _spillOver.size()
@@ -286,6 +283,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
         reinterpret_cast<uint8_t *>(_vdifHeader.getData()) + vlbiHeaderSize,
         _outputBuffer.a().begin() + ib);
     size_t i = ib / _vdifHeader.getDataFrameLength() / 8;
+
     if (i < 5)
       BOOST_LOG_TRIVIAL(debug) << i << " Dataframe Number: " << _vdifHeader.getDataFrameNumber();
 

@@ -18,7 +18,7 @@ namespace edd {
 const size_t vlbiHeaderSize = 8 * 32 / 8; // bytes [8 words a 32 bit]
 
 
-/// class VDIFHeaderView provides interprets a data block as VDIF compliant header 
+/// class VDIFHeaderView provides interprets a data block as VDIF compliant header
 /// See https://vlbi.org/vlbi-standards/vdif/specification 1.1.1 from June 2014 for details.
 class VDIFHeaderView
 {
@@ -43,7 +43,6 @@ class VDIFHeaderView
     uint32_t getBitsPerSample() const;
     uint32_t getThreadId() const;
     uint32_t getStationId() const;
-
 };
 
 
