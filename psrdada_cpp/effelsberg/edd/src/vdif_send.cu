@@ -34,6 +34,9 @@ class VDIF_Sender
     int port;
     double max_rate;
 
+    uint32_t currentSecondFromReferenceEpoch;
+    size_t noOfSendFrames;      // frames in last second
+
     boost::asio::ip::udp::socket socket;
     boost::asio::ip::udp::endpoint remote_endpoint;
 
@@ -48,7 +51,7 @@ class VDIF_Sender
      *                            communication.
      */
     VDIF_Sender(const std::string &source_ip, const std::string &destination_ip, int port, double max_rate, boost::asio::io_service&
-        io_service): socket(io_service), source_ip(source_ip), destination_ip(destination_ip), port(port), max_rate(max_rate)
+        io_service): socket(io_service), source_ip(source_ip), destination_ip(destination_ip), port(port), max_rate(max_rate), currentSecondFromReferenceEpoch(0), noOfSendFrames(0)
     {
 
     }
@@ -97,18 +100,31 @@ class VDIF_Sender
 
     BOOST_LOG_TRIVIAL(debug) << " Length of first frame: " << vdifHeader.getDataFrameLength() * 8  << " bytes";
     size_t counter = 0;
+    size_t invalidFrames = 0;
 
     auto start = std::chrono::high_resolution_clock::now();
     for(char* frame_start = block.ptr(); frame_start < block.ptr() + blockSize; frame_start += vdifHeader.getDataFrameLength() * 8)
     {
       vdifHeader.setDataLocation(reinterpret_cast<uint32_t*>(frame_start));
-			// skip invalid blocks
-			if (!vdifHeader.isValid())
-				continue;
+      // skip invalid blocks
+      if (!vdifHeader.isValid())
+      {
+        invalidFrames++;
+        continue;
+      }
+      if (vdifHeader.getSecondsFromReferenceEpoch() > currentSecondFromReferenceEpoch)
+      {
+        BOOST_LOG_TRIVIAL(info) << " New second frome reference epoch: " << vdifHeader.getSecondsFromReferenceEpoch() << ", send " << noOfSendFrames << " in previous second.";
+
+        BOOST_LOG_TRIVIAL(debug) <<     "  Previous second from refEpoch " << currentSecondFromReferenceEpoch << " delta = " << vdifHeader.getSecondsFromReferenceEpoch() - currentSecondFromReferenceEpoch;
+        currentSecondFromReferenceEpoch = vdifHeader.getSecondsFromReferenceEpoch();
+        noOfSendFrames = 0;
+      }
 
       uint32_t frameLength = vdifHeader.getDataFrameLength() * 8; // in units of 8 bytes
 
       socket.send_to(boost::asio::buffer(frame_start, frameLength), remote_endpoint, 0, err);
+      noOfSendFrames++;
       counter++;
 
       size_t processed_bytes = (frame_start - block.ptr()) + frameLength;
@@ -124,11 +140,11 @@ class VDIF_Sender
 
         //BOOST_LOG_TRIVIAL(debug) << counter << " Set delay to " << delay.count()<< " ns. Current rate " << current_rate << ", processed_bytes: " << processed_bytes;
       }
-			if (counter < 5)
-	      BOOST_LOG_TRIVIAL(debug) << counter << " Send - FN: " << vdifHeader.getDataFrameNumber() <<  ", Sec f. E.: " << vdifHeader.getSecondsFromReferenceEpoch() << " Get TS.: " << vdifHeader.getTimestamp();
+      if (counter < 5)
+        BOOST_LOG_TRIVIAL(debug) << counter << " Send - FN: " << vdifHeader.getDataFrameNumber() <<  ", Sec f. E.: " << vdifHeader.getSecondsFromReferenceEpoch() << " Get TS.: " << vdifHeader.getTimestamp();
 
     }
-    BOOST_LOG_TRIVIAL(info) << "Send " << counter << " frames of " << block.used_bytes() << " bytes total size.";
+    BOOST_LOG_TRIVIAL(debug) << "Send " << counter << " frames of " << block.used_bytes() << " bytes total size. " << invalidFrames << " invalid frames in block.";
     return false;
   }
 };

@@ -29,20 +29,20 @@ class VDIFHeaderView
     void setDataLocation(const uint32_t* _data);
     const uint32_t* getDataLocation() const;
     uint32_t getVersionNumber() const;
-		bool isValid() const;
-		uint32_t getSecondsFromReferenceEpoch() const;
-		uint32_t getReferenceEpoch() const;
+    bool isValid() const;
+    uint32_t getSecondsFromReferenceEpoch() const;
+    uint32_t getReferenceEpoch() const;
     size_t getTimestamp() const;
-		uint32_t getDataFrameNumber() const;
-		// Length of the data frame including the header, in units of 8 bytes
-		uint32_t getDataFrameLength() const;
-		uint32_t getNumberOfChannels() const;
+    uint32_t getDataFrameNumber() const;
+    // Length of the data frame including the header, in units of 8 bytes
+    uint32_t getDataFrameLength() const;
+    uint32_t getNumberOfChannels() const;
     bool isRealDataType() const;
-		bool isComplexDataType() const;
-		// Number of bits per sample -1 (max 32/bits per sample)
-		uint32_t getBitsPerSample() const;
-		uint32_t getThreadId() const;
-		uint32_t getStationId() const;
+    bool isComplexDataType() const;
+    // Number of bits per sample -1 (max 32/bits per sample)
+    uint32_t getBitsPerSample() const;
+    uint32_t getThreadId() const;
+    uint32_t getStationId() const;
 
 };
 
@@ -52,33 +52,33 @@ class VDIFHeaderView
 /// specification 1.1.1 from June 2014 for details.
 class VDIFHeader : public VDIFHeaderView
 {
-	private:
-	  uint32_t data[8];
+  private:
+    uint32_t data[8];
 
-	public:
-		VDIFHeader();
-		VDIFHeader(const VDIFHeader &v);
-		VDIFHeader& operator=(const VDIFHeader& other);
+  public:
+    VDIFHeader();
+    VDIFHeader(const VDIFHeader &v);
+    VDIFHeader& operator=(const VDIFHeader& other);
 
     // return pointer to the data block for low level manipulation
-		uint32_t* getData();
-		void setInvalid();
-		void setValid();
-		void setSecondsFromReferenceEpoch(uint32_t value);
-		void setReferenceEpoch(uint32_t value);
+    uint32_t* getData();
+    void setInvalid();
+    void setValid();
+    void setSecondsFromReferenceEpoch(uint32_t value);
+    void setReferenceEpoch(uint32_t value);
 
     /// set reference epoch and seconds from reference epoch from POSIX time
     /// stamp
     void setTimeReferencesFromTimestamp(size_t);
     /// converts time reference data to POSIX time
-		void setDataFrameNumber(uint32_t value);
-		void setDataFrameLength(uint32_t value);
-		void setNumberOfChannels(uint32_t value);
-		void setComplexDataType();
-		void setRealDataType();
-	  void setBitsPerSample(uint32_t value);
-	  void setThreadId(uint32_t value);
-	  void setStationId(uint32_t value);
+    void setDataFrameNumber(uint32_t value);
+    void setDataFrameLength(uint32_t value);
+    void setNumberOfChannels(uint32_t value);
+    void setComplexDataType();
+    void setRealDataType();
+    void setBitsPerSample(uint32_t value);
+    void setThreadId(uint32_t value);
+    void setStationId(uint32_t value);
 };
 
 

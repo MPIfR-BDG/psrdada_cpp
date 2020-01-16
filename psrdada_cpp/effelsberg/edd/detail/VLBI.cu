@@ -56,13 +56,13 @@ VLBI<HandlerType>::VLBI(std::size_t buffer_bytes, std::size_t input_bitDepth,
                            << _packed_voltage.size() << " byte";
   _spillOver.reserve(vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize);
 
-	// number of vlbi frames per input block
-	size_t nSamplesPerInputBlock = _packed_voltage.size() * 8 / _output_bitDepth;
-	size_t frames_per_block = _packed_voltage.size() / (vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize); 
+  // number of vlbi frames per input block
+  size_t nSamplesPerInputBlock = _packed_voltage.size() * 8 / _output_bitDepth;
+  size_t frames_per_block = _packed_voltage.size() / (vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize);
   BOOST_LOG_TRIVIAL(debug) << "   this correspoonds to " << frames_per_block << " - " << frames_per_block + 1 << " frames";
 
-	_outputBuffer.resize((frames_per_block+1) * vdifHeader.getDataFrameLength() * 8 );
-	// potetnitally invalidating the last frame
+  _outputBuffer.resize((frames_per_block+1) * vdifHeader.getDataFrameLength() * 8 );
+  // potetnitally invalidating the last frame
   BOOST_LOG_TRIVIAL(info) << "   Output data in VDIF format with " << _outputBuffer.size() << " bytes per buffer";
 
 
@@ -230,7 +230,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   const size_t outputBlockSize = _vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize;
 
   const size_t totalSizeOfData = _packed_voltage.size() + _spillOver.size(); // current array + remaining of previous
- 
+
   size_t numberOfBlocksInOutput = totalSizeOfData / outputBlockSize;
 
   size_t remainingBytes = outputBlockSize - _spillOver.size();
@@ -285,8 +285,8 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   const uint32_t samplesPerDataFrame = outputBlockSize * 8 / _output_bitDepth;
   const uint32_t dataFramesPerSecond = _sampleRate / samplesPerDataFrame;
 
-  BOOST_LOG_TRIVIAL(debug) << " Samples per data frame: " << samplesPerDataFrame; 
-  BOOST_LOG_TRIVIAL(debug) << " Dataframes per second: " << dataFramesPerSecond; 
+  BOOST_LOG_TRIVIAL(debug) << " Samples per data frame: " << samplesPerDataFrame;
+  BOOST_LOG_TRIVIAL(debug) << " Dataframes per second: " << dataFramesPerSecond;
 
   for (uint32_t ib = 0; ib < _outputBuffer.a().size(); ib += _vdifHeader.getDataFrameLength() * 8)
   {
@@ -294,19 +294,19 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
     std::copy(reinterpret_cast<uint8_t *>(_vdifHeader.getData()),
         reinterpret_cast<uint8_t *>(_vdifHeader.getData()) + vlbiHeaderSize,
         _outputBuffer.a().begin() + ib);
-		size_t i = ib / _vdifHeader.getDataFrameLength() / 8;
+    size_t i = ib / _vdifHeader.getDataFrameLength() / 8;
 
-		// invalidate rest of data so it can be dropped later. 
-		// Needed so that the outpuitbuffer can have always the same size
-		if (i < numberOfBlocksInOutput)
-		{
-			_vdifHeader.setValid();
-		}
-		else
-		{
-			_vdifHeader.setInvalid();
-			continue;
-		}
+    // invalidate rest of data so it can be dropped later.
+    // Needed so that the outpuitbuffer can have always the same size
+    if (i < numberOfBlocksInOutput)
+    {
+      _vdifHeader.setValid();
+    }
+    else
+    {
+      _vdifHeader.setInvalid();
+      continue;
+    }
 
     // update header
     uint32_t dataFrame = _vdifHeader.getDataFrameNumber();
