@@ -49,42 +49,78 @@ RSSpectrometer::RSSpectrometer(std::size_t input_nchans, std::size_t fft_length,
 {
 
     BOOST_LOG_TRIVIAL(info) << "Initialising RSSpectrometer instance";
-    BOOST_LOG_TRIVIAL(debug) << "Available GPU memory: " << MEM_LIMIT << " bytes";
-    std::size_t mem_budget = MEM_LIMIT;
+    BOOST_LOG_TRIVIAL(info) << "Number of input channels: " << _input_nchans;
+    BOOST_LOG_TRIVIAL(info) << "FFT length: " << _fft_length;	
+    BOOST_LOG_TRIVIAL(info) << "Number of spectra to accumulate: " << _naccumulate;
+    BOOST_LOG_TRIVIAL(info) << "Number of DADA blocks to skip: " << _nskip;
+    BOOST_LOG_TRIVIAL(info) << "Number of output channels: " << _output_nchans;
+
+    std::size_t total_mem, free_mem;	
+    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));    	
+    BOOST_LOG_TRIVIAL(debug) << "Total GPU memory: " << total_mem << " bytes";
+    BOOST_LOG_TRIVIAL(debug) << "Free GPU memory: " << free_mem << " bytes";
+
     // Memory required for accumulation buffer
-    mem_budget -= _output_nchans * sizeof(OutputType);
+    std::size_t accumulator_buffer_bytes = _output_nchans * sizeof(OutputType);
+    BOOST_LOG_TRIVIAL(debug) << "Memory required for accumulator buffer: " << accumulator_buffer_bytes << " bytes";
+    if (accumulator_buffer_bytes > free_mem)
+    {
+        throw std::runtime_error("The requested FFT length exceeds the free GPU memory");
+    }
+    std::size_t mem_budget = static_cast<std::size_t>((free_mem - accumulator_buffer_bytes) * 0.8) ; // Make only 80% of memory available
+    BOOST_LOG_TRIVIAL(debug) << "Memory budget: " << mem_budget << " bytes";
     // Memory required per input channel
-    std::size_t mem_per_input_channel = (_fft_length *
-        (sizeof(FftType) + sizeof(InputType)));
+    std::size_t mem_per_input_channel = (_fft_length *  (sizeof(FftType) + 2 * sizeof(InputType)));
     BOOST_LOG_TRIVIAL(debug) << "Memory required per input channel: " << mem_per_input_channel << " bytes";
-    _chans_per_copy = mem_budget / mem_per_input_channel;
+    _chans_per_copy = min(_input_nchans, mem_budget / mem_per_input_channel);
+    if (mem_per_input_channel > mem_budget)
+    {
+	 throw std::runtime_error("The requested FFT length exceeds the free GPU memory");
+    }
+    BOOST_LOG_TRIVIAL(debug) << "Max possible Nchans per copy: " << mem_budget / mem_per_input_channel;
     while (_input_nchans % _chans_per_copy != 0)
     {
         _chans_per_copy -= 1;
     }
     assert(_chans_per_copy > 0); /** Must be able to process at least 1 channel */
     BOOST_LOG_TRIVIAL(debug) << "Nchannels per GPU transfer: " << _chans_per_copy;
+    mem_budget -= _chans_per_copy * mem_per_input_channel;
+    BOOST_LOG_TRIVIAL(debug) << "Remaining memory budget: " << mem_budget << " bytes";
+   
     // Resize all buffers.
     BOOST_LOG_TRIVIAL(debug) << "Resizing all memory buffers";
+    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
+    BOOST_LOG_TRIVIAL(debug) << "Free GPU memory: " << free_mem << " bytes";
     _accumulation_buffer.resize(_output_nchans, 0.0f);
+    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
+    BOOST_LOG_TRIVIAL(debug) << "Free GPU memory after acc buffer: " << free_mem << " bytes";
     _h_accumulation_buffer.resize(_output_nchans, 0.0f);
+    BOOST_LOG_TRIVIAL(debug) << "Allocating " << _chans_per_copy * _fft_length * 8 << " bytes for FFT buffer";
     _fft_buffer.resize(_chans_per_copy * _fft_length);
+    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
+    BOOST_LOG_TRIVIAL(debug) << "Free GPU memory after FFT buffer: " << free_mem << " bytes";
     _copy_buffer.resize(_chans_per_copy * _fft_length);
-
+    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
+    BOOST_LOG_TRIVIAL(debug) << "Free GPU memory after copy buffer: " << free_mem << " bytes";
+    
     // Allocate streams
     BOOST_LOG_TRIVIAL(debug) << "Allocating CUDA streams";
     CUDA_ERROR_CHECK(cudaStreamCreate(&_copy_stream));
     CUDA_ERROR_CHECK(cudaStreamCreate(&_proc_stream));
 
+    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
+    BOOST_LOG_TRIVIAL(debug) << "Free GPU memory pre-cufft: " << free_mem << " bytes";
     // Configure CUFFT for FFT execution
     BOOST_LOG_TRIVIAL(debug) << "Generating CUFFT plan";
     int n[] = {static_cast<int>(_fft_length)};
-    int inembed[] = {static_cast<int>(_input_nchans)};
+    int inembed[] = {static_cast<int>(_chans_per_copy)};
     int onembed[] = {static_cast<int>(_fft_length)}; 
-    CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, inembed, _input_nchans, 1, onembed, 1, _fft_length,
-        CUFFT_C2C, _input_nchans));
+    CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, inembed, _chans_per_copy, 1, onembed, 1, _fft_length,
+        CUFFT_C2C, _chans_per_copy));
     BOOST_LOG_TRIVIAL(debug) << "Setting CUFFT stream";
     CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
+    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
+    BOOST_LOG_TRIVIAL(debug) << "Free GPU memory post-cufft: " << free_mem << " bytes";
     BOOST_LOG_TRIVIAL(info) << "RSSpectrometer instance initialised";
 }
 
@@ -171,12 +207,14 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
     // Convert shorts to floats
     BOOST_LOG_TRIVIAL(debug) << "Performing short2 to float2 conversion";
+    
     thrust::transform(
         thrust::cuda::par.on(_proc_stream),
         _copy_buffer.b().begin(),
         _copy_buffer.b().end(),
         _fft_buffer.begin(),
         kernels::short2_to_float2());
+    
     // Perform forward C2C transform
     BOOST_LOG_TRIVIAL(debug) << "Executing FFT";
     cufftComplex* ptr = static_cast<cufftComplex*>(
@@ -186,6 +224,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
     std::size_t chan_offset = chan_block_idx * _chans_per_copy * _fft_length;
     // Detect FFT output and accumulate
     BOOST_LOG_TRIVIAL(debug) << "Detecting and accumulating";
+    
     thrust::transform(
         thrust::cuda::par.on(_proc_stream),
         _fft_buffer.begin(),
@@ -193,18 +232,30 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         _accumulation_buffer.begin() + chan_offset,
         _accumulation_buffer.begin() + chan_offset,
         kernels::detect_accumulate());
+
 }
 
 void RSSpectrometer::copy(RawBytes& block, std::size_t spec_idx, std::size_t chan_block_idx, std::size_t nspectra_in)
 {
     BOOST_LOG_TRIVIAL(debug) << "Copying block to GPU";
     std::size_t spitch = _input_nchans * sizeof(short2); // Width of a row in bytes (so number of channels total)
-    std::size_t dpitch = nspectra_in; // Total number of samples in the input
-    std::size_t width = _chans_per_copy * sizeof(short2); // Width of row in bytes in the output
+    std::size_t width = _chans_per_copy * sizeof(short2);; // Total number of samples in the input
+    std::size_t dpitch = _chans_per_copy * sizeof(short2); // Width of row in bytes in the output
     std::size_t height = _fft_length; // Total number of samples to copy
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_copy_stream));
     _copy_buffer.swap();
     char* src = block.ptr() + spec_idx * spitch * height + chan_block_idx * width;
+    
+    
+    BOOST_LOG_TRIVIAL(debug) << "Calling cudaMemcpy2DAsync with args: "
+	    << "dest=" << _copy_buffer.a_ptr() << ", " 
+	    << "dpitch=" << dpitch << ", "
+	    << "src=" << (void*) src << ", "
+	    << "spitch=" << spitch << ", "
+	    << "width=" << width << ", "
+	    << "height=" << height << ", "
+	    << cudaMemcpyHostToDevice << ", "
+	    << _copy_stream;
     CUDA_ERROR_CHECK(cudaMemcpy2DAsync(_copy_buffer.a_ptr(),
         dpitch, src, spitch, width, height,
         cudaMemcpyHostToDevice, _copy_stream));

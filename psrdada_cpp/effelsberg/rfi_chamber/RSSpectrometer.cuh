@@ -8,8 +8,6 @@
 #include "thrust/host_vector.h"
 #include "cufft.h"
 
-#define MEM_LIMIT 3e9 // 3 GB
-
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace rfi_chamber {
@@ -37,7 +35,7 @@ private:
     DoubleDeviceBuffer<InputType> _copy_buffer;
     thrust::device_vector<FftType> _fft_buffer;
     thrust::device_vector<OutputType> _accumulation_buffer;
-    thrust::device_vector<OutputType> _h_accumulation_buffer;
+    thrust::host_vector<OutputType> _h_accumulation_buffer;
     std::size_t _input_nchans;
     std::size_t _fft_length;
     std::size_t _naccumulate;
