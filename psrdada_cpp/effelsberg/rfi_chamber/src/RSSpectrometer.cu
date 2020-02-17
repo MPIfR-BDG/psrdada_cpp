@@ -184,7 +184,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
             ++chan_block_idx)
         {
             copy(block, spec_idx, chan_block_idx, nspectra_in);
-            process(chan_block_idx);
+            process(chan_block_idx - 1);
         }
         CUDA_ERROR_CHECK(cudaStreamSynchronize(_copy_stream));
         _copy_buffer.swap();
