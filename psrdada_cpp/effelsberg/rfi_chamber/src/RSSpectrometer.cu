@@ -275,7 +275,7 @@ void RSSpectrometer::write_output()
     BOOST_LOG_TRIVIAL(debug) << "Perparing output file";
     std::ofstream outfile;
     outfile.open(_filename.c_str(),std::ifstream::out | std::ifstream::binary);
-    if (_outfile.is_open())
+    if (outfile.is_open())
     {
         BOOST_LOG_TRIVIAL(debug) << "Opened file " << _filename;
     }
@@ -286,10 +286,10 @@ void RSSpectrometer::write_output()
         throw std::runtime_error(stream.str().c_str());
     }
     BOOST_LOG_TRIVIAL(debug) << "Writing output to file";
-    char* ptr = static_cast<char*>(thrust::raw_pointer_cast(_h_accumulation_buffer.data()));
-    _outfile.write(ptr, _h_accumulation_buffer.size() * sizeof(_h_accumulation_buffer::value_type));
-    _outfile.flush();
-    _outfile.close();
+    char const* ptr = reinterpret_cast<char*>(thrust::raw_pointer_cast(_h_accumulation_buffer.data()));
+    outfile.write(ptr, _h_accumulation_buffer.size() * sizeof(decltype(_h_accumulation_buffer)::value_type));
+    outfile.flush();
+    outfile.close();
     BOOST_LOG_TRIVIAL(debug) << "File write complete";
 }
 
