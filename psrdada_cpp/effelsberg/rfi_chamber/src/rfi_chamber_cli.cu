@@ -41,26 +41,26 @@ int main(int argc, char** argv)
         desc.add_options()
         ("help,h", "Print help messages")
         ("key", po::value<std::string>()
-            ->required()
-            ->notifier([&config](std::string key)
+            ->default_value("dada")
+            ->notifier([&dada_key](std::string key)
                 {
                     dada_key = string_to_key(key);
                 }),
            "The shared memory key (hex string) for the dada buffer containing input data")
         ("input_nchans", po::value<std::size_t>(&input_nchans)
-            ->default_value(1<<15)
+            ->default_value(1<<15),
             "The number of PFB channels in the input data")
         ("fft_length", po::value<std::size_t>(&fft_length)
-            ->default_value(1<<12)
+            ->default_value(1<<12),
             "The length of FFT to perform on the data")
         ("naccumulate", po::value<std::size_t>(&naccumulate)
-            ->default_value(1<<12)
+            ->default_value(10),
             "The number of spectra to accumulate before writing to disk")
         ("nskip", po::value<std::size_t>(&nskip)
-            ->default_value(2)
+            ->default_value(2),
             "The number of DADA blocks to skip before recording starts (this allows time for the stream to settle)")
-        ("filename", po::value<std::size_t>(&filename)
-            ->required()
+        ("output,o", po::value<std::string>(&filename)
+            ->required(),
             "The full path of the output file to which the final accumulated spectrum will be written")
         ("log_level", po::value<std::string>()
             ->default_value("info")
