@@ -7,6 +7,8 @@
 #include <random>
 #include <cmath>
 #include <complex>
+#include <fstream>
+#include <iomanip>
 
 namespace psrdada_cpp {
 namespace effelsberg {
@@ -63,7 +65,6 @@ TEST_F(RSSpectrometerTester, test_dc_power)
             s2ptr[ii + chan_idx].y = 0;
         }
     }
-
     RSSpectrometer spectrometer(input_nchans, fft_length, naccumulate, nskip, "/tmp/dc_power_test.bin");
     spectrometer.init(header_block);
     bool retval;
@@ -75,6 +76,37 @@ TEST_F(RSSpectrometerTester, test_dc_power)
         }
     }
     cudaFreeHost(ptr);
+
+
+    std::vector<float> acc_spec(input_nchans * fft_length);
+
+    std::ifstream infile;
+    infile.open("/tmp/dc_power_test.bin", std::ifstream::in | std::ifstream::binary);
+    if (!infile.is_open())
+    {
+        std::stringstream stream;
+        stream << "Could not open file " << _filename;
+        throw std::runtime_error(stream.str().c_str());
+    }
+    infile.read(reinterpret_cast<char*>(acc_spec.data()), input_nchans * fft_length * sizeof(float));
+    infile.close();
+
+    for (std::size_t input_chan_idx = 0; input_chan_idx < input_nchans; ++input_chan_idx)
+    {
+        float expected_peak = pow(input_chan_idx * fft_length, 2);
+        for (std::size_t fft_idx = 0; fft_idx < fft_length; ++fft_idx)
+        {
+            if (fft_idx == fft_length/2)
+            {
+                ASSERT_NEAR(acc_spec[input_chan_idx*fft_length + fft_idx], expected_peak, 0.00001f);
+            }
+            else
+            {
+                ASSERT_NEAR(acc_spec[input_chan_idx*fft_length + fft_idx], 0.0f, 0.00001f);
+            }
+
+        }
+    }
 }
 
 
