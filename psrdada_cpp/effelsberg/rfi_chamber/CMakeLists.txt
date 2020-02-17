@@ -10,9 +10,9 @@ if(ENABLE_CUDA)
       )
 
    cuda_add_library(${CMAKE_PROJECT_NAME}_effelsberg_rfi_chamber ${psrdada_cpp_effelsberg_rfi_chamber_src})
-   #cuda_add_executable(rsspectrometer src/rsspectrometer_cli.cu)
-   #target_link_libraries(rsspectrometer ${PSRDADA_CPP_EFFELSBERG_RFI_CHAMBER_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
-   #install(TARGETS fbfuse DESTINATION bin)
+   cuda_add_executable(rsspectrometer src/rfi_chamber_cli.cu)
+   target_link_libraries(rsspectrometer ${PSRDADA_CPP_EFFELSBERG_RFI_CHAMBER_LIBRARIES} ${CUDA_CUFFT_LIBRARIES})
+   install(TARGETS rsspectrometer DESTINATION bin)
 
 else()
    set(psrdada_cpp_effelsberg_rfi_chamber_src
