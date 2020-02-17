@@ -75,7 +75,7 @@ RSSpectrometer::RSSpectrometer(
     std::size_t mem_budget = static_cast<std::size_t>((free_mem - accumulator_buffer_bytes) * 0.8) ; // Make only 80% of memory available
     BOOST_LOG_TRIVIAL(debug) << "Memory budget: " << mem_budget << " bytes";
     // Memory required per input channel
-    std::size_t mem_per_input_channel = (_fft_length *  (sizeof(FftType) + 2 * sizeof(InputType)));
+    std::size_t mem_per_input_channel = (_fft_length *  (sizeof(FftType) * 2 + 2 * sizeof(InputType)));
     BOOST_LOG_TRIVIAL(debug) << "Memory required per input channel: " << mem_per_input_channel << " bytes";
     _chans_per_copy = min(_input_nchans, mem_budget / mem_per_input_channel);
     if (mem_per_input_channel > mem_budget)
@@ -100,8 +100,9 @@ RSSpectrometer::RSSpectrometer(
     CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
     BOOST_LOG_TRIVIAL(debug) << "Free GPU memory after acc buffer: " << free_mem << " bytes";
     _h_accumulation_buffer.resize(_output_nchans, 0.0f);
-    BOOST_LOG_TRIVIAL(debug) << "Allocating " << _chans_per_copy * _fft_length * 8 << " bytes for FFT buffer";
-    _fft_buffer.resize(_chans_per_copy * _fft_length);
+    BOOST_LOG_TRIVIAL(debug) << "Allocating " << _chans_per_copy * _fft_length * 8  * 2 << " bytes for FFT buffers";
+    _fft_input_buffer.resize(_chans_per_copy * _fft_length);
+    _fft_output_buffer.resize(_chans_per_copy * _fft_length);
     CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
     BOOST_LOG_TRIVIAL(debug) << "Free GPU memory after FFT buffer: " << free_mem << " bytes";
     _copy_buffer.resize(_chans_per_copy * _fft_length);
@@ -221,23 +222,25 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         thrust::cuda::par.on(_proc_stream),
         _copy_buffer.b().begin(),
         _copy_buffer.b().end(),
-        _fft_buffer.begin(),
+        _fft_input_buffer.begin(),
         kernels::short2_to_float2());
 
     // Perform forward C2C transform
     BOOST_LOG_TRIVIAL(debug) << "Executing FFT";
-    cufftComplex* ptr = static_cast<cufftComplex*>(
-        thrust::raw_pointer_cast(_fft_buffer.data()));
+    cufftComplex* in_ptr = static_cast<cufftComplex*>(
+        thrust::raw_pointer_cast(_fft_input_buffer.data()));
+    cufftComplex* out_ptr = static_cast<cufftComplex*>(
+        thrust::raw_pointer_cast(_fft_output_buffer.data()));
     CUFFT_ERROR_CHECK(cufftExecC2C(
-        _fft_plan, ptr, ptr, CUFFT_FORWARD));
+        _fft_plan, in_ptr, out_ptr, CUFFT_FORWARD));
     std::size_t chan_offset = chan_block_idx * _chans_per_copy * _fft_length;
     // Detect FFT output and accumulate
     BOOST_LOG_TRIVIAL(debug) << "Detecting and accumulating";
 
     thrust::transform(
         thrust::cuda::par.on(_proc_stream),
-        _fft_buffer.begin(),
-        _fft_buffer.end(),
+        _fft_output_buffer.begin(),
+        _fft_output_buffer.end(),
         _accumulation_buffer.begin() + chan_offset,
         _accumulation_buffer.begin() + chan_offset,
         kernels::detect_accumulate());
@@ -254,8 +257,6 @@ void RSSpectrometer::copy(RawBytes& block, std::size_t spec_idx, std::size_t cha
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_copy_stream));
     _copy_buffer.swap();
     char* src = block.ptr() + spec_idx * spitch * height + chan_block_idx * width;
-
-
     BOOST_LOG_TRIVIAL(debug) << "Calling cudaMemcpy2DAsync with args: "
 	    << "dest=" << _copy_buffer.a_ptr() << ", "
 	    << "dpitch=" << dpitch << ", "

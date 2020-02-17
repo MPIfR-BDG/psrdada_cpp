@@ -37,7 +37,8 @@ private:
 
 private:
     DoubleDeviceBuffer<InputType> _copy_buffer;
-    thrust::device_vector<FftType> _fft_buffer;
+    thrust::device_vector<FftType> _fft_input_buffer;
+    thrust::device_vector<FftType> _fft_output_buffer;
     thrust::device_vector<OutputType> _accumulation_buffer;
     thrust::host_vector<OutputType> _h_accumulation_buffer;
     std::size_t _input_nchans;
