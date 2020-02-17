@@ -85,7 +85,7 @@ TEST_F(RSSpectrometerTester, test_dc_power)
     if (!infile.is_open())
     {
         std::stringstream stream;
-        stream << "Could not open file " << _filename;
+        stream << "Could not open file " << "/tmp/dc_power_test.bin";
         throw std::runtime_error(stream.str().c_str());
     }
     infile.read(reinterpret_cast<char*>(acc_spec.data()), input_nchans * fft_length * sizeof(float));
@@ -93,12 +93,12 @@ TEST_F(RSSpectrometerTester, test_dc_power)
 
     for (std::size_t input_chan_idx = 0; input_chan_idx < input_nchans; ++input_chan_idx)
     {
-        float expected_peak = pow(input_chan_idx * fft_length, 2);
+        float expected_peak = naccumulate * pow(input_chan_idx * fft_length, 2);
         for (std::size_t fft_idx = 0; fft_idx < fft_length; ++fft_idx)
         {
             if (fft_idx == fft_length/2)
             {
-                ASSERT_NEAR(acc_spec[input_chan_idx*fft_length + fft_idx], expected_peak, 0.00001f);
+                ASSERT_NEAR(acc_spec[input_chan_idx*fft_length + fft_idx], expected_peak, expected_peak * 0.00001f);
             }
             else
             {
