@@ -39,7 +39,7 @@ TEST_F(RSSpectrometerTester, test_exec)
 {
     std::size_t input_nchans = 1<<15;
     std::size_t fft_length = 65536;
-    std::size_t naccumulate = 100;
+    std::size_t naccumulate = 4;
     std::size_t nskip = 5;
 
     std::size_t block_bytes = input_nchans * fft_length * 4 * sizeof(short2);
