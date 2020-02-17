@@ -1,13 +1,5 @@
 # OpenMP (optional for shared memory multiprocessing)
-option(ENABLE_OPENMP "OpenMP for multithreading" ON)
-if(ENABLE_OPENMP)
-include(FindOpenMP)
-	if(OPENMP_FOUND)
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-	endif(OPENMP_FOUND)
-endif(ENABLE_OPENMP)
+
 
 if(ENABLE_CUDA)
 
@@ -21,7 +13,7 @@ set(psrdada_cpp_effelsberg_edd_src
     src/DadaBufferLayout.cpp
     src/DetectorAccumulator.cu
     src/EDDPolnMerge.cpp
-    src/EDDRoach.cpp	
+    src/EDDRoach.cpp
     src/EDDRoach_merge.cpp
     src/ScaledTransposeTFtoTFT.cu
     src/Tools.cu
