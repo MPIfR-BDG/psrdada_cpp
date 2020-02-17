@@ -294,8 +294,8 @@ void RSSpectrometer::write_output()
         //First write upper half of the band
         char* back = reinterpret_cast<char*>(&_h_accumulation_buffer[offset + _fft_length/2]);
         char* front = reinterpret_cast<char*>(&_h_accumulation_buffer[offset]);
-        outfile.write(front, (_fft_length/2) * sizeof(decltype(_h_accumulation_buffer)::value_type));
         outfile.write(back, (_fft_length/2) * sizeof(decltype(_h_accumulation_buffer)::value_type));
+        outfile.write(front, (_fft_length/2) * sizeof(decltype(_h_accumulation_buffer)::value_type));
     }
     outfile.flush();
     outfile.close();

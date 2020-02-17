@@ -47,10 +47,10 @@ int main(int argc, char** argv)
                     dada_key = string_to_key(key);
                 }),
            "The shared memory key (hex string) for the dada buffer containing input data")
-        ("input_nchans", po::value<std::size_t>(&input_nchans)
+        ("input-nchans", po::value<std::size_t>(&input_nchans)
             ->default_value(1<<15),
             "The number of PFB channels in the input data")
-        ("fft_length", po::value<std::size_t>(&fft_length)
+        ("fft-length", po::value<std::size_t>(&fft_length)
             ->default_value(1<<12),
             "The length of FFT to perform on the data")
         ("naccumulate", po::value<std::size_t>(&naccumulate)
