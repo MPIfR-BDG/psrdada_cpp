@@ -189,6 +189,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
         _copy_buffer.swap();
         process(nchan_blocks - 1);
     }
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
     BOOST_LOG_TRIVIAL(debug) << "Processing loop complete";
     _naccumulate -= n_to_accumulate;
     BOOST_LOG_TRIVIAL(info) << "Accumulated " << n_to_accumulate
