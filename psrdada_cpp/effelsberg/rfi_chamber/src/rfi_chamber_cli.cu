@@ -62,7 +62,7 @@ int main(int argc, char** argv)
         ("filename", po::value<std::size_t>(&filename)
             ->required()
             "The full path of the output file to which the final accumulated spectrum will be written")
-        ("log_level", po::value<std::string>()
+        ("log-level", po::value<std::string>()
             ->default_value("info")
             ->notifier([](std::string level)
                 {

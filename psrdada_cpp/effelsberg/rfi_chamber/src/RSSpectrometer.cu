@@ -285,9 +285,18 @@ void RSSpectrometer::write_output()
         stream << "Could not open file " << _filename;
         throw std::runtime_error(stream.str().c_str());
     }
-    BOOST_LOG_TRIVIAL(debug) << "Writing output to file";
-    char const* ptr = reinterpret_cast<char*>(thrust::raw_pointer_cast(_h_accumulation_buffer.data()));
-    outfile.write(ptr, _h_accumulation_buffer.size() * sizeof(decltype(_h_accumulation_buffer)::value_type));
+    BOOST_LOG_TRIVIAL(debug) << "Writing output to file with FFT shift included";
+    //char const* ptr = reinterpret_cast<char*>(thrust::raw_pointer_cast(_h_accumulation_buffer.data()));
+
+    for (std::size_t subband_idx=0; subband_idx < _h_accumulation_buffer.size() / _fft_length; ++subband_idx)
+    {
+        std::size_t offset = subband_idx * _fft_length;
+        //First write upper half of the band
+        char* back = reinterpret_cast<char*>(&_h_accumulation_buffer[offset + _fft_length/2]);
+        char* front = reinterpret_cast<char*>(&_h_accumulation_buffer[offset]);
+        outfile.write(front, (_fft_length/2) * sizeof(decltype(_h_accumulation_buffer)::value_type));
+        outfile.write(back, (_fft_length/2) * sizeof(decltype(_h_accumulation_buffer)::value_type));
+    }
     outfile.flush();
     outfile.close();
     BOOST_LOG_TRIVIAL(debug) << "File write complete";
