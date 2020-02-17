@@ -37,20 +37,16 @@ void RSSpectrometerTester::TearDown()
 
 }
 
-TEST_F(RSSpectrometerTester, test_dc_power)
+void RSSpectrometerTester::run_dc_power_test(std::size_t input_nchans, std::size_t fft_length, std::size_t naccumulate)
 {
-    std::size_t input_nchans = 1<<15;
-    std::size_t fft_length = 1<<10;
-    std::size_t naccumulate = 10;
     std::size_t nskip = 0;
     std::size_t nspec_per_block = 4;
     std::size_t block_bytes = input_nchans * fft_length * nspec_per_block * sizeof(short2);
+    std::size_t nblocks = naccumulate / nspec_per_block + 1;
     std::vector<char> vheader(4096);
-    //std::vector<char> vdata(block_bytes);
     char* ptr;
     cudaMallocHost((void**)&ptr, block_bytes);
     RawBytes header_block(vheader.data(), vheader.size(), vheader.size());
-    //RawBytes data_block((char*) vdata.data(), vdata.size(), vdata.size());
     RawBytes data_block((char*) ptr, block_bytes, block_bytes);
 
 
@@ -68,7 +64,7 @@ TEST_F(RSSpectrometerTester, test_dc_power)
     RSSpectrometer spectrometer(input_nchans, fft_length, naccumulate, nskip, "/tmp/dc_power_test.bin");
     spectrometer.init(header_block);
     bool retval;
-    for (int ii=0; ii < 20; ++ii)
+    for (int ii=0; ii < nblocks; ++ii)
     {
         if (spectrometer(data_block))
         {
@@ -109,32 +105,15 @@ TEST_F(RSSpectrometerTester, test_dc_power)
     }
 }
 
-
-TEST_F(RSSpectrometerTester, test_extreme_nchans)
+TEST_F(RSSpectrometerTester, test_dc_power_1024_chan)
 {
-    std::size_t input_nchans = 1<<15;
-    std::size_t fft_length = 65536;
-    std::size_t naccumulate = 4;
-    std::size_t nskip = 5;
-    std::size_t block_bytes = input_nchans * fft_length * 4 * sizeof(short2);
-    std::vector<char> vheader(4096);
-    //std::vector<char> vdata(block_bytes);
-    char* ptr;
-    cudaMallocHost((void**)&ptr, block_bytes);
-    RawBytes header_block(vheader.data(), vheader.size(), vheader.size());
-    //RawBytes data_block((char*) vdata.data(), vdata.size(), vdata.size());
-    RawBytes data_block((char*) ptr, block_bytes, block_bytes);
-    RSSpectrometer spectrometer(input_nchans, fft_length, naccumulate, nskip, "/dev/null");
-    spectrometer.init(header_block);
-    bool retval;
-    for (int ii=0; ii < 20; ++ii)
-    {
-        if (spectrometer(data_block))
-        {
-            break;
-        }
-    }
-    cudaFreeHost(ptr);
+    run_dc_power_test(1<<15, 1<<10, 10);
+}
+
+
+TEST_F(RSSpectrometerTester, test_dc_power_65536_chan)
+{
+    run_dc_power_test(1<<15, 1<<16, 10);
 }
 
 } //namespace test

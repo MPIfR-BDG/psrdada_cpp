@@ -17,6 +17,8 @@ protected:
 public:
     RSSpectrometerTester();
     ~RSSpectrometerTester();
+
+    void run_dc_power_test(std::size_t input_nchans, std::size_t fft_length, std::size_t naccumulate);
 };
 
 } //namespace test
