@@ -37,7 +37,7 @@ void RSSpectrometerTester::TearDown()
 
 TEST_F(RSSpectrometerTester, test_dc_power)
 {
-    std::size_t c = 1<<15;
+    std::size_t input_nchans = 1<<15;
     std::size_t fft_length = 1<<10;
     std::size_t naccumulate = 10;
     std::size_t nskip = 0;
@@ -54,7 +54,7 @@ TEST_F(RSSpectrometerTester, test_dc_power)
 
     short2* s2ptr = reinterpret_cast<short2*>(ptr);
     for (std::size_t ii = 0;
-        ii < input_nchans * nspec_per_block * fft_length * nspec_per_block;
+        ii < input_nchans * fft_length * nspec_per_block;
         ii += input_nchans)
     {
         for (std::size_t chan_idx = 0; chan_idx < input_nchans; ++chan_idx)
