@@ -7,6 +7,7 @@
 #include "thrust/device_vector.h"
 #include "thrust/host_vector.h"
 #include "cufft.h"
+#include <string>
 
 namespace psrdada_cpp {
 namespace effelsberg {
@@ -20,8 +21,10 @@ public:
     typedef float OutputType;
 
 public:
-    RSSpectrometer(std::size_t input_nchans, std::size_t fft_length,
-        std::size_t naccumulate, std::size_t nskip);
+    RSSpectrometer(
+        std::size_t input_nchans, std::size_t fft_length,
+        std::size_t naccumulate, std::size_t nskip,
+        std::string filename);
     RSSpectrometer(RSSpectrometer const&) = delete;
     ~RSSpectrometer();
     void init(RawBytes &header);
@@ -30,6 +33,7 @@ public:
 private:
     void process(std::size_t chan_block_idx);
     void copy(RawBytes& block, std::size_t spec_idx, std::size_t chan_block_idx, std::size_t nspectra_in);
+    void write_output();
 
 private:
     DoubleDeviceBuffer<InputType> _copy_buffer;
@@ -40,6 +44,7 @@ private:
     std::size_t _fft_length;
     std::size_t _naccumulate;
     std::size_t _nskip;
+    std::string _filename;
     std::size_t _output_nchans;
     std::size_t _bytes_per_input_spectrum;
     std::size_t _chans_per_copy;

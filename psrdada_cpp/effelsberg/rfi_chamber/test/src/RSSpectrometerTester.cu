@@ -46,16 +46,16 @@ TEST_F(RSSpectrometerTester, test_exec)
 
     std::vector<char> vheader(4096);
     //std::vector<char> vdata(block_bytes);
-    char* ptr;	
+    char* ptr;
     cudaMallocHost((void**)&ptr, block_bytes);
-    
+
     //std::vector<char,thrust::system::cuda::experimental::pinned_allocator<char> > vdata(block_bytes);
 
 
     RawBytes header_block(vheader.data(), vheader.size(), vheader.size());
     //RawBytes data_block((char*) vdata.data(), vdata.size(), vdata.size());
     RawBytes data_block((char*) ptr, block_bytes, block_bytes);
-    RSSpectrometer spectrometer(input_nchans, fft_length, naccumulate, nskip);
+    RSSpectrometer spectrometer(input_nchans, fft_length, naccumulate, nskip, "/tmp/dump.bin");
     spectrometer.init(header_block);
 
     bool retval;

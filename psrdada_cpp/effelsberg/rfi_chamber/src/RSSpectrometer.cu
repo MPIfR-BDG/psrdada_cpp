@@ -5,6 +5,8 @@
 #include "thrust/transform.h"
 #include "thrust/fill.h"
 #include <cassert>
+#include <fstream>
+#include <iomanip>
 
 namespace psrdada_cpp {
 namespace effelsberg {
@@ -38,25 +40,28 @@ struct detect_accumulate
 } // namespace kernels
 
 
-RSSpectrometer::RSSpectrometer(std::size_t input_nchans, std::size_t fft_length,
-    std::size_t naccumulate, std::size_t nskip)
+RSSpectrometer::RSSpectrometer(
+    std::size_t input_nchans, std::size_t fft_length,
+    std::size_t naccumulate, std::size_t nskip,
+    std::string filename)
     : _input_nchans(input_nchans)
     , _fft_length(fft_length)
     , _naccumulate(naccumulate)
     , _nskip(nskip)
+    , _filename(filename)
     , _output_nchans(_fft_length * _input_nchans)
     , _bytes_per_input_spectrum(_input_nchans * sizeof(InputType))
 {
 
     BOOST_LOG_TRIVIAL(info) << "Initialising RSSpectrometer instance";
     BOOST_LOG_TRIVIAL(info) << "Number of input channels: " << _input_nchans;
-    BOOST_LOG_TRIVIAL(info) << "FFT length: " << _fft_length;	
+    BOOST_LOG_TRIVIAL(info) << "FFT length: " << _fft_length;
     BOOST_LOG_TRIVIAL(info) << "Number of spectra to accumulate: " << _naccumulate;
     BOOST_LOG_TRIVIAL(info) << "Number of DADA blocks to skip: " << _nskip;
     BOOST_LOG_TRIVIAL(info) << "Number of output channels: " << _output_nchans;
 
-    std::size_t total_mem, free_mem;	
-    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));    	
+    std::size_t total_mem, free_mem;
+    CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
     BOOST_LOG_TRIVIAL(debug) << "Total GPU memory: " << total_mem << " bytes";
     BOOST_LOG_TRIVIAL(debug) << "Free GPU memory: " << free_mem << " bytes";
 
@@ -86,7 +91,7 @@ RSSpectrometer::RSSpectrometer(std::size_t input_nchans, std::size_t fft_length,
     BOOST_LOG_TRIVIAL(debug) << "Nchannels per GPU transfer: " << _chans_per_copy;
     mem_budget -= _chans_per_copy * mem_per_input_channel;
     BOOST_LOG_TRIVIAL(debug) << "Remaining memory budget: " << mem_budget << " bytes";
-   
+
     // Resize all buffers.
     BOOST_LOG_TRIVIAL(debug) << "Resizing all memory buffers";
     CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
@@ -102,7 +107,7 @@ RSSpectrometer::RSSpectrometer(std::size_t input_nchans, std::size_t fft_length,
     _copy_buffer.resize(_chans_per_copy * _fft_length);
     CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
     BOOST_LOG_TRIVIAL(debug) << "Free GPU memory after copy buffer: " << free_mem << " bytes";
-    
+
     // Allocate streams
     BOOST_LOG_TRIVIAL(debug) << "Allocating CUDA streams";
     CUDA_ERROR_CHECK(cudaStreamCreate(&_copy_stream));
@@ -114,7 +119,7 @@ RSSpectrometer::RSSpectrometer(std::size_t input_nchans, std::size_t fft_length,
     BOOST_LOG_TRIVIAL(debug) << "Generating CUFFT plan";
     int n[] = {static_cast<int>(_fft_length)};
     int inembed[] = {static_cast<int>(_chans_per_copy)};
-    int onembed[] = {static_cast<int>(_fft_length)}; 
+    int onembed[] = {static_cast<int>(_fft_length)};
     CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, inembed, _chans_per_copy, 1, onembed, 1, _fft_length,
         CUFFT_C2C, _chans_per_copy));
     BOOST_LOG_TRIVIAL(debug) << "Setting CUFFT stream";
@@ -189,6 +194,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
     if (_naccumulate == 0)
     {
         BOOST_LOG_TRIVIAL(debug) << "Processing loop complete";
+        write_output();
         return true;
     }
     return false;
@@ -207,14 +213,14 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
     // Convert shorts to floats
     BOOST_LOG_TRIVIAL(debug) << "Performing short2 to float2 conversion";
-    
+
     thrust::transform(
         thrust::cuda::par.on(_proc_stream),
         _copy_buffer.b().begin(),
         _copy_buffer.b().end(),
         _fft_buffer.begin(),
         kernels::short2_to_float2());
-    
+
     // Perform forward C2C transform
     BOOST_LOG_TRIVIAL(debug) << "Executing FFT";
     cufftComplex* ptr = static_cast<cufftComplex*>(
@@ -224,7 +230,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
     std::size_t chan_offset = chan_block_idx * _chans_per_copy * _fft_length;
     // Detect FFT output and accumulate
     BOOST_LOG_TRIVIAL(debug) << "Detecting and accumulating";
-    
+
     thrust::transform(
         thrust::cuda::par.on(_proc_stream),
         _fft_buffer.begin(),
@@ -245,10 +251,10 @@ void RSSpectrometer::copy(RawBytes& block, std::size_t spec_idx, std::size_t cha
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_copy_stream));
     _copy_buffer.swap();
     char* src = block.ptr() + spec_idx * spitch * height + chan_block_idx * width;
-    
-    
+
+
     BOOST_LOG_TRIVIAL(debug) << "Calling cudaMemcpy2DAsync with args: "
-	    << "dest=" << _copy_buffer.a_ptr() << ", " 
+	    << "dest=" << _copy_buffer.a_ptr() << ", "
 	    << "dpitch=" << dpitch << ", "
 	    << "src=" << (void*) src << ", "
 	    << "spitch=" << spitch << ", "
@@ -259,6 +265,32 @@ void RSSpectrometer::copy(RawBytes& block, std::size_t spec_idx, std::size_t cha
     CUDA_ERROR_CHECK(cudaMemcpy2DAsync(_copy_buffer.a_ptr(),
         dpitch, src, spitch, width, height,
         cudaMemcpyHostToDevice, _copy_stream));
+}
+
+void RSSpectrometer::write_output()
+{
+    // Copy accumulation buffer to host
+    BOOST_LOG_TRIVIAL(debug) << "Copying accumulated spectrum to host";
+    _h_accumulation_buffer = _accumulation_buffer;
+    BOOST_LOG_TRIVIAL(debug) << "Perparing output file";
+    std::ofstream outfile;
+    outfile.open(_filename.c_str(),std::ifstream::out | std::ifstream::binary);
+    if (_outfile.is_open())
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Opened file " << _filename;
+    }
+    else
+    {
+        std::stringstream stream;
+        stream << "Could not open file " << _filename;
+        throw std::runtime_error(stream.str().c_str());
+    }
+    BOOST_LOG_TRIVIAL(debug) << "Writing output to file";
+    char* ptr = static_cast<char*>(thrust::raw_pointer_cast(_h_accumulation_buffer.data()));
+    _outfile.write(ptr, _h_accumulation_buffer.size() * sizeof(_h_accumulation_buffer::value_type));
+    _outfile.flush();
+    _outfile.close();
+    BOOST_LOG_TRIVIAL(debug) << "File write complete";
 }
 
 
