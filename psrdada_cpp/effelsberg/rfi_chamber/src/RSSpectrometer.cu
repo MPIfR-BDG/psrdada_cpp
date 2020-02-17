@@ -116,12 +116,14 @@ RSSpectrometer::RSSpectrometer(
     CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
     BOOST_LOG_TRIVIAL(debug) << "Free GPU memory pre-cufft: " << free_mem << " bytes";
     // Configure CUFFT for FFT execution
+
     BOOST_LOG_TRIVIAL(debug) << "Generating CUFFT plan";
     int n[] = {static_cast<int>(_fft_length)};
     int inembed[] = {static_cast<int>(_chans_per_copy)};
     int onembed[] = {static_cast<int>(_fft_length)};
     CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, inembed, _chans_per_copy, 1, onembed, 1, _fft_length,
         CUFFT_C2C, _chans_per_copy));
+
     BOOST_LOG_TRIVIAL(debug) << "Setting CUFFT stream";
     CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
     CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
@@ -173,7 +175,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
     BOOST_LOG_TRIVIAL(debug) << "Number of spectra to accumulate in current block: " << n_to_accumulate;
     BOOST_LOG_TRIVIAL(debug) << "Entering processing loop";
     std::size_t nchan_blocks = _input_nchans / _chans_per_copy;
-    for (std::size_t spec_idx = 0; spec_idx < nspectra_out; ++spec_idx)
+    for (std::size_t spec_idx = 0; spec_idx < n_to_accumulate; ++spec_idx)
     {
         copy(block, spec_idx, 0, nspectra_in);
         for (std::size_t chan_block_idx = 1;
