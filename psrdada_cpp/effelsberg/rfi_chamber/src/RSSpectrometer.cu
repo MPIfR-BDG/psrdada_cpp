@@ -187,7 +187,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
     {
         copy(block, spec_idx, 0, nspectra_in);
         for (std::size_t chan_block_idx = 1;
-            chan_block_idx < nchan_blocks - 1;
+            chan_block_idx < nchan_blocks;
             ++chan_block_idx)
         {
             copy(block, spec_idx, chan_block_idx, nspectra_in);
