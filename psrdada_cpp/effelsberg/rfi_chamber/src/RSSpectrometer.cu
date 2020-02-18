@@ -53,7 +53,7 @@ RSSpectrometer::RSSpectrometer(
     , _bytes_per_input_spectrum(_input_nchans * sizeof(InputType))
 {
 
-    BOOST_LOG_TRIVIAL(info) << "Initialising RSSpectrometer instance";
+    BOOST_LOG_TRIVIAL(info) << "Initialising RSSpectrometer";
     BOOST_LOG_TRIVIAL(info) << "Number of input channels: " << _input_nchans;
     BOOST_LOG_TRIVIAL(info) << "FFT length: " << _fft_length;
     BOOST_LOG_TRIVIAL(info) << "Number of spectra to accumulate: " << _naccumulate;
@@ -129,18 +129,18 @@ RSSpectrometer::RSSpectrometer(
     CUFFT_ERROR_CHECK(cufftSetStream(_fft_plan, _proc_stream));
     CUDA_ERROR_CHECK(cudaMemGetInfo(&free_mem, &total_mem));
     BOOST_LOG_TRIVIAL(debug) << "Free GPU memory post-cufft: " << free_mem << " bytes";
-    BOOST_LOG_TRIVIAL(info) << "RSSpectrometer instance initialised";
+    BOOST_LOG_TRIVIAL(debug) << "RSSpectrometer instance initialised";
 }
 
 RSSpectrometer::~RSSpectrometer()
 {
-    BOOST_LOG_TRIVIAL(info) << "Destroying RSSpectrometer instance";
+    BOOST_LOG_TRIVIAL(debug) << "Destroying RSSpectrometer instance";
     BOOST_LOG_TRIVIAL(debug) << "Destroying CUDA streams";
     CUDA_ERROR_CHECK(cudaStreamDestroy(_copy_stream));
     CUDA_ERROR_CHECK(cudaStreamDestroy(_proc_stream));
     BOOST_LOG_TRIVIAL(debug) << "Destroying CUFFT plan";
     CUFFT_ERROR_CHECK(cufftDestroy(_fft_plan));
-    BOOST_LOG_TRIVIAL(info) << "RSSpectrometer instance destroyed";
+    BOOST_LOG_TRIVIAL(info) << "RSSpectrometer destroyed";
 }
 
 void RSSpectrometer::init(RawBytes &header)
