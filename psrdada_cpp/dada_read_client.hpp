@@ -52,6 +52,15 @@ namespace psrdada_cpp {
              * @brief      Check if we have read the last header block in buffer.
              */
             bool at_end() const;
+
+            /**
+             * @brief      Realease all full header blocks in the buffer
+             *
+             * @detail     This method checks the number of full header
+             *             blocks then calls next() release() that number
+             *             of times.
+             */
+            void purge();
         };
 
         class DataStream
@@ -98,6 +107,15 @@ namespace psrdada_cpp {
              * @brief      Return the index of the currently open block
              */
             std::size_t block_idx() const;
+
+            /**
+             * @brief      Realease all full data blocks in the buffer
+             *
+             * @detail     This method checks the number of full data
+             *             blocks then calls next() release() that number
+             *             of times.
+             */
+            void purge();
         };
 
     private:

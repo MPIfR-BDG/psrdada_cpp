@@ -61,10 +61,13 @@ target_link_libraries (fbfuse_output_db ${PSRDADA_CPP_LIBRARIES})
 add_executable(file_to_dada src/file_to_dada_cli.cpp)
 target_link_libraries (file_to_dada ${PSRDADA_CPP_LIBRARIES})
 
-
 #dbnull
 add_executable(dbnull examples/dbnull.cpp)
 target_link_libraries (dbnull ${PSRDADA_CPP_LIBRARIES})
+
+#dbreset
+add_executable(dbreset examples/dbreset.cpp)
+target_link_libraries (dbreset ${PSRDADA_CPP_LIBRARIES})
 
 #dbisk
 #add_executable(dbdisk examples/dbdisk.cpp)
