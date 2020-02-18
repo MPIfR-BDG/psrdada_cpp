@@ -73,7 +73,7 @@ target_link_libraries (dbreset ${PSRDADA_CPP_LIBRARIES})
 #add_executable(dbdisk examples/dbdisk.cpp)
 #target_link_libraries (dbisk ${PSRDADA_CPP_LIBRARIES})
 
-install (TARGETS junkdb dbnull syncdb fbfuse_output_db DESTINATION bin)
+install (TARGETS junkdb dbnull syncdb dbreset fbfuse_output_db DESTINATION bin)
 install (TARGETS ${CMAKE_PROJECT_NAME}
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
