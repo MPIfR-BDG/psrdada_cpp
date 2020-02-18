@@ -111,9 +111,9 @@ TEST_F(RSSpectrometerTester, test_dc_power_1024_chan)
 }
 
 
-TEST_F(RSSpectrometerTester, test_dc_power_65536_chan)
+TEST_F(RSSpectrometerTester, test_dc_power_16384_chan)
 {
-    run_dc_power_test(1<<15, 1<<16, 10);
+    run_dc_power_test(1<<15, 1<<14, 10);
 }
 
 } //namespace test
