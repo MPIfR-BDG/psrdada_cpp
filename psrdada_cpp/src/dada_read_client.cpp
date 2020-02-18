@@ -112,6 +112,17 @@ namespace psrdada_cpp {
         return (bool) ipcbuf_eod(_parent._hdu->header_block);
     }
 
+    void DadaReadClient::HeaderStream::purge()
+    {
+        std::size_t nheader = ipcbuf_get_nfull((ipcbuf_t *) _parent._hdu->header_block);
+        BOOST_LOG_TRIVIAL(debug) << _parent.id() << nheader << " header blocks are full";
+        for (std::size_t ii=0; ii < nheader; ++ii)
+        {
+            next();
+            release();
+        }
+    }
+
     DadaReadClient::DataStream::DataStream(DadaReadClient& parent)
     : _parent(parent)
     , _current_block(nullptr)
@@ -170,6 +181,19 @@ namespace psrdada_cpp {
     bool DadaReadClient::DataStream::at_end() const
     {
         return (bool) ipcbuf_eod((ipcbuf_t *)(_parent._hdu->data_block));
+    }
+
+    void DadaReadClient::DataStream::purge()
+    {
+        std::size_t ndata = ipcbuf_get_nfull((ipcbuf_t *) _parent._hdu->data_block);
+        BOOST_LOG_TRIVIAL(debug) << _parent.id() << ndata << " data blocks are full";
+        for (std::size_t ii=0; ii < ndata; ++ii)
+        {
+            next();
+            release();
+            if (at_end())
+                break;
+        }
     }
 
 } //namespace psrdada_cpp
