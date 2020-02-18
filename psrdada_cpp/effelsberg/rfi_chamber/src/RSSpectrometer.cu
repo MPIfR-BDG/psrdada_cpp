@@ -13,15 +13,22 @@ namespace effelsberg {
 namespace rfi_chamber {
 namespace kernels {
 
-struct short2_to_float2
+struct short2_be_to_float2_le
     : public thrust::unary_function<short2, float2>
 {
     __host__ __device__
     float2 operator()(short2 in)
     {
+        char4 swap;
+        char4* in_as_char4 = (char4*)(&in);
+        swap.x = in_ptr->y;
+        swap.y = in_ptr->x;
+        swap.z = in_ptr->w;
+        swap.w = in_ptr->z;
+        short2* swap_as_short2 = (short2*)(&swap);
         float2 out;
-        out.x = (float) in.x;
-        out.y = (float) in.y;
+        out.x = (float) swap_as_short2->x;
+        out.y = (float) swap_as_short2->y;
         return out;
     }
 };
