@@ -1,4 +1,5 @@
 #include "psrdada_cpp/double_buffer.cuh"
+#include "thrust/device_vector.h"
 #include <utility>
 
 namespace psrdada_cpp {
