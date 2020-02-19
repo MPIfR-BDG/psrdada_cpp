@@ -38,8 +38,6 @@ void RSSpectrometerTester::TearDown()
 
 }
 
-
-
 void RSSpectrometerTester::run_dc_power_test(std::size_t input_nchans, std::size_t fft_length, std::size_t naccumulate)
 {
     std::size_t nskip = 0;
@@ -66,7 +64,6 @@ void RSSpectrometerTester::run_dc_power_test(std::size_t input_nchans, std::size
     }
     RSSpectrometer spectrometer(input_nchans, fft_length, naccumulate, nskip, "/tmp/dc_power_test.bin");
     spectrometer.init(header_block);
-    bool retval;
     for (int ii=0; ii < nblocks; ++ii)
     {
         if (spectrometer(data_block))
