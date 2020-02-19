@@ -4,6 +4,7 @@
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <thrust/host_vector.h>
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
+#include <arpa/inet.h>
 #include <random>
 #include <cmath>
 #include <complex>
@@ -37,6 +38,8 @@ void RSSpectrometerTester::TearDown()
 
 }
 
+
+
 void RSSpectrometerTester::run_dc_power_test(std::size_t input_nchans, std::size_t fft_length, std::size_t naccumulate)
 {
     std::size_t nskip = 0;
@@ -57,7 +60,7 @@ void RSSpectrometerTester::run_dc_power_test(std::size_t input_nchans, std::size
     {
         for (std::size_t chan_idx = 0; chan_idx < input_nchans; ++chan_idx)
         {
-            s2ptr[ii + chan_idx].x = chan_idx;
+            s2ptr[ii + chan_idx].x = htons(static_cast<unsigned short>(chan_idx));
             s2ptr[ii + chan_idx].y = 0;
         }
     }
