@@ -20,7 +20,7 @@ struct short2_be_to_float2_le
     float2 operator()(short2 in)
     {
         char4 swap;
-        char4* in_as_char4 = (char4*)(&in);
+        char4* in_ptr = (char4*)(&in);
         swap.x = in_ptr->y;
         swap.y = in_ptr->x;
         swap.z = in_ptr->w;
@@ -230,7 +230,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         _copy_buffer.b().begin(),
         _copy_buffer.b().end(),
         _fft_input_buffer.begin(),
-        kernels::short2_to_float2());
+        kernels::short2_be_to_float2_le());
 
     // Perform forward C2C transform
     BOOST_LOG_TRIVIAL(debug) << "Executing FFT";
