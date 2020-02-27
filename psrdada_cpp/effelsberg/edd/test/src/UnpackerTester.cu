@@ -224,6 +224,7 @@ TEST_F(UnpackerTester, 12_bit_unpack_test)
     }
     Unpacker::InputType gpu_input = host_input;
     Unpacker::OutputType gpu_output;
+    gpu_output.resize(host_input.size() * sizeof(host_input[0]) * 8 / 12);
     OutputType host_output;
     Unpacker unpacker(_stream);
     unpacker.unpack<12>(gpu_input, gpu_output);
@@ -243,6 +244,7 @@ TEST_F(UnpackerTester, 8_bit_unpack_test)
     }
     Unpacker::InputType gpu_input = host_input;
     Unpacker::OutputType gpu_output;
+    gpu_output.resize(host_input.size() * sizeof(host_input[0]) * 8 / 8);
     OutputType host_output;
     Unpacker unpacker(_stream);
     unpacker.unpack<8>(gpu_input, gpu_output);
