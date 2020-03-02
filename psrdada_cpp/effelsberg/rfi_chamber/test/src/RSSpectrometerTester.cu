@@ -92,11 +92,11 @@ void RSSpectrometerTester::run_dc_power_test(std::size_t input_nchans, std::size
         std::size_t shifted_chan_idx;
         if (input_chan_idx < input_nchans/2)
         {
-            shifted_chan_idx = input_chan_idx + input_nchans/2
+            shifted_chan_idx = input_chan_idx + input_nchans/2;
         }
         else
         {
-            shifted_chan_idx = input_chan_idx - input_nchans/2
+            shifted_chan_idx = input_chan_idx - input_nchans/2;
         }
 
         float expected_peak = naccumulate * pow(shifted_chan_idx * fft_length, 2);
