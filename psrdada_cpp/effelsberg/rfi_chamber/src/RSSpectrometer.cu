@@ -263,19 +263,30 @@ void RSSpectrometer::copy(RawBytes& block, std::size_t spec_idx, std::size_t cha
     std::size_t height = _fft_length; // Total number of samples to copy
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_copy_stream));
     _copy_buffer.swap();
-    char* src = block.ptr() + spec_idx * spitch * height + chan_block_idx * width;
-    BOOST_LOG_TRIVIAL(debug) << "Calling cudaMemcpy2DAsync with args: "
-	    << "dest=" << _copy_buffer.a_ptr() << ", "
-	    << "dpitch=" << dpitch << ", "
-	    << "src=" << (void*) src << ", "
-	    << "spitch=" << spitch << ", "
-	    << "width=" << width << ", "
-	    << "height=" << height << ", "
-	    << cudaMemcpyHostToDevice << ", "
-	    << _copy_stream;
-    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(_copy_buffer.a_ptr(),
-        dpitch, src, spitch, width, height,
-        cudaMemcpyHostToDevice, _copy_stream));
+
+    if (_input_nchans != 1)
+    {
+        char* src = block.ptr() + spec_idx * spitch * height + chan_block_idx * width;
+        BOOST_LOG_TRIVIAL(debug) << "Calling cudaMemcpy2DAsync with args: "
+    	    << "dest=" << _copy_buffer.a_ptr() << ", "
+    	    << "dpitch=" << dpitch << ", "
+    	    << "src=" << (void*) src << ", "
+    	    << "spitch=" << spitch << ", "
+    	    << "width=" << width << ", "
+    	    << "height=" << height << ", "
+    	    << cudaMemcpyHostToDevice << ", "
+    	    << _copy_stream;
+        CUDA_ERROR_CHECK(cudaMemcpy2DAsync(_copy_buffer.a_ptr(),
+            dpitch, src, spitch, width, height,
+            cudaMemcpyHostToDevice, _copy_stream));
+    }
+    else
+    {
+        std::size_t nbytes = _fft_length * sizeof(short2);
+        block.ptr() + spec_idx * nbytes;
+        CUDA_ERROR_CHECK(cudaMemcpyAsync(_copy_buffer.a_ptr(), src, nbytes,
+            cudaMemcpyHostToDevice, _copy_stream));
+    }
 }
 
 void RSSpectrometer::write_output()
