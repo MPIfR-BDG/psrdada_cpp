@@ -296,10 +296,23 @@ void RSSpectrometer::write_output()
         stream << "Could not open file " << _filename;
         throw std::runtime_error(stream.str().c_str());
     }
-    BOOST_LOG_TRIVIAL(debug) << "Writing output to file with FFT shift included";
-    //char const* ptr = reinterpret_cast<char*>(thrust::raw_pointer_cast(_h_accumulation_buffer.data()));
-
-    for (std::size_t subband_idx=0; subband_idx < _h_accumulation_buffer.size() / _fft_length; ++subband_idx)
+    BOOST_LOG_TRIVIAL(info) << "Writing output to " << _filename << " with FFT shifts included";
+    // Here we are now doing a double FFT shift
+    // We must first shift the contents of every coarse channel
+    // The we write out the full spectrum with a shift
+    // First write second half of the band
+    std::size_t nsubbands = _h_accumulation_buffer.size() / _fft_length;
+    for (std::size_t subband_idx=nsubbands/2; subband_idx < nsubbands; ++subband_idx)
+    {
+        std::size_t offset = subband_idx * _fft_length;
+        //First write upper half of the band
+        char* back = reinterpret_cast<char*>(&_h_accumulation_buffer[offset + _fft_length/2]);
+        char* front = reinterpret_cast<char*>(&_h_accumulation_buffer[offset]);
+        outfile.write(back, (_fft_length/2) * sizeof(decltype(_h_accumulation_buffer)::value_type));
+        outfile.write(front, (_fft_length/2) * sizeof(decltype(_h_accumulation_buffer)::value_type));
+    }
+    // Second write out the first half of the band
+    for (std::size_t subband_idx=0; subband_idx < nsubbands/2; ++subband_idx)
     {
         std::size_t offset = subband_idx * _fft_length;
         //First write upper half of the band
