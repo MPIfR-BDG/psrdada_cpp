@@ -13,6 +13,22 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace rfi_chamber {
 
+/**
+ * @brief      Pipeline for processing single polarisation channelised
+ *             data in TF order.
+ *
+ * @detail     Pipeline has been developed to handle the output of an FPGA
+ *             attached to a Rohde & Schwarz spectrum analyser running in
+ *             IQ sampling mode.
+ *
+ *             Data passed to the operator() method of the class is first converted
+ *             from network-order shorts to host-order single precision floats. The
+ *             floating point data is then FFT'd along the T axis of the data before
+ *             the power is detected and the data is integrated into an accumulation
+ *             buffer. After a certain number of spectra have been accumulated the
+ *             integrated spectrum will be written to disk and the object will be
+ *             destroyed.
+ */
 class RSSpectrometer
 {
 public:
@@ -21,13 +37,39 @@ public:
     typedef float OutputType;
 
 public:
+    /**
+     * @brief      Constructs a new instance.
+     *
+     * @param[in]  input_nchans  The number of input nchans
+     * @param[in]  fft_length    The length of the FFT to apply to each channel
+     * @param[in]  naccumulate   The number of detected spectra to accumulate
+     * @param[in]  nskip         The number of DADA blocks to skip before accumulating
+     *                           (to allow network settle time)
+     * @param[in]  filename      The name of the output file to write to
+     */
     RSSpectrometer(
         std::size_t input_nchans, std::size_t fft_length,
         std::size_t naccumulate, std::size_t nskip,
         std::string filename);
     RSSpectrometer(RSSpectrometer const&) = delete;
     ~RSSpectrometer();
+
+    /**
+     * @brief      Handle the DADA header.
+     *
+     * @param      header  The header in DADA format
+     *
+     * @detail     Currently a NO-OP, as no information is required from the header.
+     */
     void init(RawBytes &header);
+
+    /**
+     * @brief      Invoke the pipeline for a block of valid TF data
+     *
+     * @param      block  A RawBytes block containing network order shorts in TF[IQ] order
+     *
+     * @return     Flag indicating if the complete number of spectra has been accumulated already
+     */
     bool operator()(RawBytes &block);
 
 private:
