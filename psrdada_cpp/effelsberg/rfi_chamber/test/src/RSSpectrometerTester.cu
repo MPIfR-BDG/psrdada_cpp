@@ -126,6 +126,11 @@ TEST_F(RSSpectrometerTester, test_dc_power_16384_chan)
     run_dc_power_test(1<<15, 1<<14, 10);
 }
 
+TEST_F(RSSpectrometerTester, test_dc_power_1_input_channel)
+{
+    run_dc_power_test(1, 1<<28, 10);
+}
+
 } //namespace test
 } //namespace rfi_chamber
 } //namespace effeslberg
