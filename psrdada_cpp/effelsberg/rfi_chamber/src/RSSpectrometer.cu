@@ -1,9 +1,11 @@
 #include "psrdada_cpp/effelsberg/rfi_chamber/RSSpectrometer.cuh"
 #include "psrdada_cpp/cuda_utils.hpp"
 #include <thrust/system/cuda/execution_policy.h>
-#include "thrust/functional.h"
-#include "thrust/transform.h"
-#include "thrust/fill.h"
+#include <thrust/functional.h>
+#include <thrust/transform.h>
+#include <thrust/reduce.h>
+#include <thrust/fill.h>
+#include <thrust/iterator/constant_iterator.h>
 #include <cassert>
 #include <fstream>
 #include <iomanip>
@@ -36,12 +38,19 @@ struct short2_be_to_float2_le
 struct detect_accumulate
     : public thrust::binary_function<float2, float, float>
 {
+    detect_accumulate(float scale_factor=1)
+    : _scale_factor(scale_factor){}
+
     __host__ __device__
     float operator()(float2 voltage, float power_accumulator)
     {
-        float power = voltage.x * voltage.x + voltage.y * voltage.y;
+        float x = voltage.x / _scale_factor;
+        float y = voltage.y / _scale_factor;
+        float power = x * x + y * y;
         return power_accumulator + power;
     }
+
+    const float _scale_factor;
 };
 
 } // namespace kernels
@@ -58,6 +67,7 @@ RSSpectrometer::RSSpectrometer(
     , _filename(filename)
     , _output_nchans(_fft_length * _input_nchans)
     , _bytes_per_input_spectrum(_input_nchans * sizeof(InputType))
+    , _naccumulated(0)
 {
 
     BOOST_LOG_TRIVIAL(info) << "Initialising RSSpectrometer";
@@ -200,11 +210,17 @@ bool RSSpectrometer::operator()(RawBytes &block)
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
     BOOST_LOG_TRIVIAL(debug) << "Processing loop complete";
     _naccumulate -= n_to_accumulate;
+    _naccumulated += n_to_accumulate;
     BOOST_LOG_TRIVIAL(info) << "Accumulated " << n_to_accumulate
     << " spectra ("<< _naccumulate << " remaining)";
     if (_naccumulate == 0)
     {
         BOOST_LOG_TRIVIAL(debug) << "Processing loop complete";
+        // Here we need to do the final scaling and conversion
+        thrust::transform(_accumulation_buffer.begin(), _accumulation_buffer.end(),
+            thrust::make_constant_iterator(1.0f / _naccumulated),
+            _accumulation_buffer.begin(),
+            thrust::multiplies<float>());
         write_output();
         return true;
     }
@@ -232,6 +248,16 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         _fft_input_buffer.begin(),
         kernels::short2_be_to_float2_le());
 
+    // Calculate RMS of data
+    float sum = thrust::reduce(
+        thrust::cuda::par.on(_proc_stream),
+        _fft_input_buffer.begin(),
+        _fft_input_buffer.end(),
+        0.0f,
+        kernels::detect_accumulate());
+    float rms = sqrtf(sum / _fft_input_buffer.size());
+    BOOST_LOG_TRIVIAL(debug) << "RMS of IQ data: " << rms;
+
     // Perform forward C2C transform
     BOOST_LOG_TRIVIAL(debug) << "Executing FFT";
     cufftComplex* in_ptr = static_cast<cufftComplex*>(
@@ -250,7 +276,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         _fft_output_buffer.end(),
         _accumulation_buffer.begin() + chan_offset,
         _accumulation_buffer.begin() + chan_offset,
-        kernels::detect_accumulate());
+        kernels::detect_accumulate(1.0f/_fft_length));
 
 }
 

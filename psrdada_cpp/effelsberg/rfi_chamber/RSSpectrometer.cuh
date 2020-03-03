@@ -90,6 +90,7 @@ private:
     std::string _filename;
     std::size_t _output_nchans;
     std::size_t _bytes_per_input_spectrum;
+    std::size_t _naccumulated;
     std::size_t _chans_per_copy;
     cufftHandle _fft_plan;
     cudaStream_t _copy_stream;
