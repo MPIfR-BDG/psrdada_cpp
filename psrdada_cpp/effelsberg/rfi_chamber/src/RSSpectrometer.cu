@@ -35,6 +35,24 @@ struct short2_be_to_float2_le
     }
 };
 
+struct scale_reduce
+    : public thrust::binary_function<float, float2, float>
+{
+    detect_accumulate(float scale_factor=1)
+    : _scale_factor(scale_factor){}
+
+    __host__ __device__
+    float operator()(float power_accumulator, float2 voltage)
+    {
+        float x = voltage.x / _scale_factor;
+        float y = voltage.y / _scale_factor;
+        float power = x * x + y * y;
+        return power_accumulator + power;
+    }
+
+    const float _scale_factor;
+};
+
 struct detect_accumulate
     : public thrust::binary_function<float2, float, float>
 {
@@ -254,7 +272,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         _fft_input_buffer.begin(),
         _fft_input_buffer.end(),
         0.0f,
-        kernels::detect_accumulate());
+        kernels::scale_reduce());
     float rms = sqrtf(sum / _fft_input_buffer.size());
     BOOST_LOG_TRIVIAL(debug) << "RMS of IQ data: " << rms;
 
