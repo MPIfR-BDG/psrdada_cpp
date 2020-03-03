@@ -4,6 +4,7 @@
 #include <thrust/functional.h>
 #include <thrust/transform.h>
 #include <thrust/reduce.h>
+#include <thrust/transform_reduce.h>
 #include <thrust/fill.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <cassert>
@@ -35,19 +36,19 @@ struct short2_be_to_float2_le
     }
 };
 
-struct scale_reduce
-    : public thrust::binary_function<float, float2, float>
+struct detect_scale
+    : public thrust::unary_function<float2, float>
 {
-    detect_accumulate(float scale_factor=1)
+    detect_scale(float scale_factor=1)
     : _scale_factor(scale_factor){}
 
     __host__ __device__
-    float operator()(float power_accumulator, float2 voltage)
+    float operator()(float2 voltage)
     {
         float x = voltage.x / _scale_factor;
         float y = voltage.y / _scale_factor;
         float power = x * x + y * y;
-        return power_accumulator + power;
+        return power;
     }
 
     const float _scale_factor;
@@ -267,12 +268,13 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         kernels::short2_be_to_float2_le());
 
     // Calculate RMS of data
-    float sum = thrust::reduce(
+    float sum = thrust::transform_reduce(
         thrust::cuda::par.on(_proc_stream),
         _fft_input_buffer.begin(),
         _fft_input_buffer.end(),
+        kernels::detect_scale(1.0f),
         0.0f,
-        kernels::scale_reduce());
+        thrust::plus<float>());
     float rms = sqrtf(sum / _fft_input_buffer.size());
     BOOST_LOG_TRIVIAL(debug) << "RMS of IQ data: " << rms;
 
