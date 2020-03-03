@@ -283,7 +283,7 @@ void RSSpectrometer::copy(RawBytes& block, std::size_t spec_idx, std::size_t cha
     else
     {
         std::size_t nbytes = _fft_length * sizeof(short2);
-        block.ptr() + spec_idx * nbytes;
+        char* src = block.ptr() + spec_idx * nbytes;
         CUDA_ERROR_CHECK(cudaMemcpyAsync(_copy_buffer.a_ptr(), src, nbytes,
             cudaMemcpyHostToDevice, _copy_stream));
     }
