@@ -83,7 +83,7 @@ struct convert_to_dBm
     convert_to_dBm(float scale_factor=1)
     : _scale_factor(scale_factor){}
 
-    __host__ __device__
+    __device__
     float operator()(float power)
     {
         // Typically _scale_factor here is 1000.0 / (50.0 * naccumulate);
