@@ -11,6 +11,11 @@
 #include <fstream>
 #include <iomanip>
 
+#define PASSTHROUGH_MODE_IQ_SCALING 1.0f/(1<<15)
+#define PFB_MODE_NSHIFTS 3
+#define PFB_MODE_IQ_SCALING 1.0f/(1<<(30 - PFB_MODE_NSHIFTS))
+#define FSW_IMPEDANCE 50.0f
+
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace rfi_chamber {
@@ -45,8 +50,8 @@ struct detect_scale
     __host__ __device__
     float operator()(float2 voltage)
     {
-        float x = voltage.x / _scale_factor;
-        float y = voltage.y / _scale_factor;
+        float x = voltage.x * _scale_factor;
+        float y = voltage.y * _scale_factor;
         float power = x * x + y * y;
         return power;
     }
@@ -63,10 +68,26 @@ struct detect_accumulate
     __host__ __device__
     float operator()(float2 voltage, float power_accumulator)
     {
-        float x = voltage.x / _scale_factor;
-        float y = voltage.y / _scale_factor;
+        float x = voltage.x * _scale_factor;
+        float y = voltage.y * _scale_factor;
         float power = x * x + y * y;
         return power_accumulator + power;
+    }
+
+    const float _scale_factor;
+};
+
+struct convert_to_dBm
+    : public thrust::unary_function<float, float>
+{
+    convert_to_dBm(float scale_factor=1)
+    : _scale_factor(scale_factor){}
+
+    __host__ __device__
+    float operator()(float power)
+    {
+        // Typically _scale_factor here is 1000.0 / (50.0 * naccumulate);
+        return 10 * __log10f(power * _scale_factor);
     }
 
     const float _scale_factor;
@@ -237,9 +258,8 @@ bool RSSpectrometer::operator()(RawBytes &block)
         BOOST_LOG_TRIVIAL(debug) << "Processing loop complete";
         // Here we need to do the final scaling and conversion
         thrust::transform(_accumulation_buffer.begin(), _accumulation_buffer.end(),
-            thrust::make_constant_iterator(1.0f / _naccumulated),
             _accumulation_buffer.begin(),
-            thrust::multiplies<float>());
+            kernels::convert_to_dBm(1000.0f / (FSW_IMPEDANCE * _naccumulated)));
         write_output();
         return true;
     }
@@ -267,16 +287,31 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         _fft_input_buffer.begin(),
         kernels::short2_be_to_float2_le());
 
+    float scale_factor;
+    if (_input_nchans == 1)
+    {
+        scale_factor = PASSTHROUGH_MODE_IQ_SCALING;
+    }
+    else if (_input_nchans == (1<<15))
+    {
+        scale_factor = PFB_MODE_IQ_SCALING;
+    }
+    else
+    {
+        BOOST_LOG_TRIVIAL(warning) << "No IQ scale factor known for " << _input_nchans << " channel input";
+        scale_factor = 1.0f;
+    }
+
     // Calculate RMS of data
     float sum = thrust::transform_reduce(
         thrust::cuda::par.on(_proc_stream),
         _fft_input_buffer.begin(),
         _fft_input_buffer.end(),
-        kernels::detect_scale(1.0f),
+        kernels::detect_scale(scale_factor),
         0.0f,
         thrust::plus<float>());
     float rms = sqrtf(sum / _fft_input_buffer.size());
-    BOOST_LOG_TRIVIAL(debug) << "RMS of IQ data: " << rms;
+    BOOST_LOG_TRIVIAL(info) << "RMS voltage of IQ data: " << rms << " V";
 
     // Perform forward C2C transform
     BOOST_LOG_TRIVIAL(debug) << "Executing FFT";
@@ -296,7 +331,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         _fft_output_buffer.end(),
         _accumulation_buffer.begin() + chan_offset,
         _accumulation_buffer.begin() + chan_offset,
-        kernels::detect_accumulate(1.0f/_fft_length));
+        kernels::detect_accumulate(scale_factor/_fft_length));
 
 }
 
