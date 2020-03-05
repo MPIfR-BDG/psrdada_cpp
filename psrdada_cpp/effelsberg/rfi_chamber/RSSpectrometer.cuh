@@ -76,7 +76,7 @@ private:
     void process(std::size_t chan_block_idx);
     void copy(RawBytes& block, std::size_t spec_idx, std::size_t chan_block_idx, std::size_t nspectra_in);
     void write_spectrum();
-    void write_histogram(thrust::device_vector<int> const& histogram)
+    void write_histogram(thrust::device_vector<int> const& histogram);
 
 private:
     DoubleDeviceBuffer<InputType> _copy_buffer;

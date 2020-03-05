@@ -3,9 +3,12 @@
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/transform.h>
+#include <thrust/sequence.h>
 #include <thrust/reduce.h>
 #include <thrust/transform_reduce.h>
 #include <thrust/fill.h>
+#include <thrust/binary_search.h>
+#include <thrust/adjacent_difference.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <cassert>
 #include <fstream>
@@ -71,7 +74,7 @@ struct detect_magnitude
         float x = voltage.x * _scale_factor;
         float y = voltage.y * _scale_factor;
         float power = x * x + y * y;
-        return __sqrtf(power);
+        return sqrtf(power);
     }
 
     const float _scale_factor;
@@ -115,7 +118,7 @@ struct convert_to_dBm
 
 // dense histogram using binary search
 void histogram(const thrust::device_vector<float2>& input,
-    thrust::device_vector<int>& histogram
+    thrust::device_vector<int>& d_hist,
     float min_val,
     float max_val,
     std::size_t nbins)
@@ -127,16 +130,16 @@ void histogram(const thrust::device_vector<float2>& input,
     thrust::sort(magnitudes.begin(), magnitudes.end());
     thrust::device_vector<float> bins(nbins);
     float step = (max_val - min_val) / nbins;
-    thrust::sequence(bins.begin(), bins.end(), min_val, step)
+    thrust::sequence(bins.begin(), bins.end(), min_val, step);
     // resize histogram storage
-    histogram.resize(nbins);
+    d_hist.resize(nbins);
     // find the end of each bin of values
     thrust::upper_bound(magnitudes.begin(), magnitudes.end(),
                         bins.begin(), bins.end(),
-                        histogram.begin());
+                        d_hist.begin());
     // compute the histogram by taking differences of the cumulative histogram
-    thrust::adjacent_difference(histogram.begin(), histogram.end(),
-                                histogram.begin());
+    thrust::adjacent_difference(d_hist.begin(), d_hist.end(),
+                                d_hist.begin());
 }
 
 RSSpectrometer::RSSpectrometer(
@@ -309,7 +312,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
 
         // Here we can calculate the histogram of the last block
         thrust::device_vector<int> d_hist;
-        histogram(_fft_input_buffer, d_hist, -1.0, 1.0, 1024);
+        histogram(_fft_input_buffer, d_hist, 0.0, 2.0, 1024);
         write_histogram(d_hist);
 
         return true;
@@ -362,7 +365,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         0.0f,
         thrust::plus<float>());
     float rms = sqrtf(sum / _fft_input_buffer.size());
-    BOOST_LOG_TRIVIAL(info) << "RMS voltage of IQ data: " << rms << " V";
+    BOOST_LOG_TRIVIAL(debug) << "RMS voltage of IQ data: " << rms << " V";
 
     // Perform forward C2C transform
     BOOST_LOG_TRIVIAL(debug) << "Executing FFT";
@@ -440,7 +443,7 @@ void RSSpectrometer::write_histogram(thrust::device_vector<int> const& histogram
         stream << "Could not open file " << _hist_filename;
         throw std::runtime_error(stream.str().c_str());
     }
-    outfile.write(h_hist.data(), h_hist.size() * sizeof(int));
+    outfile.write((char*)h_hist.data(), h_hist.size() * sizeof(int));
     outfile.flush();
     outfile.close();
 }
