@@ -59,6 +59,24 @@ struct detect_scale
     const float _scale_factor;
 };
 
+struct detect_magnitude
+    : public thrust::unary_function<float2, float>
+{
+    detect_magnitude(float scale_factor=1)
+    : _scale_factor(scale_factor){}
+
+    __device__
+    float operator()(float2 voltage)
+    {
+        float x = voltage.x * _scale_factor;
+        float y = voltage.y * _scale_factor;
+        float power = x * x + y * y;
+        return __sqrtf(power);
+    }
+
+    const float _scale_factor;
+};
+
 struct detect_accumulate
     : public thrust::binary_function<float2, float, float>
 {
@@ -95,6 +113,31 @@ struct convert_to_dBm
 
 } // namespace kernels
 
+// dense histogram using binary search
+void histogram(const thrust::device_vector<float2>& input,
+    thrust::device_vector<int>& histogram
+    float min_val,
+    float max_val,
+    std::size_t nbins)
+{
+    // sort data to bring equal elements together
+    thrust::device_vector<float> magnitudes(input.size());
+    thrust::transform(input.begin(), input.end(), magnitudes.begin(),
+        kernels::detect_magnitude(PASSTHROUGH_MODE_IQ_SCALING));
+    thrust::sort(magnitudes.begin(), magnitudes.end());
+    thrust::device_vector<float> bins(nbins);
+    float step = (max_val - min_val) / nbins;
+    thrust::sequence(bins.begin(), bins.end(), min_val, step)
+    // resize histogram storage
+    histogram.resize(nbins);
+    // find the end of each bin of values
+    thrust::upper_bound(magnitudes.begin(), magnitudes.end(),
+                        bins.begin(), bins.end(),
+                        histogram.begin());
+    // compute the histogram by taking differences of the cumulative histogram
+    thrust::adjacent_difference(histogram.begin(), histogram.end(),
+                                histogram.begin());
+}
 
 RSSpectrometer::RSSpectrometer(
     std::size_t input_nchans, std::size_t fft_length,
@@ -260,7 +303,15 @@ bool RSSpectrometer::operator()(RawBytes &block)
         thrust::transform(_accumulation_buffer.begin(), _accumulation_buffer.end(),
             _accumulation_buffer.begin(),
             kernels::convert_to_dBm(1000.0f / (FSW_IMPEDANCE * _naccumulated)));
-        write_output();
+        write_spectrum();
+        // Free up some memory for histogram calculation
+        _fft_output_buffer.resize(0);
+
+        // Here we can calculate the histogram of the last block
+        thrust::device_vector<int> d_hist;
+        histogram(_fft_input_buffer, d_hist, -1.0, 1.0, 1024);
+        write_histogram(d_hist);
+
         return true;
     }
     return false;
@@ -370,7 +421,31 @@ void RSSpectrometer::copy(RawBytes& block, std::size_t spec_idx, std::size_t cha
     }
 }
 
-void RSSpectrometer::write_output()
+void RSSpectrometer::write_histogram(thrust::device_vector<int> const& histogram)
+{
+    // Copy histogeam buffer to host
+    BOOST_LOG_TRIVIAL(debug) << "Copying histogram to host";
+    thrust::host_vector<int> h_hist = histogram;
+    BOOST_LOG_TRIVIAL(debug) << "Perparing output file";
+    std::ofstream outfile;
+    std::string _hist_filename(_filename + ".hist");
+    outfile.open(_hist_filename.c_str(),std::ifstream::out | std::ifstream::binary);
+    if (outfile.is_open())
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Opened file " << _hist_filename;
+    }
+    else
+    {
+        std::stringstream stream;
+        stream << "Could not open file " << _hist_filename;
+        throw std::runtime_error(stream.str().c_str());
+    }
+    outfile.write(h_hist.data(), h_hist.size() * sizeof(int));
+    outfile.flush();
+    outfile.close();
+}
+
+void RSSpectrometer::write_spectrum()
 {
     // Copy accumulation buffer to host
     BOOST_LOG_TRIVIAL(debug) << "Copying accumulated spectrum to host";
