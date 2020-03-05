@@ -308,7 +308,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
         // Here we need to do the final scaling and conversion
         thrust::transform(_accumulation_buffer.begin(), _accumulation_buffer.end(),
             _accumulation_buffer.begin(),
-            kernels::convert_to_dBm(1000.0f / (FSW_IMPEDANCE * _naccumulated)), _reference_dbm - 10);
+            kernels::convert_to_dBm(1000.0f / (FSW_IMPEDANCE * _naccumulated), _reference_dbm - 10));
         write_spectrum();
         // Free up some memory for histogram calculation
         _fft_output_buffer.resize(0);
