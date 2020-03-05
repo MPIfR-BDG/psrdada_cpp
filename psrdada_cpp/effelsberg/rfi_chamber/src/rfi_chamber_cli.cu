@@ -29,6 +29,7 @@ int main(int argc, char** argv)
     std::size_t input_nchans;
     std::size_t fft_length;
     std::size_t naccumulate;
+    float refdbm;
     std::size_t nskip;
     std::string filename;
 
@@ -56,6 +57,9 @@ int main(int argc, char** argv)
         ("naccumulate", po::value<std::size_t>(&naccumulate)
             ->default_value(10),
             "The number of spectra to accumulate before writing to disk")
+        ("reflevel", po::value<float>(&refdbm)
+            ->default_value(0.0f),
+            "The reference power level in dBm")
         ("nskip", po::value<std::size_t>(&nskip)
             ->default_value(2),
             "The number of DADA blocks to skip before recording starts (this allows time for the stream to settle)")
@@ -98,7 +102,7 @@ int main(int argc, char** argv)
         DadaClientBase client(dada_key, log);
         client.cuda_register_memory();
         effelsberg::rfi_chamber::RSSpectrometer spectrometer(
-            input_nchans, fft_length, naccumulate, nskip, filename);
+            input_nchans, fft_length, naccumulate, nskip, filename, refdbm);
         DadaInputStream<decltype(spectrometer)> stream(dada_key, log, spectrometer);
         stream.start();
         /**

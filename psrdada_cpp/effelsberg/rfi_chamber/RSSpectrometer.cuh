@@ -50,7 +50,7 @@ public:
     RSSpectrometer(
         std::size_t input_nchans, std::size_t fft_length,
         std::size_t naccumulate, std::size_t nskip,
-        std::string filename);
+        std::string filename, float reference_dbm);
     RSSpectrometer(RSSpectrometer const&) = delete;
     ~RSSpectrometer();
 
@@ -89,6 +89,7 @@ private:
     std::size_t _naccumulate;
     std::size_t _nskip;
     std::string _filename;
+    float _reference_dbm;
     std::size_t _output_nchans;
     std::size_t _bytes_per_input_spectrum;
     std::size_t _naccumulated;

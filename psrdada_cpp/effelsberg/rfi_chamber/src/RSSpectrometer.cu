@@ -101,17 +101,19 @@ struct detect_accumulate
 struct convert_to_dBm
     : public thrust::unary_function<float, float>
 {
-    convert_to_dBm(float scale_factor=1)
-    : _scale_factor(scale_factor){}
+    convert_to_dBm(float scale_factor=1, float offset=0)
+    : _scale_factor(scale_factor)
+    , _offset(offset){}
 
     __device__
     float operator()(float power)
     {
         // Typically _scale_factor here is 1000.0 / (50.0 * naccumulate);
-        return 10 * __log10f(power * _scale_factor);
+        return 10 * __log10f(power * _scale_factor) + _offset;
     }
 
     const float _scale_factor;
+    const float _offset;
 };
 
 } // namespace kernels
@@ -145,12 +147,13 @@ void histogram(const thrust::device_vector<float2>& input,
 RSSpectrometer::RSSpectrometer(
     std::size_t input_nchans, std::size_t fft_length,
     std::size_t naccumulate, std::size_t nskip,
-    std::string filename)
+    std::string filename, float reference_dbm)
     : _input_nchans(input_nchans)
     , _fft_length(fft_length)
     , _naccumulate(naccumulate)
     , _nskip(nskip)
     , _filename(filename)
+    , _reference_dbm(reference_dbm)
     , _output_nchans(_fft_length * _input_nchans)
     , _bytes_per_input_spectrum(_input_nchans * sizeof(InputType))
     , _naccumulated(0)
@@ -305,7 +308,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
         // Here we need to do the final scaling and conversion
         thrust::transform(_accumulation_buffer.begin(), _accumulation_buffer.end(),
             _accumulation_buffer.begin(),
-            kernels::convert_to_dBm(1000.0f / (FSW_IMPEDANCE * _naccumulated)));
+            kernels::convert_to_dBm(1000.0f / (FSW_IMPEDANCE * _naccumulated)), _reference_dbm - 10);
         write_spectrum();
         // Free up some memory for histogram calculation
         _fft_output_buffer.resize(0);

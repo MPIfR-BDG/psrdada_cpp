@@ -62,7 +62,7 @@ void RSSpectrometerTester::run_dc_power_test(std::size_t input_nchans, std::size
             s2ptr[ii + chan_idx].y = 0;
         }
     }
-    RSSpectrometer spectrometer(input_nchans, fft_length, naccumulate, nskip, "/tmp/dc_power_test.bin");
+    RSSpectrometer spectrometer(input_nchans, fft_length, naccumulate, nskip, "/tmp/dc_power_test.bin", 0.0);
     spectrometer.init(header_block);
     for (int ii=0; ii < nblocks; ++ii)
     {
