@@ -308,7 +308,7 @@ bool RSSpectrometer::operator()(RawBytes &block)
         // Here we need to do the final scaling and conversion
         thrust::transform(_accumulation_buffer.begin(), _accumulation_buffer.end(),
             _accumulation_buffer.begin(),
-            kernels::convert_to_dBm(1000.0f / (FSW_IMPEDANCE * _naccumulated)), 0);
+            kernels::convert_to_dBm(1000.0f / (FSW_IMPEDANCE * _naccumulated), 0));
         write_spectrum();
         // Free up some memory for histogram calculation
         _fft_output_buffer.resize(0);
@@ -347,7 +347,8 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
     float scale_factor;
     if (_input_nchans == 1)
     {
-        scale_factor = PASSTHROUGH_MODE_IQ_SCALING * sqrtf( powf(10.0f, (_reference_dbm-30.0f)) * 50.0f);
+        scale_factor = PASSTHROUGH_MODE_IQ_SCALING * sqrtf( powf(10.0f, 
+				(_reference_dbm - 30.0f) / 10.0f) * 50.0f);
     }
     else if (_input_nchans == (1<<15))
     {
@@ -360,6 +361,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
     }
 
     // Calculate RMS of data
+    /*
     float sum = thrust::transform_reduce(
         thrust::cuda::par.on(_proc_stream),
         _fft_input_buffer.begin(),
@@ -369,7 +371,7 @@ void RSSpectrometer::process(std::size_t chan_block_idx)
         thrust::plus<float>());
     float rms = sqrtf(sum / _fft_input_buffer.size());
     BOOST_LOG_TRIVIAL(debug) << "RMS voltage of IQ data: " << rms << " V";
-
+    */
     // Perform forward C2C transform
     BOOST_LOG_TRIVIAL(debug) << "Executing FFT";
     cufftComplex* in_ptr = static_cast<cufftComplex*>(
