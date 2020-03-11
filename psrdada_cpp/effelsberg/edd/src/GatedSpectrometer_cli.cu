@@ -33,7 +33,7 @@ void launchSpectrometer(const effelsberg::edd::DadaBufferLayout &dadaBufferLayou
     if (output_type == "file")
     {
       SimpleFileWriter sink(filename);
-      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(dadaBufferLayout,
+      effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(dadaBufferLayout,
           selectedSideChannel, selectedBit,
           fft_length, naccumulate, nbits, input_level,
           output_level, sink);
@@ -45,7 +45,7 @@ void launchSpectrometer(const effelsberg::edd::DadaBufferLayout &dadaBufferLayou
     else if (output_type == "dada")
     {
       DadaOutputStream sink(string_to_key(filename), log);
-      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(dadaBufferLayout,
+      effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(dadaBufferLayout,
           selectedSideChannel, selectedBit,
           fft_length, naccumulate, nbits, input_level,
           output_level, sink);
@@ -185,13 +185,8 @@ int main(int argc, char **argv) {
 
     effelsberg::edd::DadaBufferLayout bufferLayout(input_key, speadHeapSize, nSideChannels);
 
-    if (output_bit_depth == 8)
-    {
-      launchSpectrometer<int8_t>(bufferLayout, output_type, filename,
-          selectedSideChannel, selectedBit,
-       fft_length, naccumulate, nbits, input_level, output_level);
-    }
-    else if (output_bit_depth == 32)
+    // ToDo: Supprot only single output depth
+    if (output_bit_depth == 32)
     {
       launchSpectrometer<float>(bufferLayout, output_type, filename,
           selectedSideChannel, selectedBit,
