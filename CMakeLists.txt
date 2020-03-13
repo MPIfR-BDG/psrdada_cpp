@@ -7,6 +7,9 @@ enable_testing()
 set (psrdada_cpp_VERSION_MAJOR 0)
 set (psrdada_cpp_VERSION_MINOR 1)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # cmake setup.
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
