@@ -17,13 +17,29 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
+template<typename T>
+__device__ void reduce(T *x, const T &v)
+{
+  x[threadIdx.x] = v;
+  __syncthreads();
+  for(int s = blockDim.x / 2; s > 0; s = s / 2)
+  {
+    if (threadIdx.x < s)
+      x[threadIdx.x] += x[threadIdx.x + s];
+    __syncthreads();
+  }
+
+
+}
+
+
 __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const uint64_t* __restrict__ sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
                        size_t noOfSideChannels, size_t selectedSideChannel,
                        const float* __restrict__ _baseLineN, uint64_cu* stats_G0, uint64_cu* stats_G1) {
   float baseLine = (*_baseLineN) / N;
 
-  // statistics values for samopels to G0, G1 
+  // statistics values for samopels to G0, G1
   uint32_t _G0stats = 0;
   uint32_t _G1stats = 0;
 
@@ -47,32 +63,13 @@ __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const uin
   __shared__ uint32_t x[1024];
 
   // Reduce G0, G1
-  x[threadIdx.x] = _G0stats;
-  __syncthreads();
-  for(int s = blockDim.x / 2; s > 0; s = s / 2)
-  {
-    if (threadIdx.x < s)
-      x[threadIdx.x] += x[threadIdx.x + s];
-    __syncthreads();
-  }
-
+  reduce<uint32_t>(x, _G0stats);
   if(threadIdx.x == 0)
     atomicAdd(stats_G0,  (uint64_cu) x[threadIdx.x]);
 
-  x[threadIdx.x] = _G1stats;
-  __syncthreads();
-  for(int s = blockDim.x / 2; s > 0; s = s / 2)
-  {
-    if (threadIdx.x < s)
-      x[threadIdx.x] += x[threadIdx.x + s];
-    __syncthreads();
-  }
-
+  reduce<uint32_t>(x, _G1stats);
   if(threadIdx.x == 0)
-  {
-    uint64_cu y = x[threadIdx.x];
-    atomicAdd(stats_G1, y) ;
-  }
+    atomicAdd(stats_G1,  (uint64_cu) x[threadIdx.x]);
 }
 
 
@@ -420,7 +417,7 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
     size_t samples_lost = _nsamps_per_output_spectra - (*on_values) - (*off_values);
     total_samples_lost += samples_lost;
 
-    BOOST_LOG_TRIVIAL(info) << "    Heap " << i << ":\n" 
+    BOOST_LOG_TRIVIAL(info) << "    Heap " << i << ":\n"
       <<"                            Samples with  bit set  : " << *on_values << std::endl
       <<"                            Samples without bit set: " << *off_values << std::endl
       <<"                            Samples lost           : " << samples_lost << " out of " << _nsamps_per_output_spectra << std::endl;
