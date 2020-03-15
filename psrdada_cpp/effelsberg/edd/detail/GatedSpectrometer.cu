@@ -36,16 +36,25 @@ __device__ void reduce(T *x, const T &v)
 __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const uint64_t* __restrict__ sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
                        size_t noOfSideChannels, size_t selectedSideChannel,
-                       const float* __restrict__ _baseLineN, uint64_cu* stats_G0, uint64_cu* stats_G1) {
-  float baseLine = (*_baseLineN) / N;
+                       const float  baseLineG0,
+                       const float  baseLineG1,
+                       float* __restrict__ baseLineNG0,
+                       float* __restrict__ baseLineNG1,
+                       uint64_cu* stats_G0, uint64_cu* stats_G1) {
+//  float baseLineG0 = (*_baseLineNG0) / N;
+ // float baseLineG1 = (*_baseLineNG1) / N;
 
   // statistics values for samopels to G0, G1
   uint32_t _G0stats = 0;
   uint32_t _G1stats = 0;
 
+  float baselineUpdateG0 = 0;
+  float baselineUpdateG1 = 0;
+
   for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
        i += blockDim.x * gridDim.x) {
-    const float w = G0[i] - baseLine;
+    const float v = G0[i];
+
     const uint64_t sideChannelItem =
         sideChannelData[((i / heapSize) * (noOfSideChannels)) +
                         selectedSideChannel]; // Probably not optimal access as
@@ -55,10 +64,14 @@ __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const uin
 
     const unsigned int bit_set = TEST_BIT(sideChannelItem, bitpos);
     const unsigned int heap_lost = TEST_BIT(sideChannelItem, 63);
-    G1[i] = w * bit_set * (!heap_lost) + baseLine;
-    G0[i] = w * (!bit_set) *(!heap_lost) + baseLine;
+    G1[i] = (v - baseLineG1) * bit_set * (!heap_lost) + baseLineG1;
+    G0[i] = (v - baseLineG0) * (!bit_set) *(!heap_lost) + baseLineG0;
+
     _G0stats += (!bit_set) *(!heap_lost);
     _G1stats += bit_set * (!heap_lost);
+
+    baselineUpdateG1 += v * bit_set * (!heap_lost);
+    baselineUpdateG0 += v * (!bit_set) *(!heap_lost);
   }
   __shared__ uint32_t x[1024];
 
@@ -67,38 +80,25 @@ __global__ void gating(float* __restrict__ G0, float* __restrict__ G1, const uin
   if(threadIdx.x == 0)
     atomicAdd(stats_G0,  (uint64_cu) x[threadIdx.x]);
 
+  __syncthreads();
   reduce<uint32_t>(x, _G1stats);
   if(threadIdx.x == 0)
     atomicAdd(stats_G1,  (uint64_cu) x[threadIdx.x]);
-}
 
+  //reuse shared array
+  float *y = (float*) x;
 
-__global__ void countBitSet(const uint64_t *sideChannelData, size_t N, size_t
-    bitpos, size_t noOfSideChannels, size_t selectedSideChannel, size_t
-    *nBitsSet)
-{
-  // really not optimized reduction, but here only trivial array sizes.
-  // run only in one block!
-  __shared__ uint64_t x[1024];
-  uint64_t ls = 0;
-
-  for (uint64_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
-       i += blockDim.x * gridDim.x) {
-    ls += TEST_BIT(sideChannelData[i * noOfSideChannels + selectedSideChannel], bitpos);
-  }
-  x[threadIdx.x] = ls;
+  //update the baseline array
+  reduce<float>(y, baselineUpdateG0);
+  if(threadIdx.x == 0)
+    atomicAdd(baseLineNG0, y[threadIdx.x]);
 
   __syncthreads();
-  for(int s = blockDim.x / 2; s > 0; s = s / 2)
-  {
-    if (threadIdx.x < s)
-      x[threadIdx.x] += x[threadIdx.x + s];
-    __syncthreads();
-  }
-
+  reduce<float>(y, baselineUpdateG1);
   if(threadIdx.x == 0)
-   nBitsSet[0] += x[threadIdx.x];
+    atomicAdd(baseLineNG1, y[threadIdx.x]);
 }
+
 
 
 template <class HandlerType, typename IntegratedPowerType>
@@ -178,7 +178,8 @@ GatedSpectrometer<HandlerType, IntegratedPowerType>::GatedSpectrometer(
   _unpacked_voltage_G0.resize(_nsamps_per_buffer);
   _unpacked_voltage_G1.resize(_nsamps_per_buffer);
 
-  _baseLineN.resize(array_sum_Nthreads);
+  _baseLineNG0.resize(1);
+  _baseLineNG1.resize(1);
   BOOST_LOG_TRIVIAL(debug) << "  Unpacked voltages size (in samples): "
                            << _unpacked_voltage_G0.size();
   _channelised_voltage.resize(_nchans * batch);
@@ -270,12 +271,17 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
     throw std::runtime_error("Unsupported number of bits");
   }
   BOOST_LOG_TRIVIAL(debug) << "Calculate baseline";
-  psrdada_cpp::effelsberg::edd::array_sum<<<64, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_unpacked_voltage_G0.data()), _unpacked_voltage_G0.size(), thrust::raw_pointer_cast(_baseLineN.data()));
-  psrdada_cpp::effelsberg::edd::array_sum<<<1, array_sum_Nthreads, 0, _proc_stream>>>(thrust::raw_pointer_cast(_baseLineN.data()), _baseLineN.size(), thrust::raw_pointer_cast(_baseLineN.data()));
+  //calculate baseline from previos block
 
   BOOST_LOG_TRIVIAL(debug) << "Perform gating";
 
+  float baseLineG0 = _baseLineNG0[0];
+  float baseLineG1 = _baseLineNG1[0];
 
+  uint64_t NG0 = 0;
+  uint64_t NG1 = 0;
+
+  // Loop over outputblocks, for case of multiple output blocks per input block
   for (size_t i = 0; i < noOfBitSetsIn_G0.size(); i++)
   { // ToDo: Should be in one kernel call
   gating<<<1024, 1024, 0, _proc_stream>>>(
@@ -283,11 +289,20 @@ void GatedSpectrometer<HandlerType, IntegratedPowerType>::process(
       thrust::raw_pointer_cast(_unpacked_voltage_G1.data() + i * sideChannelData.size() / noOfBitSetsIn_G0.size()),
       thrust::raw_pointer_cast(sideChannelData.data() + i * sideChannelData.size() / noOfBitSetsIn_G0.size()),
       _unpacked_voltage_G0.size() / noOfBitSetsIn_G0.size(), _dadaBufferLayout.getHeapSize(), _selectedBit, _dadaBufferLayout.getNSideChannels(),
-      _selectedSideChannel, thrust::raw_pointer_cast(_baseLineN.data()),
+      _selectedSideChannel,
+      baseLineG0, baseLineG1,
+      thrust::raw_pointer_cast(_baseLineNG0.data()),
+      thrust::raw_pointer_cast(_baseLineNG1.data()),
       thrust::raw_pointer_cast(noOfBitSetsIn_G0.data() + i),
       thrust::raw_pointer_cast(noOfBitSetsIn_G1.data() + i)
       );
+    NG0 += noOfBitSetsIn_G0[i];
+    NG1 += noOfBitSetsIn_G1[i];
   }
+  _baseLineNG0[0] /= NG0;
+  _baseLineNG1[0] /= NG1;
+  BOOST_LOG_TRIVIAL(debug) << "Updating Baselines\n G0: " << baseLineG0 << " -> " << _baseLineNG0[0] << ", " << baseLineG1 << " -> " << _baseLineNG1[0] ;
+
 
   BOOST_LOG_TRIVIAL(debug) << "Performing FFT 1";
   UnpackedVoltageType *_unpacked_voltage_ptr =
@@ -339,7 +354,11 @@ bool GatedSpectrometer<HandlerType, IntegratedPowerType>::operator()(RawBytes &b
       static_cast<void *>(_sideChannelData_db.a_ptr()),
       static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap()),
       _dadaBufferLayout.sizeOfSideChannelData(), cudaMemcpyHostToDevice, _h2d_stream));
-  BOOST_LOG_TRIVIAL(debug) << "First side channel item: 0x" <<   std::setw(16) << std::setfill('0') << std::hex <<  (reinterpret_cast<uint64_t*>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap()))[0] << std::dec;
+  BOOST_LOG_TRIVIAL(debug) << "First side channel item: 0x" <<   std::setw(16)
+      << std::setfill('0') << std::hex <<
+      (reinterpret_cast<uint64_t*>(block.ptr() + _dadaBufferLayout.sizeOfData()
+                                   + _dadaBufferLayout.sizeOfGap()))[0] <<
+      std::dec;
 
 
   if (_call_count == 1) {
