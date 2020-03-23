@@ -133,7 +133,8 @@ private:
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G0;
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G1;
   thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
-  thrust::device_vector<UnpackedVoltageType> _baseLineN;
+  thrust::device_vector<UnpackedVoltageType> _baseLineNG0;
+  thrust::device_vector<UnpackedVoltageType> _baseLineNG1;
 
   cudaStream_t _h2d_stream;
   cudaStream_t _proc_stream;
@@ -169,8 +170,12 @@ private:
 __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
                        size_t noOfSideChannels, size_t selectedSideChannel,
-                       const float *_baseLine, uint64_cu* stats_G0, uint64_cu*
-                       stats_G1);
+                       const float  baseLineG0,
+                       const float  baseLineG1,
+                       float* __restrict__ baseLineNG0,
+                       float* __restrict__ baseLineNG1,
+                       uint64_cu* stats_G0,
+                       uint64_cu* stats_G1);
 
 
 
