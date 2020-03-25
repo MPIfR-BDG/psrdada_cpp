@@ -1,40 +1,49 @@
-#include<iostream>
-#include<complex>
-#include<vector>
-#include<numeric>
+#include "psrdada_cpp/common.hpp"
+#include <complex>
+#include <vector>
+#include <numeric>
 
-using namespace std;
+namespace psrdada_cpp {
+namespace effelsberg {
+namespace edd {
 
-typedef std::vector<int> vInt;
-typedef std::vector<float> vFloat;
-typedef std::complex<float> Complex;
-typedef std::vector<std::complex<float>> vComplex;
+#define SK_MIN 0.9
+#define SK_MAX 1.1
 
-struct rfi_stat{
-    vInt rfi_status;
+struct RFIStatistics{
+    std::vector<int>  rfi_status;
     float rfi_fraction;
 };
    
 class SpectralKurtosis{
-public:
-    int nchannels; //number of channels
-    int M; //window size
-    int nwindows; //number of windows
-    int sample_size; //size of input data
-    vComplex data;
-    //vInt rfi_status(nwindows);
-    //float rfi_fraction;
-    /**
-     * @param           data          vector of complex data
-     *                  nch           number of channels
-     *                  window_size   widow size used in sk computation.
-     *                                The value should be a multiple of size of data.
-     */
-    SpectralKurtosis(vComplex data, int nch, int window_size);
-    /**
-     * @brief          computes SK and returns rfi_fraction and rfi_status of each window.
-     */
-    rfi_stat compute_sk();
-};
+private:
+    int _nchannels; //number of channels
+    int _window_size; //window size
+    int _nwindows; //number of windows
+    int _sample_size; //size of input data
+    std::vector<float> _p1, _p2, _s1, _s2, _sk;
 
+public:
+    /**
+     * @param     nch           number of channels
+     *            window_size   number of samples per window.
+     */
+    //SpectralKurtosis(std::vector<std::complex<float>> data, int nchannels, int window_size);
+    SpectralKurtosis(int nchannels, int window_size);
+    ~SpectralKurtosis();
+    /**
+     * @brief     initializes data members of the class.
+     *
+     * @param     sample_size    size of the input data
+     */
+    void init();
+    /**
+     * @brief     computes SK and returns rfi statistics.
+     *
+     */
+    void compute_sk(std::vector<std::complex<float>> data, RFIStatistics& stats);
+};
+} //edd
+} //effelsberg
+} //psrdada_cpp
 
