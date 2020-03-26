@@ -136,6 +136,14 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   ++_call_count;
   BOOST_LOG_TRIVIAL(debug) << "VLBI operator() called (count = " << _call_count
                            << ")";
+  if (_samples_to_skip > _packed_voltage.size())
+  {
+    BOOST_LOG_TRIVIAL(debug) << "  - Skipping full block for VDIF full-second alignemnt";
+    _samples_to_skip -= _packed_voltage.size();
+    _call_count--;
+    return false;
+  }
+
   if (block.used_bytes() != _buffer_bytes) { /* Unexpected buffer size */
     BOOST_LOG_TRIVIAL(error) << "Unexpected Buffer Size - Got "
                              << block.used_bytes() << " byte, expected "
@@ -230,12 +238,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   ////////////////////////////////////////////////////////////////////////
   BOOST_LOG_TRIVIAL(debug) << "  - Copy Data back to host";
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
-  if (_samples_to_skip > _packed_voltage.size())
-  {
-    BOOST_LOG_TRIVIAL(debug) << "  - Skipping full block for second alignemnt";
-    _samples_to_skip -= _packed_voltage.size();
-    return false;
-  }
+
 
   const size_t outputBlockSize = _vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize;
   const size_t totalSizeOfData = _packed_voltage.size() + _spillOver.size() - _samples_to_skip; // current array + remaining of previous - samples to skip at the beginning
@@ -282,7 +285,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
       static_cast<void *>(_packed_voltage.a_ptr() + offset + _samples_to_skip),
       _spillOver.size(), cudaMemcpyDeviceToHost, _d2h_stream));
 
-  // ONly skip sampels in first output block to achieve alignement
+  // ONly skip samples in first output block to achieve alignement
   _samples_to_skip = 0;
 
   // fill in header data
@@ -301,7 +304,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
     size_t i = ib / _vdifHeader.getDataFrameLength() / 8;
 
     if (i < 5)
-      BOOST_LOG_TRIVIAL(debug) << i << " Dataframe Number: " << _vdifHeader.getDataFrameNumber();
+      BOOST_LOG_TRIVIAL(debug) << i << " Dataframe Number: " << _vdifHeader.getDataFrameNumber() << " " << _vdifHeader.getTimestamp();
 
     // invalidate rest of data so it can be dropped later.
     // Needed so that the outpuitbuffer can have always the same size
