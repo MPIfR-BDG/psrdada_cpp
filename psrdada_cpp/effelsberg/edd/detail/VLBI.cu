@@ -104,10 +104,11 @@ template <class HandlerType> void VLBI<HandlerType>::init(RawBytes &block) {
   // VDIF starts only at full seconds
   size_t timestamp = (size_t) fractional_timestamp + 1;
   // We thus have to skip some samples at the beginning
-  _samples_to_skip = (timestamp - fractional_timestamp) * _sampleRate;
+  size_t _samples_to_skip = (timestamp - fractional_timestamp) * _sampleRate;
+  _bytes_to_skip = _samples_to_skip * _output_bitDepth / 8;
 
   BOOST_LOG_TRIVIAL(info) << "POSIX timestamp  for first VDIF package: " << timestamp << " = " << sync_time << " + " << sample_clock_start << " / " << _sampleRate  + 1 << " = SYNC_TIME + SAMPLE_CLOCK_START/SAMPLERATE + 1";
-  BOOST_LOG_TRIVIAL(info) << "Fractional timestamp: " << fractional_timestamp << ", sampels to skip: " << _samples_to_skip;
+  BOOST_LOG_TRIVIAL(info) << "Fractional timestamp: " << fractional_timestamp << ", sampels to skip: " << _samples_to_skip << " (" << _bytes_to_skip << " bytes)";
   _vdifHeader.setTimeReferencesFromTimestamp(timestamp);
 
   std::stringstream headerInfo;
@@ -136,10 +137,10 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   ++_call_count;
   BOOST_LOG_TRIVIAL(debug) << "VLBI operator() called (count = " << _call_count
                            << ")";
-  if (_samples_to_skip > _packed_voltage.size())
+  if (_bytes_to_skip> _packed_voltage.size())
   {
     BOOST_LOG_TRIVIAL(debug) << "  - Skipping full block for VDIF full-second alignemnt";
-    _samples_to_skip -= _packed_voltage.size();
+    _bytes_to_skip -= _packed_voltage.size();
     _call_count--;
     return false;
   }
@@ -241,7 +242,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
 
 
   const size_t outputBlockSize = _vdifHeader.getDataFrameLength() * 8 - vlbiHeaderSize;
-  const size_t totalSizeOfData = _packed_voltage.size() + _spillOver.size() - _samples_to_skip; // current array + remaining of previous - samples to skip at the beginning
+  const size_t totalSizeOfData = _packed_voltage.size() + _spillOver.size() - _bytes_to_skip; // current array + remaining of previous - samples to skip at the beginning
   size_t numberOfBlocksInOutput = totalSizeOfData / outputBlockSize;
   size_t remainingBytes = outputBlockSize - _spillOver.size();
   BOOST_LOG_TRIVIAL(debug) << "    - Number of blocks in output "
@@ -258,7 +259,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
   BOOST_LOG_TRIVIAL(debug) << "     - Copying remaining " << remainingBytes
                            << " bytes for first block";
   CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_outputBuffer.a_ptr() + vlbiHeaderSize + _spillOver.size()),
-                                   static_cast<void *>(_packed_voltage.a_ptr() + _samples_to_skip),
+                                   static_cast<void *>(_packed_voltage.a_ptr() + _bytes_to_skip),
                                    remainingBytes, cudaMemcpyDeviceToHost,
                                    _d2h_stream));
 
@@ -271,7 +272,7 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
                            << " blocks of " << outputBlockSize << " bytes";
   CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
       (void *)(_outputBuffer.a_ptr() + outputBlockSize + 2 * vlbiHeaderSize),
-      dpitch, (void *)thrust::raw_pointer_cast(_packed_voltage.a_ptr() + _samples_to_skip +
+      dpitch, (void *)thrust::raw_pointer_cast(_packed_voltage.a_ptr() + _bytes_to_skip +
                                                remainingBytes),
       spitch, width, height, cudaMemcpyDeviceToHost, _d2h_stream));
 
@@ -282,11 +283,11 @@ bool VLBI<HandlerType>::operator()(RawBytes &block) {
                            << " bytes with offset " << offset;
   CUDA_ERROR_CHECK(cudaMemcpyAsync(
       static_cast<void *>(thrust::raw_pointer_cast(_spillOver.data())),
-      static_cast<void *>(_packed_voltage.a_ptr() + offset + _samples_to_skip),
+      static_cast<void *>(_packed_voltage.a_ptr() + offset + _bytes_to_skip),
       _spillOver.size(), cudaMemcpyDeviceToHost, _d2h_stream));
 
   // ONly skip samples in first output block to achieve alignement
-  _samples_to_skip = 0;
+  _bytes_to_skip = 0;
 
   // fill in header data
   const uint32_t samplesPerDataFrame = outputBlockSize * 8 / _output_bitDepth;

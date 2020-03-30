@@ -141,7 +141,7 @@ private:
   std::size_t _speadHeapSize;
   std::size_t _outputBlockSize;
   double _sampleRate, _digitizer_threshold;
-  size_t _samples_to_skip;
+  size_t _bytes_to_skip;
   VDIFHeader _vdifHeader;
 
   HandlerType &_handler;
