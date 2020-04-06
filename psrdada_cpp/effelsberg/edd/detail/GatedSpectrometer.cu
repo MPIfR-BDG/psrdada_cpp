@@ -265,8 +265,7 @@ void GatedSpectrometer<HandlerType>::init(RawBytes &block) {
 
 template <class HandlerType>
 void GatedSpectrometer<HandlerType>::gated_fft(
-        PolarizationData &thispol,
-        PolarizationData &otherpol,
+        PolarizationData &data,
   thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G0,
   thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G1
         )
@@ -291,7 +290,7 @@ void GatedSpectrometer<HandlerType>::gated_fft(
   uint64_t NG1 = 0;
 
   // Loop over outputblocks, for case of multiple output blocks per input block
-  int step = data._sideChannelData.size() / _noOfBitSetsIn_G0.size();
+  int step = data._sideChannelData.b().size() / _noOfBitSetsIn_G0.size();
   for (size_t i = 0; i < _noOfBitSetsIn_G0.size(); i++)
   { // ToDo: Should be in one kernel call
   gating<<<1024, 1024, 0, _proc_stream>>>(
@@ -338,86 +337,94 @@ void GatedSpectrometer<HandlerType>::gated_fft(
 
 template <class HandlerType>
 bool GatedSpectrometer<HandlerType>::operator()(RawBytes &block) {
-  ++_call_count;
-  BOOST_LOG_TRIVIAL(debug) << "GatedSpectrometer operator() called (count = "
-                           << _call_count << ")";
-  if (block.used_bytes() != _dadaBufferLayout.getBufferSize()) { /* Unexpected buffer size */
-    BOOST_LOG_TRIVIAL(error) << "Unexpected Buffer Size - Got "
-                             << block.used_bytes() << " byte, expected "
-                             << _dadaBufferLayout.getBufferSize() << " byte)";
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-    cudaProfilerStop();
-    return true;
-  }
+    ++_call_count;
+    BOOST_LOG_TRIVIAL(debug) << "GatedSpectrometer operator() called (count = "
+                             << _call_count << ")";
+    if (block.used_bytes() != _dadaBufferLayout.getBufferSize()) {
+      // Stop on unexpected buffer size
+      BOOST_LOG_TRIVIAL(error) << "Unexpected Buffer Size - Got "
+                               << block.used_bytes() << " byte, expected "
+                               << _dadaBufferLayout.getBufferSize() << " byte)";
+      CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+      cudaProfilerStop();
+      return true;
+    }
 
-  // Copy data to device
-  CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
- polarization0.swap();
- polarization1.swap();
+    // Copy data to device
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_h2d_stream));
+    polarization0.swap();
+    polarization1.swap();
 
-  BOOST_LOG_TRIVIAL(debug) << "   block.used_bytes() = " << block.used_bytes()
-                           << ", dataBlockBytes = " << _dadaBufferLayout.sizeOfData() << "\n";
+    BOOST_LOG_TRIVIAL(debug) << "   block.used_bytes() = " <<
+        block.used_bytes() << ", dataBlockBytes = " <<
+        _dadaBufferLayout.sizeOfData() << "\n";
 
-  // Copy the data with stride to the GPU:
-  // CPU: P1P2P1P2P1P2 ...
-  // GPU: P1P1P1 ... P2P2P2 ...
-  int heapsize_bytes = _nsamps_per_heap * _nbits / 8;
-  CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
-    static_cast<void *>(polarization0._raw_voltage.a_ptr()),
-      heapsize_bytes,
-      static_cast<void *>(block.ptr()),
-      2 * heapsize_bytes,
-      heapsize_bytes, _dadaBufferLayout.sizeOfData() / heapsize_bytes/ 2,
-      cudaMemcpyHostToDevice, _h2d_stream));
+    // Copy the data with stride to the GPU:
+    // CPU: P1P2P1P2P1P2 ...
+    // GPU: P1P1P1 ... P2P2P2 ...
+    // If this is a bottleneck the gating kernel could sort the layout out
+    // during copy
+    int heapsize_bytes = _nsamps_per_heap * _nbits / 8;
+    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
+      static_cast<void *>(polarization0._raw_voltage.a_ptr()),
+        heapsize_bytes,
+        static_cast<void *>(block.ptr()),
+        2 * heapsize_bytes,
+        heapsize_bytes, _dadaBufferLayout.sizeOfData() / heapsize_bytes/ 2,
+        cudaMemcpyHostToDevice, _h2d_stream));
 
-  CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
-    static_cast<void *>(polarization1._raw_voltage.a_ptr()),
-      heapsize_bytes,
-      static_cast<void *>(block.ptr()) + heapsize_bytes,
-      2 * heapsize_bytes,
-      heapsize_bytes, _dadaBufferLayout.sizeOfData() / heapsize_bytes/ 2,
-      cudaMemcpyHostToDevice, _h2d_stream));
+    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
+      static_cast<void *>(polarization1._raw_voltage.a_ptr()),
+        heapsize_bytes,
+        static_cast<void *>(block.ptr()) + heapsize_bytes,
+        2 * heapsize_bytes,
+        heapsize_bytes, _dadaBufferLayout.sizeOfData() / heapsize_bytes/ 2,
+        cudaMemcpyHostToDevice, _h2d_stream));
 
-// ToDo: Strided copy of side channel data
-//  CUDA_ERROR_CHECK(cudaMemcpyAsync(
-//      static_cast<void *>(polarization0._sideChannelData.a_ptr()),
-//      static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap()),
-//      _dadaBufferLayout.sizeOfSideChannelData(), cudaMemcpyHostToDevice, _h2d_stream));
-//
-//  CUDA_ERROR_CHECK(cudaMemcpyAsync(
-//      static_cast<void *>(polarization1._sideChannelData.a_ptr()),
-//      static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap()),
-//      _dadaBufferLayout.sizeOfSideChannelData(), cudaMemcpyHostToDevice, _h2d_stream));
+    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
+        static_cast<void *>(polarization0._sideChannelData.a_ptr()),
+        sizeof(uint64_t),
+        static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap()),
+        2 * sizeof(uint64_t),
+        sizeof(uint64_t),
+        _dadaBufferLayout.sizeOfSideChannelData() / 2 / sizeof(uint64_t),
+        cudaMemcpyHostToDevice, _h2d_stream));
 
-  BOOST_LOG_TRIVIAL(debug) << "First side channel item: 0x" <<   std::setw(16)
-      << std::setfill('0') << std::hex <<
-      (reinterpret_cast<uint64_t*>(block.ptr() + _dadaBufferLayout.sizeOfData()
-                                   + _dadaBufferLayout.sizeOfGap()))[0] <<
-      std::dec;
+    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
+        static_cast<void *>(polarization1._sideChannelData.a_ptr()),
+        sizeof(uint64_t),
+        static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap() + sizeof(uint64_t)),
+        2 * sizeof(uint64_t),
+        sizeof(uint64_t),
+        _dadaBufferLayout.sizeOfSideChannelData() / 2 / sizeof(uint64_t), cudaMemcpyHostToDevice, _h2d_stream));
 
+    BOOST_LOG_TRIVIAL(debug) << "First side channel item: 0x" <<   std::setw(16)
+        << std::setfill('0') << std::hex <<
+        (reinterpret_cast<uint64_t*>(block.ptr() + _dadaBufferLayout.sizeOfData()
+                                     + _dadaBufferLayout.sizeOfGap()))[0] << std::dec;
 
 
   if (_call_count == 1) {
     return false;
   }
+
   // process data
+  // check if new outblock is started:  _call_count -1 because this is the block number on the device
+  bool newBlock = (((_call_count-1) * _nsamps_per_buffer) % _nsamps_per_output_spectra == 0);
 
   // only if  a newblock is started the output buffer is swapped. Otherwise the
   // new data is added to it
-  bool newBlock = false;
-  if (((_call_count-1) * _nsamps_per_buffer) % _nsamps_per_output_spectra == 0) // _call_count -1 because this is the block number on the device
+  if (newBlock)
   {
       BOOST_LOG_TRIVIAL(debug) << "Starting new output block.";
-      newBlock = true;
       stokes_G0.swap();
       stokes_G1.swap();
       stokes_G0.reset(_proc_stream);
       stokes_G1.reset(_proc_stream);
   }
 
-
-  mergeSideChannels<<<1024, 1024, 0, _proc_stream>>>(thrust::raw_pointer_cast(polarization0._sideChannelData.data()),
-          thrust::raw_pointer_cast(polarization1._sideChannelData.data()), polarization1._sideChannelData.size());
+  mergeSideChannels<<<1024, 1024, 0, _proc_stream>>>(thrust::raw_pointer_cast(polarization0._sideChannelData.a().data()),
+          thrust::raw_pointer_cast(polarization1._sideChannelData.a().data()), polarization1._sideChannelData.a().size());
 
   gated_fft(polarization0, stokes_G0._noOfBitSets.a(), stokes_G1._noOfBitSets.a());
   gated_fft(polarization1, stokes_G0._noOfBitSets.a(), stokes_G1._noOfBitSets.a());

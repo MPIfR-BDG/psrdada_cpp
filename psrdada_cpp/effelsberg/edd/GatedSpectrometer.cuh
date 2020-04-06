@@ -291,6 +291,22 @@ __global__ void stokes_accumulate(float2 const __restrict__ *pol1,
 }
 
 
+/**
+ * @brief calculate stokes IQUV from two complex valuies for each polarization
+ */
+__device__ stokes_IQUV(const float2 &p1, const float2 &p2, float &I, float &Q, float &U, float &V)
+{
+//    I = fabs(p1.x*p1.x + p1.y * p1.y) + fabs(p2.x*p2.x + p2.y * p2.y);
+//    Q = fabs(p1.x*p1.x + p1.y * p1.y) - fabs(p2.x*p2.x + p2.y * p2.y);
+//    U = p1.x*p2.x + p1.y * p2.y;
+//    V = p1.y*p2.x - p1.x * p2.y;
+}
+
+
+
+// __global__ void stokes_accumulate(float2 const __restrict__ *pol1, float2 const __restrict__ *pol2, float ... output int nchans, int naccumulate)
+
+
 
 
 

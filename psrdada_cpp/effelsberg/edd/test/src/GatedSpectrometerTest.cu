@@ -41,7 +41,6 @@ TEST(GatedSpectrometer, stokes_IQUV)
     EXPECT_FLOAT_EQ(U, 0);
     EXPECT_FLOAT_EQ(V, 0);
 
-
     // vertical polarized
     psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){0.0f,0.0f}, (float2){1.0f,0.0f}, I, Q, U, V);
     EXPECT_FLOAT_EQ(I, 1);
@@ -63,8 +62,6 @@ TEST(GatedSpectrometer, stokes_IQUV)
     EXPECT_FLOAT_EQ(U, -1);
     EXPECT_FLOAT_EQ(V, 0);
 
-
-
     //left circular
     psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){.0f,1.0f/std::sqrt(2)}, (float2){1.0f/std::sqrt(2),.0f}, I, Q, U, V);
     EXPECT_FLOAT_EQ(I, 1);
@@ -78,12 +75,12 @@ TEST(GatedSpectrometer, stokes_IQUV)
     EXPECT_FLOAT_EQ(Q, 0);
     EXPECT_FLOAT_EQ(U, 0);
     EXPECT_FLOAT_EQ(V, 1);
-
 }
 
 
 TEST(GatedSpectrometer, stokes_accumulate)
 {
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     size_t nchans = 8 * 1024 * 1024 + 1;
     size_t naccumulate = 5;
 
@@ -120,6 +117,7 @@ TEST(GatedSpectrometer, stokes_accumulate)
           naccumulate
             );
 
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     thrust::pair<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator> minmax;
 
     minmax = thrust::minmax_element(I.begin(), I.end());
@@ -137,8 +135,8 @@ TEST(GatedSpectrometer, stokes_accumulate)
     minmax = thrust::minmax_element(V.begin(), V.end());
     EXPECT_FLOAT_EQ(*minmax.first, -1. * naccumulate);
     EXPECT_FLOAT_EQ(*minmax.second, 0);
-
 }
+
 
 
 TEST(GatedSpectrometer, GatingKernel)
@@ -230,8 +228,6 @@ TEST(GatedSpectrometer, GatingKernel)
   }
 }
 
-
-
 TEST(GatedSpectrometer, array_sum) {
 
   const size_t NBLOCKS = 16 * 32;
@@ -254,10 +250,3 @@ TEST(GatedSpectrometer, array_sum) {
 
   EXPECT_EQ(size_t(blr[0]), inputLength);
 }
-
-int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-
-  return RUN_ALL_TESTS();
-}
-
