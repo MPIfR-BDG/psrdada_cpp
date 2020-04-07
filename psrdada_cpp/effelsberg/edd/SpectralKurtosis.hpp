@@ -18,26 +18,31 @@ struct RFIStatistics{
 class SpectralKurtosis{
 public:
     /**
+     * @brief     constructor
+     *
      * @param     nchannels     number of channels.
      *            window_size   number of samples per window.
      *            sk_min        minimum value of spectral kurtosis.
      *            sk_max        maximum value of spectral kurtosis.
      */
-    SpectralKurtosis(int nchannels, int window_size, float sk_min = DEFAULT_SK_MIN,
+    SpectralKurtosis(std::size_t nchannels, std::size_t window_size, float sk_min = DEFAULT_SK_MIN,
 		     float sk_max = DEFAULT_SK_MAX);
     ~SpectralKurtosis();
 
     /**
-     * @brief     computes SK and returns rfi statistics.
+     * @brief     computes spectral kurtosis for the given data and returns its rfi statistics.
+     *
+     * @param     data          input data
+     *            stats         RFI statistics
      *
      */
     void compute_sk(std::vector<std::complex<float>> const& data, RFIStatistics& stats);
 
 private:
-    int _nchannels; //number of channels
-    int _window_size; //window size
-    int _nwindows; //number of windows
-    int _sample_size; //size of input data
+    std::size_t _nchannels; //number of channels
+    std::size_t _window_size; //window size
+    std::size_t _nwindows; //number of windows
+    std::size_t _sample_size; //size of input data
     float _sk_min, _sk_max;
     std::vector<float> _p1, _p2, _s1, _s2, _sk;
 

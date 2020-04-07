@@ -16,6 +16,7 @@ set(psrdada_cpp_effelsberg_edd_src
     src/EDDRoach.cpp
     src/EDDRoach_merge.cpp
     src/ScaledTransposeTFtoTFT.cu
+    src/SpectralKurtosis.cpp
     src/Tools.cu
     src/Unpacker.cu
     src/VLBI.cu
