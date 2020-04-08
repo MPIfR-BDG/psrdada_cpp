@@ -31,13 +31,10 @@ void SKTestVector::generate_normal_distribution_vector(std::vector<std::complex<
     //generating normal distribution samples
     BOOST_LOG_TRIVIAL(debug) << "generating normal distribution samples for mean: " << _mean 
     << " and standard deviation: " << _std << "\n";
-    std::normal_distribution<float> real_dist(_mean, _std);
-    std::normal_distribution<float> imag_dist(_mean, _std);
+    std::normal_distribution<float> norm_dist(_mean, _std);
     //Complex vector
     for(std::size_t index = 0; index < _sample_size; index++){
-        float real = real_dist(gen);
-        float imag = imag_dist(gen);
-        samples[index] = std::complex<float>(real, imag);
+        samples[index] = std::complex<float>(norm_dist(gen), norm_dist(gen));
     }
 }
 
