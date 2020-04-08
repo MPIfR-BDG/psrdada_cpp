@@ -5,10 +5,13 @@ namespace effelsberg {
 namespace edd {
 namespace test {
 
-SKTestVector::SKTestVector(std::size_t sample_size, std::size_t window_size, bool with_rfi, float mean, float std)
+SKTestVector::SKTestVector(std::size_t sample_size, std::size_t window_size, bool with_rfi, 
+                           float rfi_frequency, float rfi_amplitude, float mean, float std)
     : _sample_size(sample_size),
       _window_size(window_size),
       _with_rfi(with_rfi),
+      _rfi_frequency(rfi_frequency),
+      _rfi_amplitude(rfi_amplitude),
       _mean(mean),
       _std(std)
 {
@@ -38,14 +41,14 @@ void SKTestVector::generate_normal_distribution_vector(std::vector<std::complex<
     }
 }
 
-void SKTestVector::generate_sine_vector(std::vector<std::complex<float>> &sine_vector)
+void SKTestVector::generate_rfi_vector(std::vector<std::complex<float>> &rfi_vector)
 {
-    sine_vector.resize(_window_size);
-    BOOST_LOG_TRIVIAL(debug) << "generating sine samples of size: " << _window_size; 
+    rfi_vector.resize(_window_size);
+    BOOST_LOG_TRIVIAL(debug) << "generating rfi samples of size: " << _window_size; 
     for(std::size_t t = 0; t < _window_size; t++){
-        float sine_real = std::sin(2 * M_PI * (0.25 / _window_size) * t); // number of cycles per window = 0.25.  
-        //converting to complex values - real only.
-        sine_vector[t] = std::sin(std::complex<float>(sine_real, 0));
+        float real_cosine = _rfi_amplitude * (std::cos(2 * M_PI * _rfi_frequency * t));  
+        float imag_sine = _rfi_amplitude * (std::sin(2 * M_PI * _rfi_frequency * t));
+        rfi_vector[t] = std::complex<float>(real_cosine, imag_sine);
     }
 }
 
@@ -57,7 +60,7 @@ void SKTestVector::generate_test_vector(std::vector<int> const& rfi_window_indic
     if(_with_rfi){
         BOOST_LOG_TRIVIAL(debug) << " with RFI\n"; 
         std::vector<std::complex<float>> rfi_vector(_window_size);
-        generate_sine_vector(rfi_vector);
+        generate_rfi_vector(rfi_vector);
         int nwindows = rfi_window_indices.size();
 	BOOST_LOG_TRIVIAL(debug) <<"adding rfi in windows.." << "\n";
         for(int win = 0; win < nwindows; win++){

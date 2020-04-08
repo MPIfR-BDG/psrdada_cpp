@@ -21,11 +21,13 @@ public:
      * @param    sample_size        size of test vector
      *           window_size        number of samples in a window
      *           with_rfi           Flag to include RFI in test vector
+     *           rfi_frequency      frequency of RFI
+     *           rfi_amplitude      amplitude of RFI
      *           mean               mean for normal distribution test vector
      *           std                standard deviation for normal distribution test vector
      */           
-    SKTestVector(std::size_t sample_size, std::size_t window_size, bool with_rfi, 
-		 float mean = DEFAULT_MEAN, float std = DEFAULT_STD);
+    SKTestVector(std::size_t sample_size, std::size_t window_size, bool with_rfi, float rfi_frequency, 
+		 float rfi_amplitude, float mean = DEFAULT_MEAN, float std = DEFAULT_STD);
     ~SKTestVector();
     /**
      * @brief    generates test vector
@@ -45,15 +47,17 @@ private:
      */           
     void generate_normal_distribution_vector(std::vector<std::complex<float>> &samples);
     /**
-     * @brief    generates sine wave vector of size = _window_size
+     * @brief    generates rfi signal of frequency = _rfi_frequency and size = _window_size
      *
-     * @param    sine_samples       output RFI (sine) vector
+     * @param    rfi_samples       output RFI vector
      *
      */
-    void generate_sine_vector(std::vector<std::complex<float>> &sine_samples);
+    void generate_rfi_vector(std::vector<std::complex<float>> &rfi_samples);
     std::size_t _sample_size;
     std::size_t _window_size;
     bool _with_rfi;
+    float _rfi_frequency;
+    float _rfi_amplitude;
     float _mean;
     float _std;
 };
