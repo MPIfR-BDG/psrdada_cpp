@@ -43,9 +43,8 @@ void SKTestVector::generate_rfi_vector(std::vector<std::complex<float>> &rfi_vec
     rfi_vector.resize(_window_size);
     BOOST_LOG_TRIVIAL(debug) << "generating rfi samples of size: " << _window_size; 
     for(std::size_t t = 0; t < _window_size; t++){
-        float real_cosine = _rfi_amplitude * (std::cos(2 * M_PI * _rfi_frequency * t));  
-        float imag_sine = _rfi_amplitude * (std::sin(2 * M_PI * _rfi_frequency * t));
-        rfi_vector[t] = std::complex<float>(real_cosine, imag_sine);
+        rfi_vector[t] = _rfi_amplitude * std::exp(std::complex<float> (0, 1) * 
+			float(2 * M_PI * _rfi_frequency * t));
     }
 }
 
