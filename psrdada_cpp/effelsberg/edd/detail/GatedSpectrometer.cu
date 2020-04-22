@@ -86,26 +86,30 @@ __global__ void gating(float* __restrict__ G0,
 
   // Reduce G0, G1
   sum_reduce<uint32_t>(x, _G0stats);
-  if(threadIdx.x == 0)
+  if(threadIdx.x == 0) {
     atomicAdd(stats_G0,  (uint64_cu) x[threadIdx.x]);
+  }
   __syncthreads();
 
   sum_reduce<uint32_t>(x, _G1stats);
-  if(threadIdx.x == 0)
+  if(threadIdx.x == 0) {
     atomicAdd(stats_G1,  (uint64_cu) x[threadIdx.x]);
+  }
   __syncthreads();
 
   //reuse shared array
   float *y = (float*) x;
   //update the baseline array
   sum_reduce<float>(y, baselineUpdateG0);
-  if(threadIdx.x == 0)
+  if(threadIdx.x == 0) {
     atomicAdd(baseLineNG0, y[threadIdx.x]);
+  }
   __syncthreads();
 
   sum_reduce<float>(y, baselineUpdateG1);
-  if(threadIdx.x == 0)
+  if(threadIdx.x == 0) {
     atomicAdd(baseLineNG1, y[threadIdx.x]);
+  }
   __syncthreads();
 }
 
@@ -289,8 +293,9 @@ void GatedSpectrometer<HandlerType>::gated_fft(
   uint64_t NG0 = 0;
   uint64_t NG1 = 0;
 
-  // Loop over outputblocks, for case of multiple output blocks per input block
+// Loop over outputblocks, for case of multiple output blocks per input block
   int step = data._sideChannelData.b().size() / _noOfBitSetsIn_G0.size();
+
   for (size_t i = 0; i < _noOfBitSetsIn_G0.size(); i++)
   { // ToDo: Should be in one kernel call
   gating<<<1024, 1024, 0, _proc_stream>>>(

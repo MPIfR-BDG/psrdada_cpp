@@ -9,10 +9,10 @@ namespace psrdada_cpp
     class NullSink
     {
     public:
-        NullSink() {};
-        ~NullSink() {};
-        void init(RawBytes&) {};
-        bool operator()(RawBytes&) {};
+        NullSink();
+        ~NullSink();
+        void init(RawBytes&);
+        bool operator()(RawBytes&);
     };
 } //namespace psrdada_cpp
 #endif //PSRDADA_CPP_DADA_NULL_SINK_HPP

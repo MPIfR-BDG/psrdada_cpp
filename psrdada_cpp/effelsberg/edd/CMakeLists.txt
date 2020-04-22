@@ -9,7 +9,6 @@ set(PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES
     ${DEPENDENCY_LIBRARIES})
 
 set(psrdada_cpp_effelsberg_edd_src
-    src/Channeliser.cu
     src/DadaBufferLayout.cpp
     src/DetectorAccumulator.cu
     src/EDDPolnMerge.cpp
@@ -23,7 +22,6 @@ set(psrdada_cpp_effelsberg_edd_src
 
 
 set(psrdada_cpp_effelsberg_edd_inc
-    Channeliser.cuh
     DadaBufferLayout.hpp
     DetectorAccumulator.cuh
     EDDPolnMerge.hpp

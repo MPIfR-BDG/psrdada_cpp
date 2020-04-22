@@ -27,73 +27,81 @@ namespace edd {
 typedef unsigned long long int uint64_cu;
 static_assert(sizeof(uint64_cu) == sizeof(uint64_t), "Long long int not of 64 bit! This is problematic for CUDA!");
 
-  typedef uint64_t RawVoltageType;
-  typedef float UnpackedVoltageType;
-  typedef float2 ChannelisedVoltageType;
+typedef uint64_t RawVoltageType;
+typedef float UnpackedVoltageType;
+typedef float2 ChannelisedVoltageType;
 
-  typedef float IntegratedPowerType;
-  //typedef int8_t IntegratedPowerType;
+typedef float IntegratedPowerType;
+//typedef int8_t IntegratedPowerType;
 
-    // Input data and intermediate processing data for one polarization
-    struct PolarizationData
+/// Input data and intermediate processing data for one polarization
+struct PolarizationData
+{
+    /// Raw ADC Voltage
+    DoubleDeviceBuffer<RawVoltageType> _raw_voltage;
+    /// Side channel data
+    DoubleDeviceBuffer<uint64_t> _sideChannelData;
+
+    /// Baseline in gate 0 state
+    thrust::device_vector<UnpackedVoltageType> _baseLineG0;
+    /// Baseline in gate 1 state
+    thrust::device_vector<UnpackedVoltageType> _baseLineG1;
+    /// Channelized voltage in gate 0 state
+    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G0;
+    /// Channelized voltage in gate 1 state
+    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G1;
+
+    /// Swaps input buffers
+    void swap()
     {
-        DoubleDeviceBuffer<RawVoltageType> _raw_voltage;
-        DoubleDeviceBuffer<uint64_t> _sideChannelData;
-
-        thrust::device_vector<UnpackedVoltageType> _baseLineG0;
-        thrust::device_vector<UnpackedVoltageType> _baseLineG1;
-        thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G0;
-        thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G1;
-
-        void swap()
-        {
-            _raw_voltage.swap();
-            _sideChannelData.swap();
-        }
-    };
+        _raw_voltage.swap();
+        _sideChannelData.swap();
+    }
+};
 
 
-    // Outptu data for one gate
-    class StokesOutput
+// Output data for one gate
+struct StokesOutput
+{
+    /// Stokes parameters
+    DoubleDeviceBuffer<IntegratedPowerType> I;
+    DoubleDeviceBuffer<IntegratedPowerType> Q;
+    DoubleDeviceBuffer<IntegratedPowerType> U;
+    DoubleDeviceBuffer<IntegratedPowerType> V;
+
+    /// Number of samples integrated in this output block
+    DoubleDeviceBuffer<uint64_cu> _noOfBitSets;
+
+    /// Reset outptu for new integration
+    void reset(cudaStream_t &_proc_stream)
     {
-        public:
-      DoubleDeviceBuffer<IntegratedPowerType> I;
-      DoubleDeviceBuffer<IntegratedPowerType> Q;
-      DoubleDeviceBuffer<IntegratedPowerType> U;
-      DoubleDeviceBuffer<IntegratedPowerType> V;
+      thrust::fill(thrust::cuda::par.on(_proc_stream),I.a().begin(), I.a().end(), 0.);
+      thrust::fill(thrust::cuda::par.on(_proc_stream),Q.a().begin(), Q.a().end(), 0.);
+      thrust::fill(thrust::cuda::par.on(_proc_stream),U.a().begin(), U.a().end(), 0.);
+      thrust::fill(thrust::cuda::par.on(_proc_stream),V.a().begin(), V.a().end(), 0.);
+      thrust::fill(thrust::cuda::par.on(_proc_stream), _noOfBitSets.a().begin(), _noOfBitSets.a().end(), 0L);
+    }
 
-      DoubleDeviceBuffer<uint64_cu> _noOfBitSets;
+    /// Swap output buffers
+    void swap()
+    {
+      I.swap();
+      Q.swap();
+      U.swap();
+      V.swap();
+      _noOfBitSets.swap();
+    }
 
-      void reset(cudaStream_t &_proc_stream)
-      {
-        thrust::fill(thrust::cuda::par.on(_proc_stream),I.a().begin(), I.a().end(), 0.);
-        thrust::fill(thrust::cuda::par.on(_proc_stream),Q.a().begin(), Q.a().end(), 0.);
-        thrust::fill(thrust::cuda::par.on(_proc_stream),U.a().begin(), U.a().end(), 0.);
-        thrust::fill(thrust::cuda::par.on(_proc_stream),V.a().begin(), V.a().end(), 0.);
-
-        thrust::fill(thrust::cuda::par.on(_proc_stream), _noOfBitSets.a().begin(), _noOfBitSets.a().end(), 0L);
-      }
-
-      void swap()
-      {
-        I.swap();
-        Q.swap();
-        U.swap();
-        V.swap();
-        _noOfBitSets.swap();
-
-      }
-
-      void resize(size_t size, size_t blocks)
-      {
-        I.resize(size * blocks);
-        Q.resize(size * blocks);
-        U.resize(size * blocks);
-        V.resize(size * blocks);
-
-        _noOfBitSets.resize(blocks);
-      }
-    };
+    /// Resize all buffers
+    void resize(size_t size, size_t blocks)
+    {
+      I.resize(size * blocks);
+      Q.resize(size * blocks);
+      U.resize(size * blocks);
+      V.resize(size * blocks);
+      _noOfBitSets.resize(blocks);
+    }
+};
 
 
 
@@ -289,23 +297,6 @@ __global__ void stokes_accumulate(float2 const __restrict__ *pol1,
   }
 
 }
-
-
-/**
- * @brief calculate stokes IQUV from two complex valuies for each polarization
- */
-__device__ stokes_IQUV(const float2 &p1, const float2 &p2, float &I, float &Q, float &U, float &V)
-{
-//    I = fabs(p1.x*p1.x + p1.y * p1.y) + fabs(p2.x*p2.x + p2.y * p2.y);
-//    Q = fabs(p1.x*p1.x + p1.y * p1.y) - fabs(p2.x*p2.x + p2.y * p2.y);
-//    U = p1.x*p2.x + p1.y * p2.y;
-//    V = p1.y*p2.x - p1.x * p2.y;
-}
-
-
-
-// __global__ void stokes_accumulate(float2 const __restrict__ *pol1, float2 const __restrict__ *pol2, float ... output int nchans, int naccumulate)
-
 
 
 

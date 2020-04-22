@@ -52,7 +52,7 @@ FftSpectrometer<HandlerType>::FftSpectrometer(
     _raw_voltage_db.resize(n64bit_words);
     BOOST_LOG_TRIVIAL(debug) << "Input voltages size (in 64-bit words): " << _raw_voltage_db.size();
     //_unpacked_voltage.resize(nsamps_per_buffer);
-    _unpacked_voltage.resize(_nchans * batch * 2);
+    _unpacked_voltage.resize(nsamps_per_buffer);
     //BOOST_LOG_TRIVIAL(debug) << "Unpacked voltages size (in samples): " << _unpacked_voltage.size();
     //_channelised_voltage.resize(_nchans * batch);
     //BOOST_LOG_TRIVIAL(debug) << "Channelised voltages size: " << _channelised_voltage.size();
@@ -161,19 +161,19 @@ bool FftSpectrometer<HandlerType>::operator()(RawBytes& block)
         _power_db.size() * sizeof(IntegratedPowerType),
         cudaMemcpyDeviceToHost,
         _d2h_stream));
-    
+
     if (_call_count == 3)
     {
         return false;
-    }   
+    }
 
     //Wrap _detected_host_previous in a RawBytes object here;
     RawBytes bytes(reinterpret_cast<char*>(_host_power_db.b_ptr()),
         _host_power_db.size() * sizeof(IntegratedPowerType),
         _host_power_db.size() * sizeof(IntegratedPowerType));
     BOOST_LOG_TRIVIAL(debug) << "Calling handler";
-    // The handler can't do anything asynchronously without a copy here 
-    // as it would be unsafe (given that it does not own the memory it 
+    // The handler can't do anything asynchronously without a copy here
+    // as it would be unsafe (given that it does not own the memory it
     // is being passed).
     return _handler(bytes);
 }
