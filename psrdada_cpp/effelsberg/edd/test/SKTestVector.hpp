@@ -12,7 +12,7 @@ namespace effelsberg {
 namespace edd {
 namespace test {
 
-#define DEFAULT_MEAN 1 //default mean for normal ditribution test vector
+#define DEFAULT_MEAN 0 //default mean for normal ditribution test vector
 #define DEFAULT_STD 0.5 //default standard deviation for normal ditribution test vector
 
 class SKTestVector{

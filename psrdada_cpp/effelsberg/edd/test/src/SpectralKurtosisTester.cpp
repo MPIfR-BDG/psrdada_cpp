@@ -65,7 +65,7 @@ TEST_F(SpectralKurtosisTester, sk_withoutRFI)
 
     RFIStatistics stat;
     sk_computation(1, 400, samples, stat);
-    float expected_rfi_fraction = 0;
+    float expected_rfi_fraction = 0.01;
     EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
 }
 
@@ -77,8 +77,10 @@ TEST_F(SpectralKurtosisTester, sk_withRFI)
 
     RFIStatistics stat;
     sk_computation(1, 400, samples, stat);
-    float expected_rfi_fraction = rfi_window_indices.size()/float(40000/400);
+    float expected_rfi_fraction = (rfi_window_indices.size()/float(40000/400)) + 0.01;
     EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
+    //float expected_rfi_fraction = (rfi_window_indices.size()/float(40000/400)) + 0.01;
+    //EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
 }
 
 TEST_F(SpectralKurtosisTester, sk_replacement)
@@ -101,7 +103,7 @@ TEST_F(SpectralKurtosisTester, sk_replacement)
     RFIStatistics stat;
     SpectralKurtosis sk(nch, window_size, sk_min, sk_max);
     sk.compute_sk(samples, stat); //computing SK
-    float expected_rfi_fraction = rfi_window_indices.size()/float(40000/400);
+    float expected_rfi_fraction = (rfi_window_indices.size()/float(40000/400)) + 0.01;
     EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
 
     //RFI replacement

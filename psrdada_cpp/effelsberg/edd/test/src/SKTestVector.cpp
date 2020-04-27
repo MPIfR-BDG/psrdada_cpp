@@ -27,7 +27,7 @@ void SKTestVector::generate_normal_distribution_vector(std::vector<std::complex<
 {
     samples.resize(_sample_size);
     //normal distribution seed
-    std::default_random_engine gen(1);
+    std::default_random_engine gen(14);
     //generating normal distribution samples
     BOOST_LOG_TRIVIAL(debug) << "generating normal distribution samples for mean: " << _mean 
     << " and standard deviation: " << _std << "\n";
