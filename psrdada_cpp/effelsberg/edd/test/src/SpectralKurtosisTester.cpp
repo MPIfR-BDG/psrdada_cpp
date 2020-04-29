@@ -50,13 +50,7 @@ TEST_F(SpectralKurtosisTester, sk_window_size_check)
     test_vector_generation(4000, 150, 0, 0, 0, rfi_window_indices, samples);
 
     RFIStatistics stat;
-    try{
-        sk_computation(1, 150, samples, stat);
-	FAIL() << "Expected std::runtime_error\n";
-    }
-    catch(std::runtime_error const & err){
-        EXPECT_EQ(err.what(), std::string("sample size is not a multiple of window_size. Give different window size\n"));
-    }
+    EXPECT_THROW(sk_computation(1, 150, samples, stat), std::runtime_error);
 }
 
 TEST_F(SpectralKurtosisTester, sk_withoutRFI)
@@ -89,8 +83,8 @@ TEST_F(SpectralKurtosisTester, sk_replacement)
     bool with_rfi = 1;
     std::size_t sample_size = 40000;
     std::size_t window_size = 400;
-    float rfi_freq = 30;
-    float rfi_amp = 10;
+    float rfi_freq = 10;
+    float rfi_amp = 30;
     float mean =  5;
     float std = 2;
     SKTestVector tv(sample_size, window_size, with_rfi, rfi_freq, rfi_amp, mean, std);
@@ -110,7 +104,7 @@ TEST_F(SpectralKurtosisTester, sk_replacement)
 
     //RFI replacement
     BOOST_LOG_TRIVIAL(info) <<"RFI replacement \n";
-    SKRfiReplacement rr(samples, stat.rfi_status);
+    SKRfiReplacement rr(stat.rfi_status);
     rr.replace_rfi_data(samples);
 
     //SK computation after RFI replacement
