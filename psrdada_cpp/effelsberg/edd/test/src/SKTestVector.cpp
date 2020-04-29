@@ -34,7 +34,7 @@ void SKTestVector::generate_normal_distribution_vector(std::vector<std::complex<
     std::normal_distribution<float> norm_dist(_mean, _std);
     //Complex vector
     for(std::size_t index = 0; index < _sample_size; index++){
-        samples[index] = std::complex<float>(norm_dist(gen), norm_dist(gen));
+        samples[index] = std::complex<float>((norm_dist(gen) - _mean), (norm_dist(gen) - _mean));
     }
 }
 

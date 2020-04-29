@@ -27,7 +27,9 @@ void SpectralKurtosisTester::test_vector_generation(std::size_t sample_size, std
 						    const std::vector<int> &rfi_window_indices,
 						    std::vector<std::complex<float>> &samples)
 {
-    SKTestVector tv(sample_size, window_size, with_rfi, rfi_freq, rfi_amp);
+    float m = 5;
+    float std = 1;
+    SKTestVector tv(sample_size, window_size, with_rfi, rfi_freq, rfi_amp, m, std);
     tv.generate_test_vector(rfi_window_indices, samples);
 }
 
@@ -73,14 +75,12 @@ TEST_F(SpectralKurtosisTester, sk_withRFI)
 {
     std::vector<int> rfi_window_indices{3, 4, 6, 7, 8, 20, 30, 40};
     std::vector<std::complex<float>> samples;
-    test_vector_generation(40000, 400, 1, 10, 1, rfi_window_indices, samples);
+    test_vector_generation(40000, 400, 1, 30, 10, rfi_window_indices, samples);
 
     RFIStatistics stat;
     sk_computation(1, 400, samples, stat);
     float expected_rfi_fraction = (rfi_window_indices.size()/float(40000/400)) + 0.01;
-    EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
-    //float expected_rfi_fraction = (rfi_window_indices.size()/float(40000/400)) + 0.01;
-    //EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
+    EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction); //To check: fails inspite of actual and expected values being same.
 }
 
 TEST_F(SpectralKurtosisTester, sk_replacement)
@@ -89,9 +89,11 @@ TEST_F(SpectralKurtosisTester, sk_replacement)
     bool with_rfi = 1;
     std::size_t sample_size = 40000;
     std::size_t window_size = 400;
-    float rfi_freq = 10;
-    float rfi_amp = 1;
-    SKTestVector tv(sample_size, window_size, with_rfi, rfi_freq, rfi_amp);
+    float rfi_freq = 30;
+    float rfi_amp = 10;
+    float mean =  5;
+    float std = 2;
+    SKTestVector tv(sample_size, window_size, with_rfi, rfi_freq, rfi_amp, mean, std);
     std::vector<int> rfi_window_indices{1, 2, 3, 4, 6, 7, 8, 9, 20, 30, 40};
     std::vector<std::complex<float>> samples;
     tv.generate_test_vector(rfi_window_indices, samples); //generating test vector
