@@ -54,6 +54,25 @@ void launchSpectrometer(const effelsberg::edd::DadaBufferLayout &dadaBufferLayou
       spectrometer);
       istream.start();
     }
+     else if (output_type == "profile")
+    {
+      NullSink sink;
+      effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(dadaBufferLayout,
+          selectedSideChannel, selectedBit,
+          fft_length, naccumulate, nbits, input_level,
+          output_level, sink);
+
+      std::vector<char> buffer(dadaBufferLayout.getBufferSize());
+      cudaHostRegister(buffer.data(), buffer.size(),cudaHostRegisterPortable);
+      RawBytes ib(buffer.data(), buffer.size(), buffer.size());
+      spectrometer.init(ib);
+      for (int i =0; i< 10; i++)
+      {
+        std::cout << "Profile Block: "<< i +1 << std::endl;
+        spectrometer(ib);
+      }
+
+    }
     else
     {
       throw std::runtime_error("Unknown oputput-type");
@@ -96,7 +115,7 @@ int main(int argc, char **argv) {
         "string)");
     desc.add_options()(
         "output_type", po::value<std::string>(&output_type)->default_value(output_type),
-        "output type [dada, file]. Default is file."
+        "output type [dada, file, profile]. Default is file. Profile executes the spectrometer 10x on random data and passes the ouput to a null sink."
         );
     desc.add_options()(
         "output_bit_depth", po::value<unsigned int>(&output_bit_depth)->default_value(8),
@@ -167,7 +186,7 @@ int main(int argc, char **argv) {
       }
 
       po::notify(vm);
-      if (vm.count("output_type") && (!(output_type == "dada" || output_type == "file") ))
+      if (vm.count("output_type") && (!(output_type == "dada" || output_type == "file" || output_type== "profile") ))
       {
         throw po::validation_error(po::validation_error::invalid_option_value, "output_type", output_type);
       }
