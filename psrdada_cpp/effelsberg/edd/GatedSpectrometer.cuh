@@ -26,105 +26,20 @@ namespace edd {
 
 typedef unsigned long long int uint64_cu;
 static_assert(sizeof(uint64_cu) == sizeof(uint64_t), "Long long int not of 64 bit! This is problematic for CUDA!");
-
-typedef uint64_t RawVoltageType;
-typedef float UnpackedVoltageType;
-typedef float2 ChannelisedVoltageType;
-
-typedef float IntegratedPowerType;
-//typedef int8_t IntegratedPowerType;
-
-/// Input data and intermediate processing data for one polarization
-struct PolarizationData
-{
-    /// Raw ADC Voltage
-    DoubleDeviceBuffer<RawVoltageType> _raw_voltage;
-    /// Side channel data
-    DoubleDeviceBuffer<uint64_t> _sideChannelData;
-
-    /// Baseline in gate 0 state
-    thrust::device_vector<UnpackedVoltageType> _baseLineG0;
-    /// Baseline in gate 1 state
-    thrust::device_vector<UnpackedVoltageType> _baseLineG1;
-
-    /// Baseline in gate 0 state after update
-    thrust::device_vector<UnpackedVoltageType> _baseLineG0_update;
-    /// Baseline in gate 1 state after update
-    thrust::device_vector<UnpackedVoltageType> _baseLineG1_update;
-
-    /// Channelized voltage in gate 0 state
-    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G0;
-    /// Channelized voltage in gate 1 state
-    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G1;
-
-    /// Swaps input buffers
-    void swap()
-    {
-        _raw_voltage.swap();
-        _sideChannelData.swap();
-    }
-};
-
-
-// Output data for one gate
-struct StokesOutput
-{
-    /// Stokes parameters
-    DoubleDeviceBuffer<IntegratedPowerType> I;
-    DoubleDeviceBuffer<IntegratedPowerType> Q;
-    DoubleDeviceBuffer<IntegratedPowerType> U;
-    DoubleDeviceBuffer<IntegratedPowerType> V;
-
-    /// Number of samples integrated in this output block
-    DoubleDeviceBuffer<uint64_cu> _noOfBitSets;
-
-    /// Reset outptu for new integration
-    void reset(cudaStream_t &_proc_stream)
-    {
-      thrust::fill(thrust::cuda::par.on(_proc_stream),I.a().begin(), I.a().end(), 0.);
-      thrust::fill(thrust::cuda::par.on(_proc_stream),Q.a().begin(), Q.a().end(), 0.);
-      thrust::fill(thrust::cuda::par.on(_proc_stream),U.a().begin(), U.a().end(), 0.);
-      thrust::fill(thrust::cuda::par.on(_proc_stream),V.a().begin(), V.a().end(), 0.);
-      thrust::fill(thrust::cuda::par.on(_proc_stream), _noOfBitSets.a().begin(), _noOfBitSets.a().end(), 0L);
-    }
-
-    /// Swap output buffers
-    void swap()
-    {
-      I.swap();
-      Q.swap();
-      U.swap();
-      V.swap();
-      _noOfBitSets.swap();
-    }
-
-    /// Resize all buffers
-    void resize(size_t size, size_t blocks)
-    {
-      I.resize(size * blocks);
-      Q.resize(size * blocks);
-      U.resize(size * blocks);
-      V.resize(size * blocks);
-      _noOfBitSets.resize(blocks);
-    }
-};
-
-
-
-
-
-
-
 /**
  @class GatedSpectrometer
  @brief Split data into two streams and create integrated spectra depending on
  bit set in side channel data.
 
  */
-template <class HandlerType> class GatedSpectrometer {
+template <class HandlerType, typename IntegratedPowerType> class GatedSpectrometer {
 public:
+  typedef uint64_t RawVoltageType;
+  typedef float UnpackedVoltageType;
+  typedef float2 ChannelisedVoltageType;
 
-
+//  typedef float IntegratedPowerType;
+  //typedef int8_t IntegratedPowerType;
 
 public:
   /**
@@ -175,10 +90,11 @@ public:
   bool operator()(RawBytes &block);
 
 private:
-  // gate the data and fft data per gate
-  void gated_fft(PolarizationData &data,
-  thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G0,
-  thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G1);
+  void process(thrust::device_vector<RawVoltageType> const &digitiser_raw,
+               thrust::device_vector<uint64_t> const &sideChannelData,
+               thrust::device_vector<IntegratedPowerType> &detected,
+               thrust::device_vector<uint64_cu> &noOfBitSetsIn_G0,
+               thrust::device_vector<uint64_cu> &noOfBitSetsIn_G1);
 
 private:
   DadaBufferLayout _dadaBufferLayout;
@@ -199,20 +115,26 @@ private:
   double _processing_efficiency;
 
   std::unique_ptr<Unpacker> _unpacker;
+  std::unique_ptr<DetectorAccumulator<IntegratedPowerType> > _detector;
 
-  // Input data and per pol intermediate data
-  PolarizationData polarization0, polarization1;
+  // Input data
+  DoubleDeviceBuffer<RawVoltageType> _raw_voltage_db;
+  DoubleDeviceBuffer<uint64_t> _sideChannelData_db;
 
   // Output data
-  StokesOutput stokes_G0, stokes_G1;
+  DoubleDeviceBuffer<IntegratedPowerType> _power_db;
 
+
+  DoubleDeviceBuffer<uint64_cu> _noOfBitSetsIn_G0;
+  DoubleDeviceBuffer<uint64_cu> _noOfBitSetsIn_G1;
   DoublePinnedHostBuffer<char> _host_power_db;
 
-  // Temporary processing block
-  // ToDo: Use inplace FFT to avoid temporary coltage array
+  // Intermediate process steps
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G0;
   thrust::device_vector<UnpackedVoltageType> _unpacked_voltage_G1;
-
+  thrust::device_vector<ChannelisedVoltageType> _channelised_voltage;
+  thrust::device_vector<UnpackedVoltageType> _baseLineNG0;
+  thrust::device_vector<UnpackedVoltageType> _baseLineNG1;
 
   cudaStream_t _h2d_stream;
   cudaStream_t _proc_stream;
@@ -220,10 +142,11 @@ private:
 };
 
 
+
 /**
    * @brief      Splits the input data depending on a bit set into two arrays.
    *
-   * @detail     The resulting gaps are filled with a given baseline value in the other stream.
+   * @detail     The resulting gaps are filled with zeros in the other stream.
    *
    * @param      GO Input data. Data is set to the baseline value if corresponding
    *             sideChannelData bit at bitpos os set.
@@ -247,62 +170,12 @@ private:
 __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
                        size_t noOfSideChannels, size_t selectedSideChannel,
-                       const float*  __restrict__ _baseLineG0,
-                       const float*  __restrict__ _baseLineG1,
+                       const float  baseLineG0,
+                       const float  baseLineG1,
                        float* __restrict__ baseLineNG0,
                        float* __restrict__ baseLineNG1,
                        uint64_cu* stats_G0,
                        uint64_cu* stats_G1);
-
-/**
- * @brief calculate stokes IQUV from two complex valuies for each polarization
- */
-//__host__ __device__ void stokes_IQUV(const float2 &p1, const float2 &p2, float &I, float &Q, float &U, float &V);
-__host__ __device__ void stokes_IQUV(const float2 &p1, const float2 &p2, float &I, float &Q, float &U, float &V)
-{
-    I = fabs(p1.x*p1.x + p1.y * p1.y) + fabs(p2.x*p2.x + p2.y * p2.y);
-    Q = fabs(p1.x*p1.x + p1.y * p1.y) - fabs(p2.x*p2.x + p2.y * p2.y);
-    U = 2 * (p1.x*p2.x + p1.y * p2.y);
-    V = -2 * (p1.y*p2.x - p1.x * p2.y);
-}
-
-
-
-
-/**
- * @brief calculate stokes IQUV spectra pol1, pol2 are arrays of naccumulate
- * complex spectra for individual polarizations
- */
-__global__ void stokes_accumulate(float2 const __restrict__ *pol1,
-        float2 const __restrict__ *pol2, float *I, float* Q, float *U, float*V,
-        int nchans, int naccumulate)
-{
-
-  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < nchans);
-       i += blockDim.x * gridDim.x)
-  {
-      float rI = 0;
-      float rQ = 0;
-      float rU = 0;
-      float rV = 0;
-
-      for (int k=0; k < naccumulate; k++)
-      {
-        const float2 p1 = pol1[i + k * nchans];
-        const float2 p2 = pol2[i + k * nchans];
-
-        rI += fabs(p1.x * p1.x + p1.y * p1.y) + fabs(p2.x * p2.x + p2.y * p2.y);
-        rQ += fabs(p1.x * p1.x + p1.y * p1.y) - fabs(p2.x * p2.x + p2.y * p2.y);
-        rU += 2.f * (p1.x * p2.x + p1.y * p2.y);
-        rV += -2.f * (p1.y * p2.x - p1.x * p2.y);
-      }
-      I[i] += rI;
-      Q[i] += rQ;
-      U[i] += rU;
-      V[i] += rV;
-  }
-
-}
 
 
 

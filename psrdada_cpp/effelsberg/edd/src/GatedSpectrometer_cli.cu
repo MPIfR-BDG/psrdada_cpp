@@ -25,7 +25,12 @@ const size_t ERROR_UNHANDLED_EXCEPTION = 2;
 
 
 template<typename T>
-void launchSpectrometer(const effelsberg::edd::DadaBufferLayout &dadaBufferLayout, const std::string &output_type, const std::string &filename, size_t selectedSideChannel, size_t selectedBit, size_t fft_length, size_t naccumulate, unsigned int nbits,  float input_level,  float output_level)
+void launchSpectrometer(const effelsberg::edd::DadaBufferLayout
+        &dadaBufferLayout, const std::string &output_type,
+        const std::string &filename,
+        size_t selectedSideChannel, size_t selectedBit,
+        size_t fft_length, size_t naccumulate, unsigned int nbits,
+        float input_level, float output_level)
 {
 
     MultiLog log("DadaBufferLayout");

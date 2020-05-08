@@ -7,6 +7,7 @@
 #include "thrust/device_vector.h"
 #include "thrust/extrema.h"
 
+namespace {
 
 TEST(GatedSpectrometer, BitManipulationMacros) {
   for (int i = 0; i < 64; i++) {
@@ -22,121 +23,31 @@ TEST(GatedSpectrometer, BitManipulationMacros) {
   }
 }
 
-
-TEST(GatedSpectrometer, stokes_IQUV)
-{
-    float I,Q,U,V;
-    // No field
-    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){0.0f,0.0f}, (float2){0.0f,0.0f}, I, Q, U, V);
-    EXPECT_FLOAT_EQ(I, 0);
-    EXPECT_FLOAT_EQ(Q, 0);
-    EXPECT_FLOAT_EQ(U, 0);
-    EXPECT_FLOAT_EQ(V, 0);
-
-    // For p1 = Ex, p2 = Ey
-    // horizontal polarized
-    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){1.0f,0.0f}, (float2){0.0f,0.0f}, I, Q, U, V);
-    EXPECT_FLOAT_EQ(I, 1);
-    EXPECT_FLOAT_EQ(Q, 1);
-    EXPECT_FLOAT_EQ(U, 0);
-    EXPECT_FLOAT_EQ(V, 0);
-
-    // vertical polarized
-    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){0.0f,0.0f}, (float2){1.0f,0.0f}, I, Q, U, V);
-    EXPECT_FLOAT_EQ(I, 1);
-    EXPECT_FLOAT_EQ(Q, -1);
-    EXPECT_FLOAT_EQ(U, 0);
-    EXPECT_FLOAT_EQ(V, 0);
-
-    //linear +45 deg.
-    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){1.0f/std::sqrt(2),0.0f}, (float2){1.0f/std::sqrt(2),0.0f}, I, Q, U, V);
-    EXPECT_FLOAT_EQ(I, 1);
-    EXPECT_FLOAT_EQ(Q, 0);
-    EXPECT_FLOAT_EQ(U, 1);
-    EXPECT_FLOAT_EQ(V, 0);
-
-    //linear -45 deg.
-    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){-1.0f/std::sqrt(2),0.0f}, (float2){1.0f/std::sqrt(2),0.0f}, I, Q, U, V);
-    EXPECT_FLOAT_EQ(I, 1);
-    EXPECT_FLOAT_EQ(Q, 0);
-    EXPECT_FLOAT_EQ(U, -1);
-    EXPECT_FLOAT_EQ(V, 0);
-
-    //left circular
-    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){.0f,1.0f/std::sqrt(2)}, (float2){1.0f/std::sqrt(2),.0f}, I, Q, U, V);
-    EXPECT_FLOAT_EQ(I, 1);
-    EXPECT_FLOAT_EQ(Q, 0);
-    EXPECT_FLOAT_EQ(U, 0);
-    EXPECT_FLOAT_EQ(V, -1);
-
-    // right circular
-    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){.0f,-1.0f/std::sqrt(2)}, (float2){1.0f/std::sqrt(2),.0f}, I, Q, U, V);
-    EXPECT_FLOAT_EQ(I, 1);
-    EXPECT_FLOAT_EQ(Q, 0);
-    EXPECT_FLOAT_EQ(U, 0);
-    EXPECT_FLOAT_EQ(V, 1);
-}
-
-
-TEST(GatedSpectrometer, stokes_accumulate)
-{
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-    size_t nchans = 8 * 1024 * 1024 + 1;
-    size_t naccumulate = 5;
-
-    thrust::device_vector<float2> P0(nchans * naccumulate);
-    thrust::device_vector<float2> P1(nchans * naccumulate);
-    thrust::fill(P0.begin(), P0.end(), (float2){0, 0});
-    thrust::fill(P1.begin(), P1.end(), (float2){0, 0});
-    thrust::device_vector<float> I(nchans);
-    thrust::device_vector<float> Q(nchans);
-    thrust::device_vector<float> U(nchans);
-    thrust::device_vector<float> V(nchans);
-    thrust::fill(I.begin(), I.end(), 0);
-    thrust::fill(Q.begin(), Q.end(), 0);
-    thrust::fill(U.begin(), U.end(), 0);
-    thrust::fill(V.begin(), V.end(), 0);
-
-    // This channel should be left circular polarized
-    size_t idx0 = 23;
-    for (int k = 0; k< naccumulate; k++)
-    {
-        size_t idx = idx0 + k * nchans;
-        P0[idx] = (float2){0.0f, 1.0f/std::sqrt(2)};
-        P1[idx] = (float2){1.0f/std::sqrt(2),0.0f};
-    }
-
-    psrdada_cpp::effelsberg::edd::stokes_accumulate<<<1024, 1024>>>(
-          thrust::raw_pointer_cast(P0.data()),
-          thrust::raw_pointer_cast(P1.data()),
-          thrust::raw_pointer_cast(I.data()),
-          thrust::raw_pointer_cast(Q.data()),
-          thrust::raw_pointer_cast(U.data()),
-          thrust::raw_pointer_cast(V.data()),
-          nchans,
-          naccumulate
-            );
-
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-    thrust::pair<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator> minmax;
-
-    minmax = thrust::minmax_element(I.begin(), I.end());
-    EXPECT_FLOAT_EQ(*minmax.first, 0);
-    EXPECT_FLOAT_EQ(*minmax.second, naccumulate);
-
-    minmax = thrust::minmax_element(Q.begin(), Q.end());
-    EXPECT_FLOAT_EQ(*minmax.first, 0);
-    EXPECT_FLOAT_EQ(*minmax.second, 0);
-
-    minmax = thrust::minmax_element(U.begin(), U.end());
-    EXPECT_FLOAT_EQ(*minmax.first, 0);
-    EXPECT_FLOAT_EQ(*minmax.second, 0);
-
-    minmax = thrust::minmax_element(V.begin(), V.end());
-    EXPECT_FLOAT_EQ(*minmax.first, -1. * naccumulate);
-    EXPECT_FLOAT_EQ(*minmax.second, 0);
-}
-
+//
+//TEST(GatedSpectrometer, ParameterSanity) {
+//  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+//  psrdada_cpp::NullSink sink;
+//
+//  // 8 or 12 bit sampling
+//  EXPECT_DEATH(psrdada_cpp::effelsberg::edd::GatedSpectrometer<decltype(sink),int8_t > (0, 0, 0, 0, 4096, 0, 0, 0, 0, 0, sink),
+//               "_nbits == 8");
+//  // naccumulate > 0
+//  EXPECT_DEATH(psrdada_cpp::effelsberg::edd::GatedSpectrometer<decltype(sink),int8_t > (0, 0, 0, 0, 4096, 0, 0, 8, 0, 0, sink),
+//               "_naccumulate");
+//
+//  // selected side channel
+//  EXPECT_DEATH(psrdada_cpp::effelsberg::edd::GatedSpectrometer<decltype(sink),int8_t > (0, 1, 2, 0, 4096, 0, 1, 8, 0, 0, sink),
+//               "nSideChannels");
+//
+//  // selected bit
+//  EXPECT_DEATH(psrdada_cpp::effelsberg::edd::GatedSpectrometer<decltype(sink),int8_t > (0, 2, 1, 65, 4096, 0, 1, 8, 0, 0, sink),
+//               "selectedBit");
+//
+//  // valid construction
+//  psrdada_cpp::effelsberg::edd::GatedSpectrometer<decltype(sink), int8_t> a(
+//      4096 * 4096, 2, 1, 63, 4096, 1024, 1, 8, 100., 100., sink);
+//}
+} // namespace
 
 
 TEST(GatedSpectrometer, GatingKernel)
@@ -152,8 +63,6 @@ TEST(GatedSpectrometer, GatingKernel)
   thrust::device_vector<float> baseLineG0(1);
   thrust::device_vector<float> baseLineG1(1);
 
-  thrust::device_vector<float> baseLineG0_update(1);
-  thrust::device_vector<float> baseLineG1_update(1);
   thrust::fill(G0.begin(), G0.end(), 42);
   thrust::fill(G1.begin(), G1.end(), 23);
   thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 0);
@@ -162,22 +71,18 @@ TEST(GatedSpectrometer, GatingKernel)
   {
     thrust::fill(_nG0.begin(), _nG0.end(), 0);
     thrust::fill(_nG1.begin(), _nG1.end(), 0);
-    baseLineG0[0] = -3;
-    baseLineG1[0] = -4;
-    baseLineG0_update[0] = 0;
-    baseLineG1_update[0] = 0;
-
+    baseLineG0[0] = 0.;
+    baseLineG1[0] = 0.;
     const uint64_t *sideCD =
         (uint64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
     psrdada_cpp::effelsberg::edd::gating<<<1024 , 1024>>>(
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
-          G0.size(), blockSize, 0, 1,
+          G0.size(), G0.size(), 0, 1,
           0,
+          -3., -4,
           thrust::raw_pointer_cast(baseLineG0.data()),
           thrust::raw_pointer_cast(baseLineG1.data()),
-          thrust::raw_pointer_cast(baseLineG0_update.data()),
-          thrust::raw_pointer_cast(baseLineG1_update.data()),
           thrust::raw_pointer_cast(_nG0.data()),
           thrust::raw_pointer_cast(_nG1.data())
           );
@@ -194,31 +99,27 @@ TEST(GatedSpectrometer, GatingKernel)
     EXPECT_EQ(_nG0[0], G0.size());
     EXPECT_EQ(_nG1[0], 0u);
 
-    EXPECT_FLOAT_EQ(42.f, baseLineG0_update[0] / (_nG0[0] + 1E-121));
-    EXPECT_FLOAT_EQ(0.f, baseLineG1_update[0] / (_nG1[0] + 1E-121));
+    EXPECT_FLOAT_EQ(baseLineG0[0] / (_nG0[0] + 1E-127), 42.f);
+    EXPECT_FLOAT_EQ(baseLineG1[0] / (_nG1[0] + 1E-127), 0.f);
   }
 
   // everything to G1 // with baseline -5
   {
     thrust::fill(_nG0.begin(), _nG0.end(), 0);
     thrust::fill(_nG1.begin(), _nG1.end(), 0);
-    baseLineG0[0] = 5.;
-    baseLineG1[0] = -2;
-    baseLineG0_update[0] = 0;
-    baseLineG1_update[0] = 0;
-
+    baseLineG0[0] = 0.;
+    baseLineG1[0] = 0.;
     thrust::fill(_sideChannelData.begin(), _sideChannelData.end(), 1L);
     const uint64_t *sideCD =
         (uint64_t *)(thrust::raw_pointer_cast(_sideChannelData.data()));
     psrdada_cpp::effelsberg::edd::gating<<<1024, 1024>>>(
           thrust::raw_pointer_cast(G0.data()),
           thrust::raw_pointer_cast(G1.data()), sideCD,
-          G0.size(), blockSize, 0, 1,
+          G0.size(), G0.size(), 0, 1,
           0,
+          5., -2.,
           thrust::raw_pointer_cast(baseLineG0.data()),
           thrust::raw_pointer_cast(baseLineG1.data()),
-          thrust::raw_pointer_cast(baseLineG0_update.data()),
-          thrust::raw_pointer_cast(baseLineG1_update.data()),
           thrust::raw_pointer_cast(_nG0.data()),
           thrust::raw_pointer_cast(_nG1.data())
           );
@@ -233,11 +134,12 @@ TEST(GatedSpectrometer, GatingKernel)
 
     EXPECT_EQ(_nG0[0], 0u);
     EXPECT_EQ(_nG1[0], G1.size());
-
-    EXPECT_FLOAT_EQ(0.f, baseLineG0_update[0] / (_nG0[0] + 1E-121));
-    EXPECT_FLOAT_EQ(42.f, baseLineG1_update[0] / (_nG1[0] + 1E-121));
+    EXPECT_FLOAT_EQ(baseLineG0[0] / (_nG0[0] + 1E-127), 0.);
+    EXPECT_FLOAT_EQ(baseLineG1[0] / (_nG1[0] + 1E-127), 42.);
   }
 }
+
+
 
 TEST(GatedSpectrometer, array_sum) {
 
@@ -261,3 +163,10 @@ TEST(GatedSpectrometer, array_sum) {
 
   EXPECT_EQ(size_t(blr[0]), inputLength);
 }
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+
+  return RUN_ALL_TESTS();
+}
+
