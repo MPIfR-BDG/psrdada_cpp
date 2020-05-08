@@ -46,6 +46,12 @@ struct PolarizationData
     thrust::device_vector<UnpackedVoltageType> _baseLineG0;
     /// Baseline in gate 1 state
     thrust::device_vector<UnpackedVoltageType> _baseLineG1;
+
+    /// Baseline in gate 0 state after update
+    thrust::device_vector<UnpackedVoltageType> _baseLineG0_update;
+    /// Baseline in gate 1 state after update
+    thrust::device_vector<UnpackedVoltageType> _baseLineG1_update;
+
     /// Channelized voltage in gate 0 state
     thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G0;
     /// Channelized voltage in gate 1 state
@@ -241,8 +247,8 @@ private:
 __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                        size_t N, size_t heapSize, size_t bitpos,
                        size_t noOfSideChannels, size_t selectedSideChannel,
-                       const float  baseLineG0,
-                       const float  baseLineG1,
+                       const float*  __restrict__ _baseLineG0,
+                       const float*  __restrict__ _baseLineG1,
                        float* __restrict__ baseLineNG0,
                        float* __restrict__ baseLineNG1,
                        uint64_cu* stats_G0,

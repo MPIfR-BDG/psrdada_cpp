@@ -51,14 +51,17 @@ __global__ void gating(float* __restrict__ G0,
         const uint64_t* __restrict__ sideChannelData,
         size_t N, size_t heapSize, size_t bitpos,
         size_t noOfSideChannels, size_t selectedSideChannel,
-        const float  baseLineG0,
-        const float  baseLineG1,
+        const float*  __restrict__ _baseLineG0,
+        const float*  __restrict__ _baseLineG1,
         float* __restrict__ baseLineNG0,
         float* __restrict__ baseLineNG1,
         uint64_cu* stats_G0, uint64_cu* stats_G1) {
   // statistics values for samopels to G0, G1
   uint32_t _G0stats = 0;
   uint32_t _G1stats = 0;
+
+  const float baseLineG0 = _baseLineG0[0];
+  const float baseLineG1 = _baseLineG1[0];
 
   float baselineUpdateG0 = 0;
   float baselineUpdateG1 = 0;
@@ -112,6 +115,36 @@ __global__ void gating(float* __restrict__ G0,
   }
   __syncthreads();
 }
+
+
+
+// Updates the baselines of the gates for the polarization set for the next
+// block
+// only few output blocks per input block thus execution on only one thread.
+// Important is that the execution is async on the GPU.
+__global__ void update_baselines(float*  __restrict__ baseLineG0,
+        float*  __restrict__ baseLineG1,
+        float* __restrict__ baseLineNG0,
+        float* __restrict__ baseLineNG1,
+        uint64_cu* stats_G0, uint64_cu* stats_G1,
+        size_t N)
+{
+    size_t NG0 = 0;
+    size_t NG1 = 0;
+
+    for (size_t i =0; i < N; i++)
+    {
+       NG0 += stats_G0[i];
+       NG1 += stats_G1[i];
+    }
+
+    baseLineG0[0] = baseLineNG0[0] / NG0;
+    baseLineG1[0] = baseLineNG1[0] / NG1;
+    baseLineNG0[0] = 0;
+    baseLineNG1[0] = 0;
+}
+
+
 
 
 
@@ -194,10 +227,14 @@ GatedSpectrometer<HandlerType>::GatedSpectrometer(
   _unpacked_voltage_G0.resize(_nsamps_per_buffer);
   _unpacked_voltage_G1.resize(_nsamps_per_buffer);
 
-  polarization0._baseLineG0.resize(1);
-  polarization0._baseLineG1.resize(1);
-  polarization1._baseLineG0.resize(1);
-  polarization1._baseLineG1.resize(1);
+    polarization0._baseLineG0.resize(1);
+    polarization0._baseLineG0_update.resize(1);
+    polarization0._baseLineG1.resize(1);
+    polarization0._baseLineG1_update.resize(1);
+    polarization1._baseLineG0.resize(1);
+    polarization1._baseLineG0_update.resize(1);
+    polarization1._baseLineG1.resize(1);
+    polarization1._baseLineG1_update.resize(1);
 
   BOOST_LOG_TRIVIAL(debug) << "  Unpacked voltages size (in samples): "
                            << _unpacked_voltage_G0.size();
@@ -286,14 +323,7 @@ void GatedSpectrometer<HandlerType>::gated_fft(
     throw std::runtime_error("Unsupported number of bits");
   }
 
-  // Get baseline from previous block
-  float previous_baseLineG0 = data._baseLineG0[0];
-  float previous_baseLineG1 = data._baseLineG1[0];
-
-  uint64_t NG0 = 0;
-  uint64_t NG1 = 0;
-
-// Loop over outputblocks, for case of multiple output blocks per input block
+  // Loop over outputblocks, for case of multiple output blocks per input block
   int step = data._sideChannelData.b().size() / _noOfBitSetsIn_G0.size();
 
   for (size_t i = 0; i < _noOfBitSetsIn_G0.size(); i++)
@@ -307,19 +337,26 @@ void GatedSpectrometer<HandlerType>::gated_fft(
       _selectedBit,
       _dadaBufferLayout.getNSideChannels(),
       _selectedSideChannel,
-      previous_baseLineG0, previous_baseLineG1,
       thrust::raw_pointer_cast(data._baseLineG0.data()),
       thrust::raw_pointer_cast(data._baseLineG1.data()),
+      thrust::raw_pointer_cast(data._baseLineG0_update.data()),
+      thrust::raw_pointer_cast(data._baseLineG1_update.data()),
       thrust::raw_pointer_cast(_noOfBitSetsIn_G0.data() + i),
       thrust::raw_pointer_cast(_noOfBitSetsIn_G1.data() + i)
       );
-    NG0 += _noOfBitSetsIn_G0[i];
-    NG1 += _noOfBitSetsIn_G1[i];
   }
-  data._baseLineG0[0] /= NG0;
-  data._baseLineG1[0] /= NG1;
-  BOOST_LOG_TRIVIAL(debug) << "Updating Baselines\n G0: " << previous_baseLineG0 << " -> " << data._baseLineG0[0] << ", " << previous_baseLineG1 << " -> " << data._baseLineG1[0] ;
 
+    // only few output blocks per input block thus execution on only one thread.
+    // Important is that the execution is async on the GPU.
+    update_baselines<<<1,1,0, _proc_stream>>>(
+        thrust::raw_pointer_cast(data._baseLineG0.data()),
+        thrust::raw_pointer_cast(data._baseLineG1.data()),
+        thrust::raw_pointer_cast(data._baseLineG0_update.data()),
+        thrust::raw_pointer_cast(data._baseLineG1_update.data()),
+        thrust::raw_pointer_cast(_noOfBitSetsIn_G0.data()),
+        thrust::raw_pointer_cast(_noOfBitSetsIn_G1.data()),
+        _noOfBitSetsIn_G0.size()
+            );
 
   BOOST_LOG_TRIVIAL(debug) << "Performing FFT 1";
   UnpackedVoltageType *_unpacked_voltage_ptr =
