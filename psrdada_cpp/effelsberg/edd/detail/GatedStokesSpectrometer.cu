@@ -227,21 +227,10 @@ GatedStokesSpectrometer<HandlerType>::GatedStokesSpectrometer(
   _unpacked_voltage_G0.resize(_nsamps_per_buffer);
   _unpacked_voltage_G1.resize(_nsamps_per_buffer);
 
-    polarization0._baseLineG0.resize(1);
-    polarization0._baseLineG0_update.resize(1);
-    polarization0._baseLineG1.resize(1);
-    polarization0._baseLineG1_update.resize(1);
-    polarization1._baseLineG0.resize(1);
-    polarization1._baseLineG0_update.resize(1);
-    polarization1._baseLineG1.resize(1);
-    polarization1._baseLineG1_update.resize(1);
-
   BOOST_LOG_TRIVIAL(debug) << "  Unpacked voltages size (in samples): "
                            << _unpacked_voltage_G0.size();
-  polarization0._channelised_voltage_G0.resize(_nchans * batch);
-  polarization0._channelised_voltage_G1.resize(_nchans * batch);
-  polarization1._channelised_voltage_G0.resize(_nchans * batch);
-  polarization1._channelised_voltage_G1.resize(_nchans * batch);
+  polarization0.resize(_nchans * batch);
+  polarization1.resize(_nchans * batch);
   BOOST_LOG_TRIVIAL(debug) << "  Channelised voltages size: "
                            << polarization0._channelised_voltage_G0.size();
 

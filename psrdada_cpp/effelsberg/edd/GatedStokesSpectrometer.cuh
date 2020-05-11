@@ -27,87 +27,9 @@ namespace edd {
 typedef unsigned long long int uint64_cu;
 static_assert(sizeof(uint64_cu) == sizeof(uint64_t), "Long long int not of 64 bit! This is problematic for CUDA!");
 
-typedef uint64_t RawVoltageType;
-typedef float UnpackedVoltageType;
-typedef float2 ChannelisedVoltageType;
-
-typedef float IntegratedPowerType;
-//typedef int8_t IntegratedPowerType;
-
-/// Input data and intermediate processing data for one polarization
-struct PolarizationData
-{
-    /// Raw ADC Voltage
-    DoubleDeviceBuffer<RawVoltageType> _raw_voltage;
-    /// Side channel data
-    DoubleDeviceBuffer<uint64_t> _sideChannelData;
-
-    /// Baseline in gate 0 state
-    thrust::device_vector<UnpackedVoltageType> _baseLineG0;
-    /// Baseline in gate 1 state
-    thrust::device_vector<UnpackedVoltageType> _baseLineG1;
-
-    /// Baseline in gate 0 state after update
-    thrust::device_vector<UnpackedVoltageType> _baseLineG0_update;
-    /// Baseline in gate 1 state after update
-    thrust::device_vector<UnpackedVoltageType> _baseLineG1_update;
-
-    /// Channelized voltage in gate 0 state
-    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G0;
-    /// Channelized voltage in gate 1 state
-    thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G1;
-
-    /// Swaps input buffers
-    void swap()
-    {
-        _raw_voltage.swap();
-        _sideChannelData.swap();
-    }
-};
 
 
-// Output data for one gate
-struct StokesOutput
-{
-    /// Stokes parameters
-    DoubleDeviceBuffer<IntegratedPowerType> I;
-    DoubleDeviceBuffer<IntegratedPowerType> Q;
-    DoubleDeviceBuffer<IntegratedPowerType> U;
-    DoubleDeviceBuffer<IntegratedPowerType> V;
 
-    /// Number of samples integrated in this output block
-    DoubleDeviceBuffer<uint64_cu> _noOfBitSets;
-
-    /// Reset outptu for new integration
-    void reset(cudaStream_t &_proc_stream)
-    {
-      thrust::fill(thrust::cuda::par.on(_proc_stream),I.a().begin(), I.a().end(), 0.);
-      thrust::fill(thrust::cuda::par.on(_proc_stream),Q.a().begin(), Q.a().end(), 0.);
-      thrust::fill(thrust::cuda::par.on(_proc_stream),U.a().begin(), U.a().end(), 0.);
-      thrust::fill(thrust::cuda::par.on(_proc_stream),V.a().begin(), V.a().end(), 0.);
-      thrust::fill(thrust::cuda::par.on(_proc_stream), _noOfBitSets.a().begin(), _noOfBitSets.a().end(), 0L);
-    }
-
-    /// Swap output buffers
-    void swap()
-    {
-      I.swap();
-      Q.swap();
-      U.swap();
-      V.swap();
-      _noOfBitSets.swap();
-    }
-
-    /// Resize all buffers
-    void resize(size_t size, size_t blocks)
-    {
-      I.resize(size * blocks);
-      Q.resize(size * blocks);
-      U.resize(size * blocks);
-      V.resize(size * blocks);
-      _noOfBitSets.resize(blocks);
-    }
-};
 
 
 
@@ -177,8 +99,8 @@ public:
 private:
   // gate the data and fft data per gate
   void gated_fft(PolarizationData &data,
-  thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G0,
-  thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G1);
+      thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G0,
+      thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G1);
 
 private:
   DadaBufferLayout _dadaBufferLayout;
