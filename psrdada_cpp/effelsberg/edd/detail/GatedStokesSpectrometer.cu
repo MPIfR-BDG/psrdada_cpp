@@ -148,7 +148,7 @@ __global__ void update_baselines(float*  __restrict__ baseLineG0,
 
 
 
-template <class HandlerType>
+template <class HandlerType, class InputType>
 GatedStokesSpectrometer<HandlerType>::GatedStokesSpectrometer(
     const DadaBufferLayout &dadaBufferLayout,
     std::size_t selectedSideChannel, std::size_t selectedBit, std::size_t fft_length, std::size_t naccumulate,
@@ -250,7 +250,7 @@ GatedStokesSpectrometer<HandlerType>::GatedStokesSpectrometer(
 
 
 
-template <class HandlerType>
+template <class HandlerType, class InputType>
 GatedStokesSpectrometer<HandlerType>::~GatedStokesSpectrometer() {
   BOOST_LOG_TRIVIAL(debug) << "Destroying GatedStokesSpectrometer";
   if (!_fft_plan)
@@ -262,7 +262,7 @@ GatedStokesSpectrometer<HandlerType>::~GatedStokesSpectrometer() {
 
 
 
-template <class HandlerType>
+template <class HandlerType, class InputType>
 void GatedStokesSpectrometer<HandlerType>::init(RawBytes &block) {
   BOOST_LOG_TRIVIAL(debug) << "GatedStokesSpectrometer init called";
   std::stringstream headerInfo;
@@ -293,7 +293,7 @@ void GatedStokesSpectrometer<HandlerType>::init(RawBytes &block) {
 
 
 
-template <class HandlerType>
+template <class HandlerType, class InputType>
 void GatedStokesSpectrometer<HandlerType>::gated_fft(
         PolarizationData &data,
   thrust::device_vector<uint64_cu> &_noOfBitSetsIn_G0,
@@ -366,7 +366,7 @@ void GatedStokesSpectrometer<HandlerType>::gated_fft(
 } // process
 
 
-template <class HandlerType>
+template <class HandlerType, class InputType>
 bool GatedStokesSpectrometer<HandlerType>::operator()(RawBytes &block) {
     ++_call_count;
     BOOST_LOG_TRIVIAL(debug) << "GatedStokesSpectrometer operator() called (count = "

@@ -38,7 +38,7 @@ void launchSpectrometer(const effelsberg::edd::DadaBufferLayout
     if (output_type == "file")
     {
       SimpleFileWriter sink(filename);
-      effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(dadaBufferLayout,
+      effelsberg::edd::GatedSpectrometer<decltype(sink), effelsberg::edd::PolarizationData, effelsberg::edd::GatedPowerSpectrumOutput> spectrometer(dadaBufferLayout,
           selectedSideChannel, selectedBit,
           fft_length, naccumulate, nbits, input_level,
           output_level, sink);
@@ -50,7 +50,7 @@ void launchSpectrometer(const effelsberg::edd::DadaBufferLayout
     else if (output_type == "dada")
     {
       DadaOutputStream sink(string_to_key(filename), log);
-      effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(dadaBufferLayout,
+      effelsberg::edd::GatedSpectrometer<decltype(sink), effelsberg::edd::PolarizationData, effelsberg::edd::GatedPowerSpectrumOutput> spectrometer(dadaBufferLayout,
           selectedSideChannel, selectedBit,
           fft_length, naccumulate, nbits, input_level,
           output_level, sink);
@@ -62,7 +62,7 @@ void launchSpectrometer(const effelsberg::edd::DadaBufferLayout
      else if (output_type == "profile")
     {
       NullSink sink;
-      effelsberg::edd::GatedSpectrometer<decltype(sink)> spectrometer(dadaBufferLayout,
+      effelsberg::edd::GatedSpectrometer<decltype(sink), effelsberg::edd::PolarizationData, effelsberg::edd::GatedPowerSpectrumOutput> spectrometer(dadaBufferLayout,
           selectedSideChannel, selectedBit,
           fft_length, naccumulate, nbits, input_level,
           output_level, sink);
