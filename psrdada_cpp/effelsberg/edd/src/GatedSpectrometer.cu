@@ -119,24 +119,76 @@ __global__ void update_baselines(float*  __restrict__ baseLineG0,
 
 
 
-
-
-
-
-PolarizationData::PolarizationData(size_t fft_length, size_t batch, const DadaBufferLayout
-        &dadaBufferLayout) : _fft_length(fft_length), _batch(batch), _dadaBufferLayout(dadaBufferLayout)
+/**
+ * @brief calculate stokes IQUV from two complex valuies for each polarization
+ */
+__host__ __device__ void stokes_IQUV(const float2 &p1, const float2 &p2, float &I, float &Q, float &U, float &V)
 {
-    _raw_voltage.resize(_dadaBufferLayout.sizeOfData() / sizeof(uint64_t));
+    I = fabs(p1.x*p1.x + p1.y * p1.y) + fabs(p2.x*p2.x + p2.y * p2.y);
+    Q = fabs(p1.x*p1.x + p1.y * p1.y) - fabs(p2.x*p2.x + p2.y * p2.y);
+    U = 2 * (p1.x*p2.x + p1.y * p2.y);
+    V = -2 * (p1.y*p2.x - p1.x * p2.y);
+}
+
+
+
+
+/**
+ * @brief calculate stokes IQUV spectra pol1, pol2 are arrays of naccumulate
+ * complex spectra for individual polarizations
+ */
+__global__ void stokes_accumulate(float2 const __restrict__ *pol1,
+        float2 const __restrict__ *pol2, float *I, float* Q, float *U, float*V,
+        int nchans, int naccumulate)
+{
+
+  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < nchans);
+       i += blockDim.x * gridDim.x)
+  {
+      float rI = 0;
+      float rQ = 0;
+      float rU = 0;
+      float rV = 0;
+
+      for (int k=0; k < naccumulate; k++)
+      {
+        const float2 p1 = pol1[i + k * nchans];
+        const float2 p2 = pol2[i + k * nchans];
+
+        rI += fabs(p1.x * p1.x + p1.y * p1.y) + fabs(p2.x * p2.x + p2.y * p2.y);
+        rQ += fabs(p1.x * p1.x + p1.y * p1.y) - fabs(p2.x * p2.x + p2.y * p2.y);
+        rU += 2.f * (p1.x * p2.x + p1.y * p2.y);
+        rV += -2.f * (p1.y * p2.x - p1.x * p2.y);
+      }
+      I[i] += rI;
+      Q[i] += rQ;
+      U[i] += rU;
+      V[i] += rV;
+  }
+
+}
+
+
+void PolarizationData::resize(size_t rawVolttageBufferBytes, size_t nsidechannelitems, size_t channelized_samples)
+{
+    _raw_voltage.resize(rawVolttageBufferBytes / sizeof(uint64_t));
     BOOST_LOG_TRIVIAL(debug) << "  Input voltages size (in 64-bit words): " << _raw_voltage.size();
 
     _baseLineG0.resize(1);
     _baseLineG0_update.resize(1);
     _baseLineG1.resize(1);
     _baseLineG1_update.resize(1);
-    _channelised_voltage_G0.resize((_fft_length / 2 + 1) * _batch);
-    _channelised_voltage_G1.resize((_fft_length / 2 + 1) * _batch);
-    _sideChannelData.resize(_dadaBufferLayout.getNSideChannels() * _dadaBufferLayout.getNHeaps());
+    _channelised_voltage_G0.resize(channelized_samples);
+    _channelised_voltage_G1.resize(channelized_samples);
+    _sideChannelData.resize(nsidechannelitems);
     BOOST_LOG_TRIVIAL(debug) << "  Channelised voltages size: " << _channelised_voltage_G0.size();
+}
+
+
+SinglePolarizationInput::SinglePolarizationInput(size_t fft_length, size_t batch, size_t nbits, const DadaBufferLayout
+        &dadaBufferLayout) : PolarizationData(nbits), _fft_length(fft_length), _batch(batch), _dadaBufferLayout(dadaBufferLayout)
+{
+    resize(_dadaBufferLayout.sizeOfData(), _dadaBufferLayout.getNSideChannels() * _dadaBufferLayout.getNHeaps(), (_fft_length / 2 + 1) * _batch);
 };
 
 
@@ -147,7 +199,7 @@ void PolarizationData::swap()
 }
 
 
-void PolarizationData::getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream)
+void SinglePolarizationInput::getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream)
 {
   BOOST_LOG_TRIVIAL(debug) << "   block.used_bytes() = " << block.used_bytes()
                            << ", dataBlockBytes = " << _dadaBufferLayout.sizeOfData() << "\n";
@@ -168,19 +220,26 @@ void PolarizationData::getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream)
 }
 
 
-DualPolarizationData::DualPolarizationData(size_t fft_length, size_t batch, const DadaBufferLayout
-        &dadaBufferLayout) : polarization0(fft_length, batch, dadaBufferLayout),
-                            polarization1(fft_length, batch, dadaBufferLayout),
-                            _dadaBufferLayout(dadaBufferLayout)
+DualPolarizationInput::DualPolarizationInput(size_t fft_length, size_t batch, size_t nbits, const DadaBufferLayout
+        &dadaBufferLayout) : _fft_length(fft_length),
+    _batch(batch),
+    polarization0(nbits),
+    polarization1(nbits),
+    _dadaBufferLayout(dadaBufferLayout)
 {
+    polarization0.resize(_dadaBufferLayout.sizeOfData() / 2, _dadaBufferLayout.getNSideChannels() * _dadaBufferLayout.getNHeaps() / 2, (_fft_length / 2 + 1) * _batch);
+    polarization1.resize(_dadaBufferLayout.sizeOfData() / 2, _dadaBufferLayout.getNSideChannels() * _dadaBufferLayout.getNHeaps() / 2, (_fft_length / 2 + 1) * _batch);
 };
 
-void DualPolarizationData::swap()
+
+void DualPolarizationInput::swap()
 {
-    polarization0.swap(); polarization1.swap();
+    polarization0.swap();
+    polarization1.swap();
 }
 
-void DualPolarizationData::getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream)
+
+void DualPolarizationInput::getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream)
 {
 // Copy the data with stride to the GPU:
 // CPU: P1P2P1P2P1P2 ...
@@ -199,7 +258,7 @@ CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
 CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
   static_cast<void *>(polarization1._raw_voltage.a_ptr()),
     heapsize_bytes,
-    static_cast<void *>(block.ptr()) + heapsize_bytes,
+    static_cast<void *>(block.ptr() + heapsize_bytes),
     2 * heapsize_bytes,
     heapsize_bytes, _dadaBufferLayout.sizeOfData() / heapsize_bytes/ 2,
     cudaMemcpyHostToDevice, _h2d_stream));
@@ -292,13 +351,13 @@ void GatedPowerSpectrumOutput::data2Host(cudaStream_t &_d2h_stream)
     // copy 2x channel data
     CUDA_ERROR_CHECK(
         cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset) ,
-                        static_cast<void *>(G0.data.b_ptr() + i * memslicesize),
+                        static_cast<void *>(G0.data.b_ptr() + i * _nchans),
                         _nchans * sizeof(IntegratedPowerType),
                         cudaMemcpyDeviceToHost, _d2h_stream));
 
     CUDA_ERROR_CHECK(
         cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 1 * memslicesize) ,
-                        static_cast<void *>(G1.data.b_ptr() + i * memslicesize),
+                        static_cast<void *>(G1.data.b_ptr() + i * _nchans),
                         _nchans * sizeof(IntegratedPowerType),
                         cudaMemcpyDeviceToHost, _d2h_stream));
 
@@ -316,6 +375,9 @@ void GatedPowerSpectrumOutput::data2Host(cudaStream_t &_d2h_stream)
             cudaMemcpyDeviceToHost, _d2h_stream));
   }
 }
+
+
+
 
 
 

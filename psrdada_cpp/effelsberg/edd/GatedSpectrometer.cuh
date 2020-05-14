@@ -44,14 +44,8 @@ typedef float IntegratedPowerType;
 /// Input data and intermediate processing data for one polarization
 struct PolarizationData
 {
-    DadaBufferLayout _dadaBufferLayout;
-    size_t _fft_length;
-    size_t _batch;
-
-    // a buffer contains batch * fft_length samples
-    PolarizationData(size_t fft_length, size_t batch, const DadaBufferLayout
-            &dadaBufferLayout);
-
+    size_t _nbits;
+    PolarizationData(size_t nbits): _nbits(nbits) {};
     /// Raw ADC Voltage
     DoubleDeviceBuffer<RawVoltageType> _raw_voltage;
     /// Side channel data
@@ -75,25 +69,49 @@ struct PolarizationData
     /// Swaps input buffers
     void swap();
 
+    ///resize the internal buffers
+    void resize(size_t rawVolttageBufferBytes, size_t nsidechannelitems, size_t channelized_samples);
+};
+
+
+struct SinglePolarizationInput : public PolarizationData
+{
+    DadaBufferLayout _dadaBufferLayout;
+    size_t _fft_length;
+    size_t _batch;
+
+    // a buffer contains batch * fft_length samples
+    SinglePolarizationInput(size_t fft_length, size_t _batch, size_t nbits,
+            const DadaBufferLayout &dadaBufferLayout);
+
     void getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream);
 
+    size_t getSamplesPerInputPolarization()
+    {
+        return _dadaBufferLayout.sizeOfData() * 8 / _nbits;
+    }
 };
 
 
 /// Input data and intermediate processing data for two polarizations
-struct DualPolarizationData
+struct DualPolarizationInput
 {
+    DadaBufferLayout _dadaBufferLayout;
+    size_t _fft_length;
+    size_t _batch;
+    PolarizationData polarization0, polarization1;
 
-    DualPolarizationData(size_t fft_length, size_t batch, const DadaBufferLayout
+    DualPolarizationInput(size_t fft_length, size_t batch, size_t nbit, const DadaBufferLayout
             &dadaBufferLayout);
 
-    DadaBufferLayout _dadaBufferLayout;
-
-    PolarizationData polarization0, polarization1;
     void swap();
 
     void getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream);
 
+    size_t getSamplesPerInputPolarization()
+    {
+        return _dadaBufferLayout.sizeOfData() * 8 / polarization0._nbits / 2;
+    }
 };
 
 
@@ -190,7 +208,7 @@ struct FullStokesOutput
     }
 
     /// Resize all buffers
-    void resize(size_t size, size_t blocks)
+    FullStokesOutput(size_t size, size_t blocks)
     {
         I.resize(size * blocks);
         Q.resize(size * blocks);
@@ -200,10 +218,17 @@ struct FullStokesOutput
     }
 };
 
-/*
+
 struct GatedFullStokesOutput: public OutputDataStream
 {
 
+    GatedFullStokesOutput(size_t nchans, size_t blocks): OutputDataStream(nchans, blocks / 2), G0(nchans, blocks / 2),
+G1(nchans, blocks / 2)
+    {
+        BOOST_LOG_TRIVIAL(debug) << "Output with " << _blocks << " blocks a " << _nchans << " channels";
+        _host_power.resize( 8 * ( _nchans * sizeof(IntegratedPowerType) + sizeof(size_t) ) * _blocks);
+        BOOST_LOG_TRIVIAL(debug) << "Allocated " << _host_power.size() << " bytes.";
+    };
 
     FullStokesOutput G0, G1;
      void reset(cudaStream_t &_proc_stream)
@@ -217,108 +242,104 @@ struct GatedFullStokesOutput: public OutputDataStream
     {
         G0.swap();
         G1.swap();
+        _host_power.swap();
     }
 
-    /// Resize all buffers
-    void resize(size_t size, size_t blocks)
-    {
-        G0.resize(size, blocks);
-        G1.resize(size, blocks);
-    }
+
 
     void data2Host(cudaStream_t &_d2h_stream)
     {
     for (size_t i = 0; i < G0._noOfBitSets.size(); i++)
     {
         size_t memslicesize = (_nchans * sizeof(IntegratedPowerType));
-        size_t memOffset = 8 * i * (memslicesize +  + sizeof(size_t));
+        size_t memOffset = 8 * i * (memslicesize + sizeof(size_t));
         // Copy  II QQ UU VV
         CUDA_ERROR_CHECK(
             cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset) ,
-                            static_cast<void *>(G0.I.b_ptr() + i * memslicesize),
+                            static_cast<void *>(G0.I.b_ptr() + i * _nchans),
                             _nchans * sizeof(IntegratedPowerType),
                             cudaMemcpyDeviceToHost, _d2h_stream));
 
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr() + memOffset + 1 * memslicesize) ,
-                            static_cast<void *>(G1.I.b_ptr() + i * memslicesize),
+            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 1 * memslicesize) ,
+                            static_cast<void *>(G1.I.b_ptr() + i * _nchans),
                             _nchans * sizeof(IntegratedPowerType),
                             cudaMemcpyDeviceToHost, _d2h_stream));
 
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr() + memOffset + 2 * memslicesize) ,
-                            static_cast<void *>(G0.Q.b_ptr() + i * memslicesize),
+            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 2 * memslicesize) ,
+                            static_cast<void *>(G0.Q.b_ptr() + i * _nchans),
                             _nchans * sizeof(IntegratedPowerType),
                             cudaMemcpyDeviceToHost, _d2h_stream));
 
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr() + memOffset + 3 * memslicesize) ,
-                            static_cast<void *>(G1.Q.b_ptr() + i * memslicesize),
+            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 3 * memslicesize) ,
+                            static_cast<void *>(G1.Q.b_ptr() + i * _nchans),
                             _nchans * sizeof(IntegratedPowerType),
                             cudaMemcpyDeviceToHost, _d2h_stream));
 
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr() + memOffset + 4 * memslicesize) ,
-                            static_cast<void *>(G0.U.b_ptr() + i * memslicesize),
+            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 4 * memslicesize) ,
+                            static_cast<void *>(G0.U.b_ptr() + i * _nchans),
                             _nchans * sizeof(IntegratedPowerType),
                             cudaMemcpyDeviceToHost, _d2h_stream));
 
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr() + memOffset + 5 * memslicesize) ,
-                            static_cast<void *>(G1.U.b_ptr() + i * memslicesize),
+            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 5 * memslicesize) ,
+                            static_cast<void *>(G1.U.b_ptr() + i * _nchans),
                             _nchans * sizeof(IntegratedPowerType),
                             cudaMemcpyDeviceToHost, _d2h_stream));
 
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr() + memOffset + 6 * memslicesize) ,
-                            static_cast<void *>(G0.V.b_ptr() + i * memslicesize),
+            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 6 * memslicesize) ,
+                            static_cast<void *>(G0.V.b_ptr() + i * _nchans),
                             _nchans * sizeof(IntegratedPowerType),
                             cudaMemcpyDeviceToHost, _d2h_stream));
 
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power_db.a_ptr() + memOffset + 7 * memslicesize) ,
-                            static_cast<void *>(G1.V.b_ptr() + i * memslicesize),
+            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 7 * memslicesize) ,
+                            static_cast<void *>(G1.V.b_ptr() + i * _nchans),
                             _nchans * sizeof(IntegratedPowerType),
                             cudaMemcpyDeviceToHost, _d2h_stream));
 
         // Copy SCI
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 8 * memslicesize),
+            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 8 * memslicesize),
               static_cast<void *>(G0._noOfBitSets.b_ptr() + i ),
                 1 * sizeof(size_t),
                 cudaMemcpyDeviceToHost, _d2h_stream));
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 8 * memslicesize + 1 * sizeof(size_t)),
+            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 8 * memslicesize + 1 * sizeof(size_t)),
               static_cast<void *>(G1._noOfBitSets.b_ptr() + i ),
                 1 * sizeof(size_t),
                 cudaMemcpyDeviceToHost, _d2h_stream));
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 8 * memslicesize + 2 * sizeof(size_t)),
+            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 8 * memslicesize + 2 * sizeof(size_t)),
               static_cast<void *>(G0._noOfBitSets.b_ptr() + i ),
                 1 * sizeof(size_t),
                 cudaMemcpyDeviceToHost, _d2h_stream));
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 8 * memslicesize + 3 * sizeof(size_t)),
+            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 8 * memslicesize + 3 * sizeof(size_t)),
               static_cast<void *>(G1._noOfBitSets.b_ptr() + i ),
                 1 * sizeof(size_t),
                 cudaMemcpyDeviceToHost, _d2h_stream));
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 8 * memslicesize + 4 * sizeof(size_t)),
+            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 8 * memslicesize + 4 * sizeof(size_t)),
               static_cast<void *>(G0._noOfBitSets.b_ptr() + i ),
                 1 * sizeof(size_t),
                 cudaMemcpyDeviceToHost, _d2h_stream));
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 8 * memslicesize + 5 * sizeof(size_t)),
+            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 8 * memslicesize + 5 * sizeof(size_t)),
               static_cast<void *>(G1._noOfBitSets.b_ptr() + i ),
                 1 * sizeof(size_t),
                 cudaMemcpyDeviceToHost, _d2h_stream));
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 8 * memslicesize + 6 * sizeof(size_t)),
+            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 8 * memslicesize + 6 * sizeof(size_t)),
               static_cast<void *>(G0._noOfBitSets.b_ptr() + i ),
                 1 * sizeof(size_t),
                 cudaMemcpyDeviceToHost, _d2h_stream));
         CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power_db.a_ptr() + memOffset + 8 * memslicesize + 7 * sizeof(size_t)),
+            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 8 * memslicesize + 7 * sizeof(size_t)),
               static_cast<void *>(G1._noOfBitSets.b_ptr() + i ),
                 1 * sizeof(size_t),
                 cudaMemcpyDeviceToHost, _d2h_stream));
@@ -330,7 +351,7 @@ struct GatedFullStokesOutput: public OutputDataStream
     }
 
 };
-*/
+
 
 
 
@@ -392,16 +413,16 @@ public:
    */
   bool operator()(RawBytes &block);
 
+private:
   // Processing strategy for single pol mode
-  void process(PolarizationData *inputDataStream, GatedPowerSpectrumOutput *outputDataStream);
+  void process(SinglePolarizationInput *inputDataStream, GatedPowerSpectrumOutput *outputDataStream);
 
   // Processing strategy for dual pol  power mode
-  //void process(DualPolarizationData*inputDataStream, GatedPowerSpectrumOutput *outputDataStream);
+  //void process(DualPolarizationInput*inputDataStream, GatedPowerSpectrumOutput *outputDataStream);
 
   // Processing strategy for full stokes mode
-  //void process(DualPolarizationData*inputDataStream, FullStokesOutput *outputDataStream);
+  void process(DualPolarizationInput *inputDataStream, GatedFullStokesOutput *outputDataStream);
 
-private:
   // gate the data from the input stream and fft data per gate. Number of bit
   // sets in every gate is stored in the output datasets
   void gated_fft(PolarizationData &data,
@@ -412,12 +433,9 @@ private:
   DadaBufferLayout _dadaBufferLayout;
   std::size_t _fft_length;
   std::size_t _naccumulate;
-  std::size_t _nbits;
   std::size_t _selectedSideChannel;
   std::size_t _selectedBit;
   std::size_t _batch;
-  std::size_t _nsamps_per_output_spectra;
-  std::size_t _nsamps_per_buffer;
   std::size_t _nsamps_per_heap;
 
   HandlerType &_handler;
@@ -477,6 +495,20 @@ __global__ void gating(float *G0, float *G1, const int64_t *sideChannelData,
                        uint64_cu* stats_G0,
                        uint64_cu* stats_G1);
 
+
+/**
+ * @brief calculate stokes IQUV from two complex valuies for each polarization
+ */
+__host__ __device__ void stokes_IQUV(const float2 &p1, const float2 &p2, float &I, float &Q, float &U, float &V);
+
+
+/**
+ * @brief calculate stokes IQUV spectra pol1, pol2 are arrays of naccumulate
+ * complex spectra for individual polarizations
+ */
+__global__ void stokes_accumulate(float2 const __restrict__ *pol1,
+        float2 const __restrict__ *pol2, float *I, float* Q, float *U, float*V,
+        int nchans, int naccumulate);
 
 
 

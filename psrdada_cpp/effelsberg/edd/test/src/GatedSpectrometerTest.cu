@@ -22,121 +22,121 @@ TEST(GatedSpectrometer, BitManipulationMacros) {
   }
 }
 
-//
-//TEST(GatedSpectrometer, stokes_IQUV)
-//{
-//    float I,Q,U,V;
-//    // No field
-//    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){0.0f,0.0f}, (float2){0.0f,0.0f}, I, Q, U, V);
-//    EXPECT_FLOAT_EQ(I, 0);
-//    EXPECT_FLOAT_EQ(Q, 0);
-//    EXPECT_FLOAT_EQ(U, 0);
-//    EXPECT_FLOAT_EQ(V, 0);
-//
-//    // For p1 = Ex, p2 = Ey
-//    // horizontal polarized
-//    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){1.0f,0.0f}, (float2){0.0f,0.0f}, I, Q, U, V);
-//    EXPECT_FLOAT_EQ(I, 1);
-//    EXPECT_FLOAT_EQ(Q, 1);
-//    EXPECT_FLOAT_EQ(U, 0);
-//    EXPECT_FLOAT_EQ(V, 0);
-//
-//    // vertical polarized
-//    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){0.0f,0.0f}, (float2){1.0f,0.0f}, I, Q, U, V);
-//    EXPECT_FLOAT_EQ(I, 1);
-//    EXPECT_FLOAT_EQ(Q, -1);
-//    EXPECT_FLOAT_EQ(U, 0);
-//    EXPECT_FLOAT_EQ(V, 0);
-//
-//    //linear +45 deg.
-//    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){1.0f/std::sqrt(2),0.0f}, (float2){1.0f/std::sqrt(2),0.0f}, I, Q, U, V);
-//    EXPECT_FLOAT_EQ(I, 1);
-//    EXPECT_FLOAT_EQ(Q, 0);
-//    EXPECT_FLOAT_EQ(U, 1);
-//    EXPECT_FLOAT_EQ(V, 0);
-//
-//    //linear -45 deg.
-//    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){-1.0f/std::sqrt(2),0.0f}, (float2){1.0f/std::sqrt(2),0.0f}, I, Q, U, V);
-//    EXPECT_FLOAT_EQ(I, 1);
-//    EXPECT_FLOAT_EQ(Q, 0);
-//    EXPECT_FLOAT_EQ(U, -1);
-//    EXPECT_FLOAT_EQ(V, 0);
-//
-//    //left circular
-//    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){.0f,1.0f/std::sqrt(2)}, (float2){1.0f/std::sqrt(2),.0f}, I, Q, U, V);
-//    EXPECT_FLOAT_EQ(I, 1);
-//    EXPECT_FLOAT_EQ(Q, 0);
-//    EXPECT_FLOAT_EQ(U, 0);
-//    EXPECT_FLOAT_EQ(V, -1);
-//
-//    // right circular
-//    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){.0f,-1.0f/std::sqrt(2)}, (float2){1.0f/std::sqrt(2),.0f}, I, Q, U, V);
-//    EXPECT_FLOAT_EQ(I, 1);
-//    EXPECT_FLOAT_EQ(Q, 0);
-//    EXPECT_FLOAT_EQ(U, 0);
-//    EXPECT_FLOAT_EQ(V, 1);
-//}
-//
-//
-//TEST(GatedSpectrometer, stokes_accumulate)
-//{
-//    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-//    size_t nchans = 8 * 1024 * 1024 + 1;
-//    size_t naccumulate = 5;
-//
-//    thrust::device_vector<float2> P0(nchans * naccumulate);
-//    thrust::device_vector<float2> P1(nchans * naccumulate);
-//    thrust::fill(P0.begin(), P0.end(), (float2){0, 0});
-//    thrust::fill(P1.begin(), P1.end(), (float2){0, 0});
-//    thrust::device_vector<float> I(nchans);
-//    thrust::device_vector<float> Q(nchans);
-//    thrust::device_vector<float> U(nchans);
-//    thrust::device_vector<float> V(nchans);
-//    thrust::fill(I.begin(), I.end(), 0);
-//    thrust::fill(Q.begin(), Q.end(), 0);
-//    thrust::fill(U.begin(), U.end(), 0);
-//    thrust::fill(V.begin(), V.end(), 0);
-//
-//    // This channel should be left circular polarized
-//    size_t idx0 = 23;
-//    for (int k = 0; k< naccumulate; k++)
-//    {
-//        size_t idx = idx0 + k * nchans;
-//        P0[idx] = (float2){0.0f, 1.0f/std::sqrt(2)};
-//        P1[idx] = (float2){1.0f/std::sqrt(2),0.0f};
-//    }
-//
-//    psrdada_cpp::effelsberg::edd::stokes_accumulate<<<1024, 1024>>>(
-//          thrust::raw_pointer_cast(P0.data()),
-//          thrust::raw_pointer_cast(P1.data()),
-//          thrust::raw_pointer_cast(I.data()),
-//          thrust::raw_pointer_cast(Q.data()),
-//          thrust::raw_pointer_cast(U.data()),
-//          thrust::raw_pointer_cast(V.data()),
-//          nchans,
-//          naccumulate
-//            );
-//
-//    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-//    thrust::pair<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator> minmax;
-//
-//    minmax = thrust::minmax_element(I.begin(), I.end());
-//    EXPECT_FLOAT_EQ(*minmax.first, 0);
-//    EXPECT_FLOAT_EQ(*minmax.second, naccumulate);
-//
-//    minmax = thrust::minmax_element(Q.begin(), Q.end());
-//    EXPECT_FLOAT_EQ(*minmax.first, 0);
-//    EXPECT_FLOAT_EQ(*minmax.second, 0);
-//
-//    minmax = thrust::minmax_element(U.begin(), U.end());
-//    EXPECT_FLOAT_EQ(*minmax.first, 0);
-//    EXPECT_FLOAT_EQ(*minmax.second, 0);
-//
-//    minmax = thrust::minmax_element(V.begin(), V.end());
-//    EXPECT_FLOAT_EQ(*minmax.first, -1. * naccumulate);
-//    EXPECT_FLOAT_EQ(*minmax.second, 0);
-//}
-//
+
+TEST(GatedSpectrometer, stokes_IQUV)
+{
+    float I,Q,U,V;
+    // No field
+    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){0.0f,0.0f}, (float2){0.0f,0.0f}, I, Q, U, V);
+    EXPECT_FLOAT_EQ(I, 0);
+    EXPECT_FLOAT_EQ(Q, 0);
+    EXPECT_FLOAT_EQ(U, 0);
+    EXPECT_FLOAT_EQ(V, 0);
+
+    // For p1 = Ex, p2 = Ey
+    // horizontal polarized
+    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){1.0f,0.0f}, (float2){0.0f,0.0f}, I, Q, U, V);
+    EXPECT_FLOAT_EQ(I, 1);
+    EXPECT_FLOAT_EQ(Q, 1);
+    EXPECT_FLOAT_EQ(U, 0);
+    EXPECT_FLOAT_EQ(V, 0);
+
+    // vertical polarized
+    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){0.0f,0.0f}, (float2){1.0f,0.0f}, I, Q, U, V);
+    EXPECT_FLOAT_EQ(I, 1);
+    EXPECT_FLOAT_EQ(Q, -1);
+    EXPECT_FLOAT_EQ(U, 0);
+    EXPECT_FLOAT_EQ(V, 0);
+
+    //linear +45 deg.
+    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){1.0f/std::sqrt(2),0.0f}, (float2){1.0f/std::sqrt(2),0.0f}, I, Q, U, V);
+    EXPECT_FLOAT_EQ(I, 1);
+    EXPECT_FLOAT_EQ(Q, 0);
+    EXPECT_FLOAT_EQ(U, 1);
+    EXPECT_FLOAT_EQ(V, 0);
+
+    //linear -45 deg.
+    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){-1.0f/std::sqrt(2),0.0f}, (float2){1.0f/std::sqrt(2),0.0f}, I, Q, U, V);
+    EXPECT_FLOAT_EQ(I, 1);
+    EXPECT_FLOAT_EQ(Q, 0);
+    EXPECT_FLOAT_EQ(U, -1);
+    EXPECT_FLOAT_EQ(V, 0);
+
+    //left circular
+    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){.0f,1.0f/std::sqrt(2)}, (float2){1.0f/std::sqrt(2),.0f}, I, Q, U, V);
+    EXPECT_FLOAT_EQ(I, 1);
+    EXPECT_FLOAT_EQ(Q, 0);
+    EXPECT_FLOAT_EQ(U, 0);
+    EXPECT_FLOAT_EQ(V, -1);
+
+    // right circular
+    psrdada_cpp::effelsberg::edd::stokes_IQUV((float2){.0f,-1.0f/std::sqrt(2)}, (float2){1.0f/std::sqrt(2),.0f}, I, Q, U, V);
+    EXPECT_FLOAT_EQ(I, 1);
+    EXPECT_FLOAT_EQ(Q, 0);
+    EXPECT_FLOAT_EQ(U, 0);
+    EXPECT_FLOAT_EQ(V, 1);
+}
+
+
+TEST(GatedSpectrometer, stokes_accumulate)
+{
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    size_t nchans = 8 * 1024 * 1024 + 1;
+    size_t naccumulate = 5;
+
+    thrust::device_vector<float2> P0(nchans * naccumulate);
+    thrust::device_vector<float2> P1(nchans * naccumulate);
+    thrust::fill(P0.begin(), P0.end(), (float2){0, 0});
+    thrust::fill(P1.begin(), P1.end(), (float2){0, 0});
+    thrust::device_vector<float> I(nchans);
+    thrust::device_vector<float> Q(nchans);
+    thrust::device_vector<float> U(nchans);
+    thrust::device_vector<float> V(nchans);
+    thrust::fill(I.begin(), I.end(), 0);
+    thrust::fill(Q.begin(), Q.end(), 0);
+    thrust::fill(U.begin(), U.end(), 0);
+    thrust::fill(V.begin(), V.end(), 0);
+
+    // This channel should be left circular polarized
+    size_t idx0 = 23;
+    for (int k = 0; k< naccumulate; k++)
+    {
+        size_t idx = idx0 + k * nchans;
+        P0[idx] = (float2){0.0f, 1.0f/std::sqrt(2)};
+        P1[idx] = (float2){1.0f/std::sqrt(2),0.0f};
+    }
+
+    psrdada_cpp::effelsberg::edd::stokes_accumulate<<<1024, 1024>>>(
+          thrust::raw_pointer_cast(P0.data()),
+          thrust::raw_pointer_cast(P1.data()),
+          thrust::raw_pointer_cast(I.data()),
+          thrust::raw_pointer_cast(Q.data()),
+          thrust::raw_pointer_cast(U.data()),
+          thrust::raw_pointer_cast(V.data()),
+          nchans,
+          naccumulate
+            );
+
+    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
+    thrust::pair<thrust::device_vector<float>::iterator, thrust::device_vector<float>::iterator> minmax;
+
+    minmax = thrust::minmax_element(I.begin(), I.end());
+    EXPECT_FLOAT_EQ(*minmax.first, 0);
+    EXPECT_FLOAT_EQ(*minmax.second, naccumulate);
+
+    minmax = thrust::minmax_element(Q.begin(), Q.end());
+    EXPECT_FLOAT_EQ(*minmax.first, 0);
+    EXPECT_FLOAT_EQ(*minmax.second, 0);
+
+    minmax = thrust::minmax_element(U.begin(), U.end());
+    EXPECT_FLOAT_EQ(*minmax.first, 0);
+    EXPECT_FLOAT_EQ(*minmax.second, 0);
+
+    minmax = thrust::minmax_element(V.begin(), V.end());
+    EXPECT_FLOAT_EQ(*minmax.first, -1. * naccumulate);
+    EXPECT_FLOAT_EQ(*minmax.second, 0);
+}
+
 
 
 TEST(GatedSpectrometer, GatingKernel)

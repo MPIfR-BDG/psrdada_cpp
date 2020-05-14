@@ -7,9 +7,19 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
+DadaBufferLayout::DadaBufferLayout() {};
 
-DadaBufferLayout::DadaBufferLayout(key_t input_key, size_t heapSize, size_t nSideChannels) : _input_key(input_key), _heapSize(heapSize), _nSideChannels(nSideChannels)
+DadaBufferLayout::DadaBufferLayout(key_t input_key, size_t heapSize, size_t nSideChannels)
 {
+  intitialize(input_key, heapSize, nSideChannels);
+}
+
+void DadaBufferLayout::intitialize(key_t input_key, size_t heapSize, size_t nSideChannels)
+{
+    _input_key = input_key;
+    _heapSize = heapSize;
+    _nSideChannels = nSideChannels;
+
   MultiLog log("DadaBufferLayout");
   DadaClientBase client(input_key, log);
   _bufferSize = client.data_buffer_size();

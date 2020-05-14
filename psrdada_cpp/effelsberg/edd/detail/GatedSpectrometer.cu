@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <cstring>
 #include <sstream>
+#include <typeinfo>
 
 namespace psrdada_cpp {
 namespace effelsberg {
@@ -69,12 +70,12 @@ GatedSpectrometer<HandlerType, InputType, OutputType>::GatedSpectrometer(
     std::size_t nbits, float input_level, float output_level, HandlerType
     &handler) : _dadaBufferLayout(dadaBufferLayout),
     _selectedSideChannel(selectedSideChannel), _selectedBit(selectedBit),
-    _fft_length(fft_length), _naccumulate(naccumulate), _nbits(nbits),
+    _fft_length(fft_length), _naccumulate(naccumulate),
     _handler(handler), _fft_plan(0), _call_count(0), _nsamps_per_heap(4096)
 {
 
   // Sanity checks
-  assert(((_nbits == 12) || (_nbits == 8)));
+  assert(((nbits == 12) || (nbits == 8)));
   assert(_naccumulate > 0);
 
   // check for any device errors
@@ -94,28 +95,10 @@ GatedSpectrometer<HandlerType, InputType, OutputType>::GatedSpectrometer(
          (selectedSideChannel < _dadaBufferLayout.getNSideChannels()));  // Sanity check of side channel value
   assert(selectedBit < 64); // Sanity check of selected bit
 
-   _nsamps_per_buffer = _dadaBufferLayout.sizeOfData() * 8 / nbits;
-  _nsamps_per_output_spectra = fft_length * naccumulate;
-  if (_nsamps_per_output_spectra <= _nsamps_per_buffer)
-  { // one buffer block is used for one or multiple output spectra
-    size_t N = _nsamps_per_buffer / _nsamps_per_output_spectra;
-    // All data in one block has to be used
-    assert(N * _nsamps_per_output_spectra == _nsamps_per_buffer);
-    _nBlocks = 1;
-  }
-  else
-  { // multiple blocks are integrated intoone output
-    size_t N =  _nsamps_per_output_spectra /  _nsamps_per_buffer;
-    // All data in multiple blocks has to be used
-    assert(N * _nsamps_per_buffer == _nsamps_per_output_spectra);
-    _nBlocks = N;
-  }
-  BOOST_LOG_TRIVIAL(debug) << "Integrating  " << _nsamps_per_output_spectra <<
-      " samples from " << _nBlocks << " into one output spectrum.";
 
   _nchans = _fft_length / 2 + 1;
-  int batch = _nsamps_per_buffer / _fft_length;
 
+  // Calculate the scaling parameters for 8 bit output
   float dof = 2 * _naccumulate;
   float scale =
       std::pow(input_level * std::sqrt(static_cast<float>(_nchans)), 2);
@@ -125,26 +108,45 @@ GatedSpectrometer<HandlerType, InputType, OutputType>::GatedSpectrometer(
       << "Correction factors for 8-bit conversion: offset = " << offset
       << ", scaling = " << scaling;
 
+  // plan the FFT
+  size_t nsamps_per_buffer = _dadaBufferLayout.sizeOfData() * 8 / nbits;
+  int batch = nsamps_per_buffer / _fft_length;
   int n[] = {static_cast<int>(_fft_length)};
   BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan: \n"
       << "   fft_length = " << _fft_length << "\n"
       << "   n[0] = " << n[0] << "\n"
       << "   _nchans = " << _nchans << "\n"
       << "   batch = " << batch << "\n";
-
-
-      ;
   CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length, NULL,
                                   1, _nchans, CUFFT_R2C, batch));
 
-  BOOST_LOG_TRIVIAL(debug) << "Allocating memory";
+  inputDataStream = new InputType(fft_length, batch, nbits, _dadaBufferLayout);
 
-  inputDataStream = new InputType(fft_length, batch, _dadaBufferLayout);
+  //How many output spectra per input block?
+  size_t nsamps_per_output_spectra = fft_length * naccumulate;
 
-  _unpacked_voltage_G0.resize(_nsamps_per_buffer);
-  _unpacked_voltage_G1.resize(_nsamps_per_buffer);
-  BOOST_LOG_TRIVIAL(debug) << "  Unpacked voltages size (in samples): "
-                           << _unpacked_voltage_G0.size();
+  size_t nsamps_per_pol = inputDataStream->getSamplesPerInputPolarization();
+  if (nsamps_per_output_spectra <= nsamps_per_pol)
+  { // one buffer block is used for one or multiple output spectra
+    size_t N = nsamps_per_pol / nsamps_per_output_spectra;
+    // All data in one block has to be used
+    assert(N * nsamps_per_output_spectra == nsamps_per_pol);
+    _nBlocks = 1;
+  }
+  else
+  { // multiple blocks are integrated intoone output
+    size_t N =  nsamps_per_output_spectra /  nsamps_per_pol;
+    // All data in multiple blocks has to be used
+    assert(N * nsamps_per_pol == nsamps_per_output_spectra);
+    _nBlocks = N;
+  }
+  BOOST_LOG_TRIVIAL(debug) << "Integrating  " << nsamps_per_output_spectra <<
+      " samples from " << _nBlocks << "blocks into one output spectrum.";
+
+  // We unpack one pol at a time
+  _unpacked_voltage_G0.resize(nsamps_per_pol);
+  _unpacked_voltage_G1.resize(nsamps_per_pol);
+  BOOST_LOG_TRIVIAL(debug) << "  Unpacked voltages size (in samples): " << _unpacked_voltage_G0.size();
 
   outputDataStream = new OutputType(_nchans, batch / (_naccumulate / _nBlocks));
 
@@ -160,9 +162,12 @@ GatedSpectrometer<HandlerType, InputType, OutputType>::GatedSpectrometer(
 template <class HandlerType, class InputType, class OutputType>
 GatedSpectrometer<HandlerType, InputType, OutputType>::~GatedSpectrometer() {
   BOOST_LOG_TRIVIAL(debug) << "Destroying GatedSpectrometer";
-  cudaDeviceSynchronize();
-  if (!_fft_plan)
+  if (_fft_plan)
     cufftDestroy(_fft_plan);
+
+  delete inputDataStream;
+  delete outputDataStream;
+
   cudaStreamDestroy(_h2d_stream);
   cudaStreamDestroy(_proc_stream);
   cudaStreamDestroy(_d2h_stream);
@@ -176,11 +181,20 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::init(RawBytes &block
   headerInfo << "\n"
       << "# Gated spectrometer parameters: \n"
       << "fft_length               " << _fft_length << "\n"
-      << "nchannels                " << _fft_length /2 + 1 << "\n"
+      << "nchannels                " << _nchans << "\n"
       << "naccumulate              " << _naccumulate << "\n"
       << "selected_side_channel    " << _selectedSideChannel << "\n"
       << "selected_bit             " << _selectedBit << "\n"
-      << "output_bit_depth         " << sizeof(IntegratedPowerType) * 8;
+      << "output_bit_depth         " << sizeof(IntegratedPowerType) * 8 << "\n"
+      << "full_stokes_output       ";
+  if (typeid(OutputType) == typeid(GatedFullStokesOutput))
+  {
+          headerInfo << "yes\n";
+  }
+  else
+  {
+          headerInfo << "no\n";
+  }
 
   size_t bEnd = std::strlen(block.ptr());
   if (bEnd + headerInfo.str().size() < block.total_bytes())
@@ -208,7 +222,7 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::gated_fft(
         )
 {
   BOOST_LOG_TRIVIAL(debug) << "Unpacking raw voltages";
-  switch (_nbits) {
+  switch (data._nbits) {
   case 8:
     _unpacker->unpack<8>(data._raw_voltage.b(), _unpacked_voltage_G0);
     break;
@@ -242,8 +256,6 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::gated_fft(
       );
   }
 
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     // only few output blocks per input block thus execution on only one thread.
     // Important is that the execution is async on the GPU.
     update_baselines<<<1,1,0, _proc_stream>>>(
@@ -256,29 +268,23 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::gated_fft(
         _noOfBitSetsIn_G0.size()
             );
 
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   BOOST_LOG_TRIVIAL(debug) << "Performing FFT 1";
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   BOOST_LOG_TRIVIAL(debug) << "Accessing unpacked voltage";
   UnpackedVoltageType *_unpacked_voltage_ptr =
       thrust::raw_pointer_cast(_unpacked_voltage_G0.data());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   BOOST_LOG_TRIVIAL(debug) << "Accessing channelized voltage";
   ChannelisedVoltageType *_channelised_voltage_ptr =
       thrust::raw_pointer_cast(data._channelised_voltage_G0.data());
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
 
   CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal *)_unpacked_voltage_ptr,
                                  (cufftComplex *)_channelised_voltage_ptr));
 
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   BOOST_LOG_TRIVIAL(debug) << "Performing FFT 2";
   _unpacked_voltage_ptr = thrust::raw_pointer_cast(_unpacked_voltage_G1.data());
   _channelised_voltage_ptr = thrust::raw_pointer_cast(data._channelised_voltage_G1.data());
   CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal *)_unpacked_voltage_ptr,
                                  (cufftComplex *)_channelised_voltage_ptr));
 
-    CUDA_ERROR_CHECK(cudaDeviceSynchronize());
   CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   BOOST_LOG_TRIVIAL(debug) << "Exit processing";
 } // process
@@ -314,21 +320,21 @@ bool GatedSpectrometer<HandlerType, InputType, OutputType>::operator()(RawBytes 
   // process data
 
   // check if new outblock is started:  _call_count -1 because this is the block number on the device
-  bool newBlock = (((_call_count-1) * _nsamps_per_buffer) % _nsamps_per_output_spectra == 0);
+  bool newBlock = ((((_call_count-1) * inputDataStream->getSamplesPerInputPolarization()) % (_fft_length * _naccumulate) ) == 0);
 
   // only if  a newblock is started the output buffer is swapped. Otherwise the
   // new data is added to it
   if (newBlock)
   {
     BOOST_LOG_TRIVIAL(debug) << "Starting new output block.";
+    CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
     outputDataStream->swap();
     outputDataStream->reset(_proc_stream);
   }
 
   BOOST_LOG_TRIVIAL(debug) << "Processing block.";
-  cudaDeviceSynchronize();
   process(inputDataStream, outputDataStream);
-  cudaDeviceSynchronize();
+  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
   BOOST_LOG_TRIVIAL(debug) << "Processing block finished.";
   /// For one pol input and power out
   /// ToDo: For two pol input and power out
@@ -339,36 +345,12 @@ bool GatedSpectrometer<HandlerType, InputType, OutputType>::operator()(RawBytes 
     return false;
   }
 
-    outputDataStream->data2Host(_d2h_stream);
+  outputDataStream->data2Host(_d2h_stream);
   if (_call_count == 3) {
     return false;
   }
 
-//  // calculate off value
-//  BOOST_LOG_TRIVIAL(info) << "Buffer block: " << _call_count-3 << " with " << _noOfBitSetsIn_G0.size() << "x2 output heaps:";
-//  size_t total_samples_lost = 0;
-//  for (size_t i = 0; i < _noOfBitSetsIn_G0.size(); i++)
-//  {
-//    size_t memOffset = 2 * i * (_nchans * sizeof(IntegratedPowerType) + sizeof(size_t));
-//
-//    size_t* on_values = reinterpret_cast<size_t*> (_host_power_db.b_ptr() + memOffset + 2 * _nchans * sizeof(IntegratedPowerType));
-//    size_t* off_values = reinterpret_cast<size_t*> (_host_power_db.b_ptr() + memOffset + 2 * _nchans * sizeof(IntegratedPowerType) + sizeof(size_t));
-//
-//    size_t samples_lost = _nsamps_per_output_spectra - (*on_values) - (*off_values);
-//    total_samples_lost += samples_lost;
-//
-//    BOOST_LOG_TRIVIAL(info) << "    Heap " << i << ":\n"
-//      <<"                            Samples with  bit set  : " << *on_values << std::endl
-//      <<"                            Samples without bit set: " << *off_values << std::endl
-//      <<"                            Samples lost           : " << samples_lost << " out of " << _nsamps_per_output_spectra << std::endl;
-//  }
-//  double efficiency = 1. - double(total_samples_lost) / (_nsamps_per_output_spectra * _noOfBitSetsIn_G0.size());
-//  double prev_average = _processing_efficiency / (_call_count- 3 - 1);
-//  _processing_efficiency += efficiency;
-//  double average = _processing_efficiency / (_call_count-3);
-//  BOOST_LOG_TRIVIAL(info) << "Total processing efficiency of this buffer block:" << std::setprecision(6) << efficiency << ". Run average: " << average << " (Trend: " << std::showpos << (average - prev_average) << ")";
-//
-//  // Wrap in a RawBytes object here;
+  // Wrap in a RawBytes object here;
   RawBytes bytes(reinterpret_cast<char *>(outputDataStream->_host_power.b_ptr()),
                  outputDataStream->_host_power.size(),
                  outputDataStream->_host_power.size());
@@ -384,7 +366,7 @@ bool GatedSpectrometer<HandlerType, InputType, OutputType>::operator()(RawBytes 
 
 
 template <class HandlerType, class InputType, class OutputType>
-void GatedSpectrometer<HandlerType, InputType, OutputType>::process(PolarizationData *inputDataStream, GatedPowerSpectrumOutput *outputDataStream)
+void GatedSpectrometer<HandlerType, InputType, OutputType>::process(SinglePolarizationInput *inputDataStream, GatedPowerSpectrumOutput *outputDataStream)
 {
   gated_fft(*inputDataStream, outputDataStream->G0._noOfBitSets.a(), outputDataStream->G1._noOfBitSets.a());
 
@@ -404,10 +386,51 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::process(Polarization
             _naccumulate / _nBlocks,
             1, 0., 1, 0);
 
-  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
 }
 
 
+template <class HandlerType, class InputType, class OutputType>
+void GatedSpectrometer<HandlerType, InputType, OutputType>::process(DualPolarizationInput *inputDataStream, GatedFullStokesOutput *outputDataStream)
+{
+  mergeSideChannels<<<1024, 1024, 0, _proc_stream>>>(thrust::raw_pointer_cast(inputDataStream->polarization0._sideChannelData.a().data()),
+          thrust::raw_pointer_cast(inputDataStream->polarization1._sideChannelData.a().data()), inputDataStream->polarization1._sideChannelData.a().size());
+
+  gated_fft(inputDataStream->polarization0, outputDataStream->G0._noOfBitSets.a(), outputDataStream->G1._noOfBitSets.a());
+  gated_fft(inputDataStream->polarization1, outputDataStream->G0._noOfBitSets.a(), outputDataStream->G1._noOfBitSets.a());
+
+  stokes_accumulate<<<1024, 1024, 0, _proc_stream>>>(
+          thrust::raw_pointer_cast(inputDataStream->polarization0._channelised_voltage_G0.data()),
+          thrust::raw_pointer_cast(inputDataStream->polarization1._channelised_voltage_G0.data()),
+          thrust::raw_pointer_cast(outputDataStream->G0.I.a().data()),
+          thrust::raw_pointer_cast(outputDataStream->G0.Q.a().data()),
+          thrust::raw_pointer_cast(outputDataStream->G0.U.a().data()),
+          thrust::raw_pointer_cast(outputDataStream->G0.V.a().data()),
+          _nchans, _naccumulate
+          );
+
+  stokes_accumulate<<<1024, 1024, 0, _proc_stream>>>(
+          thrust::raw_pointer_cast(inputDataStream->polarization0._channelised_voltage_G1.data()),
+          thrust::raw_pointer_cast(inputDataStream->polarization1._channelised_voltage_G1.data()),
+          thrust::raw_pointer_cast(outputDataStream->G1.I.a().data()),
+          thrust::raw_pointer_cast(outputDataStream->G1.Q.a().data()),
+          thrust::raw_pointer_cast(outputDataStream->G1.U.a().data()),
+          thrust::raw_pointer_cast(outputDataStream->G1.V.a().data()),
+          _nchans, _naccumulate
+          );
+
+  //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G0.I.a().begin(), outputDataStream->G0.I.a().end(), _call_count);
+  //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G0.Q.a().begin(), outputDataStream->G0.Q.a().end(), _call_count);
+  //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G0.U.a().begin(), outputDataStream->G0.U.a().end(), _call_count);
+  //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G0.V.a().begin(), outputDataStream->G0.V.a().end(), _call_count);
+
+
+ // thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G1.I.a().begin(), outputDataStream->G1.I.a().end(), _call_count);
+  //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G1.Q.a().begin(), outputDataStream->G1.Q.a().end(), _call_count);
+  //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G1.U.a().begin(), outputDataStream->G1.U.a().end(), _call_count);
+  //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G1.V.a().begin(), outputDataStream->G1.V.a().end(), _call_count);
+
+    cudaDeviceSynchronize();
+}
 
 } // edd
 } // effelsberg
