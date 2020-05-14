@@ -35,16 +35,7 @@ __device__ void sum_reduce(T *x, const T &v)
 // If one of the side channel items is lost, then both are considered as lost
 // here
 __global__ void mergeSideChannels(uint64_t* __restrict__ A, uint64_t*
-        __restrict__ B, size_t N)
-{
-  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
-       i += blockDim.x * gridDim.x)
-  {
-    uint64_t v = A[i] || B[i];
-    A[i] = v;
-    B[i] = v;
-  }
-}
+        __restrict__ B, size_t N);
 
 
 __global__ void gating(float* __restrict__ G0,
@@ -56,67 +47,7 @@ __global__ void gating(float* __restrict__ G0,
         const float*  __restrict__ _baseLineG1,
         float* __restrict__ baseLineNG0,
         float* __restrict__ baseLineNG1,
-        uint64_cu* stats_G0, uint64_cu* stats_G1) {
-  // statistics values for samopels to G0, G1
-  uint32_t _G0stats = 0;
-  uint32_t _G1stats = 0;
-
-  const float baseLineG0 = _baseLineG0[0];
-  const float baseLineG1 = _baseLineG1[0];
-
-  float baselineUpdateG0 = 0;
-  float baselineUpdateG1 = 0;
-
-  for (size_t i = blockIdx.x * blockDim.x + threadIdx.x; (i < N);
-       i += blockDim.x * gridDim.x) {
-    const float v = G0[i];
-
-    const uint64_t sideChannelItem = sideChannelData[((i / heapSize) * (noOfSideChannels)) +
-                        selectedSideChannel];
-
-    const unsigned int bit_set = TEST_BIT(sideChannelItem, bitpos);
-    const unsigned int heap_lost = TEST_BIT(sideChannelItem, 63);
-    G1[i] = (v - baseLineG1) * bit_set * (!heap_lost) + baseLineG1;
-    G0[i] = (v - baseLineG0) * (!bit_set) *(!heap_lost) + baseLineG0;
-
-    _G0stats += (!bit_set) *(!heap_lost);
-    _G1stats += bit_set * (!heap_lost);
-
-    baselineUpdateG1 += v * bit_set * (!heap_lost);
-    baselineUpdateG0 += v * (!bit_set) *(!heap_lost);
-  }
-
-  __shared__ uint32_t x[1024];
-
-  // Reduce G0, G1
-  sum_reduce<uint32_t>(x, _G0stats);
-  if(threadIdx.x == 0) {
-    atomicAdd(stats_G0,  (uint64_cu) x[threadIdx.x]);
-  }
-  __syncthreads();
-
-  sum_reduce<uint32_t>(x, _G1stats);
-  if(threadIdx.x == 0) {
-    atomicAdd(stats_G1,  (uint64_cu) x[threadIdx.x]);
-  }
-  __syncthreads();
-
-  //reuse shared array
-  float *y = (float*) x;
-  //update the baseline array
-  sum_reduce<float>(y, baselineUpdateG0);
-  if(threadIdx.x == 0) {
-    atomicAdd(baseLineNG0, y[threadIdx.x]);
-  }
-  __syncthreads();
-
-  sum_reduce<float>(y, baselineUpdateG1);
-  if(threadIdx.x == 0) {
-    atomicAdd(baseLineNG1, y[threadIdx.x]);
-  }
-  __syncthreads();
-}
-
+        uint64_cu* stats_G0, uint64_cu* stats_G1);
 
 
 // Updates the baselines of the gates for the polarization set for the next
@@ -128,23 +59,7 @@ __global__ void update_baselines(float*  __restrict__ baseLineG0,
         float* __restrict__ baseLineNG0,
         float* __restrict__ baseLineNG1,
         uint64_cu* stats_G0, uint64_cu* stats_G1,
-        size_t N)
-{
-    size_t NG0 = 0;
-    size_t NG1 = 0;
-
-    for (size_t i =0; i < N; i++)
-    {
-       NG0 += stats_G0[i];
-       NG1 += stats_G1[i];
-    }
-
-    baseLineG0[0] = baseLineNG0[0] / NG0;
-    baseLineG1[0] = baseLineNG1[0] / NG1;
-    baseLineNG0[0] = 0;
-    baseLineNG1[0] = 0;
-}
-
+        size_t N);
 
 
 template <class HandlerType, class InputType, class OutputType>

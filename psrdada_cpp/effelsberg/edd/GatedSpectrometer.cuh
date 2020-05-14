@@ -50,20 +50,7 @@ struct PolarizationData
 
     // a buffer contains batch * fft_length samples
     PolarizationData(size_t fft_length, size_t batch, const DadaBufferLayout
-            &dadaBufferLayout) : _fft_length(fft_length), _batch(batch), _dadaBufferLayout(dadaBufferLayout)
-    {
-        _raw_voltage.resize(_dadaBufferLayout.sizeOfData() / sizeof(uint64_t));
-        BOOST_LOG_TRIVIAL(debug) << "  Input voltages size (in 64-bit words): " << _raw_voltage.size();
-
-        _baseLineG0.resize(1);
-        _baseLineG0_update.resize(1);
-        _baseLineG1.resize(1);
-        _baseLineG1_update.resize(1);
-        _channelised_voltage_G0.resize((_fft_length / 2 + 1) * _batch);
-        _channelised_voltage_G1.resize((_fft_length / 2 + 1) * _batch);
-        _sideChannelData.resize(_dadaBufferLayout.getNSideChannels() * _dadaBufferLayout.getNHeaps());
-        BOOST_LOG_TRIVIAL(debug) << "  Channelised voltages size: " << _channelised_voltage_G0.size();
-    };
+            &dadaBufferLayout);
 
     /// Raw ADC Voltage
     DoubleDeviceBuffer<RawVoltageType> _raw_voltage;
@@ -86,102 +73,28 @@ struct PolarizationData
     thrust::device_vector<ChannelisedVoltageType> _channelised_voltage_G1;
 
     /// Swaps input buffers
-    void swap()
-    {
-        _raw_voltage.swap();
-        _sideChannelData.swap();
-    }
+    void swap();
 
-    void getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream)
-    {
-      BOOST_LOG_TRIVIAL(debug) << "   block.used_bytes() = " << block.used_bytes()
-                               << ", dataBlockBytes = " << _dadaBufferLayout.sizeOfData() << "\n";
+    void getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream);
 
-      CUDA_ERROR_CHECK(cudaMemcpyAsync(static_cast<void *>(_raw_voltage.a_ptr()),
-                                       static_cast<void *>(block.ptr()),
-                                       _dadaBufferLayout.sizeOfData() , cudaMemcpyHostToDevice,
-                                       _h2d_stream));
-      CUDA_ERROR_CHECK(cudaMemcpyAsync(
-          static_cast<void *>(_sideChannelData.a_ptr()),
-          static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap()),
-          _dadaBufferLayout.sizeOfSideChannelData(), cudaMemcpyHostToDevice, _h2d_stream));
-      BOOST_LOG_TRIVIAL(debug) << "First side channel item: 0x" <<   std::setw(16)
-          << std::setfill('0') << std::hex <<
-          (reinterpret_cast<uint64_t*>(block.ptr() + _dadaBufferLayout.sizeOfData()
-                                       + _dadaBufferLayout.sizeOfGap()))[0] <<
-          std::dec;
-    }
 };
 
 
 /// Input data and intermediate processing data for two polarizations
 struct DualPolarizationData
 {
-    DadaBufferLayout _dadaBufferLayout;
 
     DualPolarizationData(size_t fft_length, size_t batch, const DadaBufferLayout
-            &dadaBufferLayout) : polarization0(fft_length, batch, dadaBufferLayout),
-                                polarization1(fft_length, batch, dadaBufferLayout),
-                                _dadaBufferLayout(dadaBufferLayout)
-    {
-    };
+            &dadaBufferLayout);
+
+    DadaBufferLayout _dadaBufferLayout;
 
     PolarizationData polarization0, polarization1;
-    void swap()
-    {
-        polarization0.swap(); polarization1.swap();
-    }
+    void swap();
 
-    void getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream)
-    {
-    // Copy the data with stride to the GPU:
-    // CPU: P1P2P1P2P1P2 ...
-    // GPU: P1P1P1 ... P2P2P2 ...
-    // If this is a bottleneck the gating kernel could sort the layout out
-    // during copy
-    int heapsize_bytes =  _dadaBufferLayout.getHeapSize();
-    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
-      static_cast<void *>(polarization0._raw_voltage.a_ptr()),
-        heapsize_bytes,
-        static_cast<void *>(block.ptr()),
-        2 * heapsize_bytes,
-        heapsize_bytes, _dadaBufferLayout.sizeOfData() / heapsize_bytes/ 2,
-        cudaMemcpyHostToDevice, _h2d_stream));
-
-    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
-      static_cast<void *>(polarization1._raw_voltage.a_ptr()),
-        heapsize_bytes,
-        static_cast<void *>(block.ptr()) + heapsize_bytes,
-        2 * heapsize_bytes,
-        heapsize_bytes, _dadaBufferLayout.sizeOfData() / heapsize_bytes/ 2,
-        cudaMemcpyHostToDevice, _h2d_stream));
-
-    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
-        static_cast<void *>(polarization0._sideChannelData.a_ptr()),
-        sizeof(uint64_t),
-        static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap()),
-        2 * sizeof(uint64_t),
-        sizeof(uint64_t),
-        _dadaBufferLayout.sizeOfSideChannelData() / 2 / sizeof(uint64_t),
-        cudaMemcpyHostToDevice, _h2d_stream));
-
-    CUDA_ERROR_CHECK(cudaMemcpy2DAsync(
-        static_cast<void *>(polarization1._sideChannelData.a_ptr()),
-        sizeof(uint64_t),
-        static_cast<void *>(block.ptr() + _dadaBufferLayout.sizeOfData() + _dadaBufferLayout.sizeOfGap() + sizeof(uint64_t)),
-        2 * sizeof(uint64_t),
-        sizeof(uint64_t),
-        _dadaBufferLayout.sizeOfSideChannelData() / 2 / sizeof(uint64_t), cudaMemcpyHostToDevice, _h2d_stream));
-
-    BOOST_LOG_TRIVIAL(debug) << "First side channel item: 0x" <<   std::setw(16)
-        << std::setfill('0') << std::hex <<
-        (reinterpret_cast<uint64_t*>(block.ptr() + _dadaBufferLayout.sizeOfData()
-                                     + _dadaBufferLayout.sizeOfGap()))[0] << std::dec;
-    }
+    void getFromBlock(RawBytes &block, cudaStream_t &_h2d_stream);
 
 };
-
-
 
 
 
@@ -212,12 +125,7 @@ struct OutputDataStream
 // Output data for one gate, single power spectrum
 struct PowerSpectrumOutput
 {
-    PowerSpectrumOutput(size_t size, size_t blocks)
-    {
-        BOOST_LOG_TRIVIAL(debug) << "Setting size of power spectrum output size = " << size << ", blocks =  " << blocks;
-       data.resize(size * blocks);
-       _noOfBitSets.resize(blocks);
-    }
+    PowerSpectrumOutput(size_t size, size_t blocks);
 
     /// spectrum data
     DoubleDeviceBuffer<IntegratedPowerType> data;
@@ -226,94 +134,31 @@ struct PowerSpectrumOutput
     DoubleDeviceBuffer<uint64_cu> _noOfBitSets;
 
     /// Reset outptu for new integration
-    void reset(cudaStream_t &_proc_stream)
-    {
-        thrust::fill(thrust::cuda::par.on(_proc_stream), data.a().begin(), data.a().end(), 0.);
-        thrust::fill(thrust::cuda::par.on(_proc_stream), _noOfBitSets.a().begin(), _noOfBitSets.a().end(), 0L);
-    }
+    void reset(cudaStream_t &_proc_stream);
 
     /// Swap output buffers
-    void swap()
-    {
-        data.swap();
-        _noOfBitSets.swap();
-    }
+    void swap();
 };
 
 
 struct GatedPowerSpectrumOutput : public OutputDataStream
 {
 
-    GatedPowerSpectrumOutput(size_t nchans, size_t blocks) : OutputDataStream(nchans, blocks),
-        G0(nchans, blocks), G1(nchans, blocks)
-    {
-      // on the host both power are stored in the same data buffer together with
-      // the number of bit sets
-      _host_power.resize( 2 * ( _nchans * sizeof(IntegratedPowerType) + sizeof(size_t) ) * G0._noOfBitSets.size());
-    }
+    GatedPowerSpectrumOutput(size_t nchans, size_t blocks);
 
     PowerSpectrumOutput G0, G1;
 
-    void reset(cudaStream_t &_proc_stream)
-    {
-        G0.reset(_proc_stream);
-        G1.reset(_proc_stream);
-    }
+    void reset(cudaStream_t &_proc_stream);
 
     /// Swap output buffers
-    void swap()
-    {
-        G0.swap();
-        G1.swap();
-        _host_power.swap();
-    }
+    void swap();
 
-    void data2Host(cudaStream_t &_d2h_stream)
-    {
-        // copy data to host if block is finished
-      CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
-
-      for (size_t i = 0; i < G0._noOfBitSets.size(); i++)
-      {
-        // size of individual spectrum + meta
-        size_t memslicesize = (_nchans * sizeof(IntegratedPowerType));
-        // number of spectra per output
-        size_t memOffset = 2 * i * (memslicesize +  + sizeof(size_t));
-
-        // copy 2x channel data
-        CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset) ,
-                            static_cast<void *>(G0.data.b_ptr() + i * memslicesize),
-                            _nchans * sizeof(IntegratedPowerType),
-                            cudaMemcpyDeviceToHost, _d2h_stream));
-
-        CUDA_ERROR_CHECK(
-            cudaMemcpyAsync(static_cast<void *>(_host_power.a_ptr() + memOffset + 1 * memslicesize) ,
-                            static_cast<void *>(G1.data.b_ptr() + i * memslicesize),
-                            _nchans * sizeof(IntegratedPowerType),
-                            cudaMemcpyDeviceToHost, _d2h_stream));
-
-        // copy noOf bit set data
-        CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 2 * _nchans * sizeof(IntegratedPowerType)),
-              static_cast<void *>(G0._noOfBitSets.b_ptr() + i ),
-                1 * sizeof(size_t),
-                cudaMemcpyDeviceToHost, _d2h_stream));
-
-        CUDA_ERROR_CHECK(
-            cudaMemcpyAsync( static_cast<void *>(_host_power.a_ptr() + memOffset + 2 * _nchans * sizeof(IntegratedPowerType) + sizeof(size_t)),
-              static_cast<void *>(G1._noOfBitSets.b_ptr() + i ),
-                1 * sizeof(size_t),
-                cudaMemcpyDeviceToHost, _d2h_stream));
-      }
-    }
-
-
-};
+    void data2Host(cudaStream_t &_d2h_stream);
+    };
 
 
 // Output data for one gate full stokes
-struct FullStokesOutput : public OutputDataStream
+struct FullStokesOutput
 {
     /// Stokes parameters
     DoubleDeviceBuffer<IntegratedPowerType> I;

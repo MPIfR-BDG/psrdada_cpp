@@ -11,6 +11,7 @@ set(PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES
 set(psrdada_cpp_effelsberg_edd_src
     src/DadaBufferLayout.cpp
     src/DetectorAccumulator.cu
+    src/GatedSpectrometer.cu
     src/EDDPolnMerge.cpp
     src/EDDRoach.cpp
     src/EDDRoach_merge.cpp
