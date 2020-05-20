@@ -108,19 +108,7 @@ GatedSpectrometer<HandlerType, InputType, OutputType>::GatedSpectrometer(
       << "Correction factors for 8-bit conversion: offset = " << offset
       << ", scaling = " << scaling;
 
-  // plan the FFT
-  size_t nsamps_per_buffer = _dadaBufferLayout.sizeOfData() * 8 / nbits;
-  int batch = nsamps_per_buffer / _fft_length;
-  int n[] = {static_cast<int>(_fft_length)};
-  BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan: \n"
-      << "   fft_length = " << _fft_length << "\n"
-      << "   n[0] = " << n[0] << "\n"
-      << "   _nchans = " << _nchans << "\n"
-      << "   batch = " << batch << "\n";
-  CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length, NULL,
-                                  1, _nchans, CUFFT_R2C, batch));
-
-  inputDataStream = new InputType(fft_length, batch, nbits, _dadaBufferLayout);
+  inputDataStream = new InputType(fft_length, nbits, _dadaBufferLayout);
 
   //How many output spectra per input block?
   size_t nsamps_per_output_spectra = fft_length * naccumulate;
@@ -142,6 +130,20 @@ GatedSpectrometer<HandlerType, InputType, OutputType>::GatedSpectrometer(
   }
   BOOST_LOG_TRIVIAL(debug) << "Integrating  " << nsamps_per_output_spectra <<
       " samples from " << _nBlocks << "blocks into one output spectrum.";
+
+  // plan the FFT
+  size_t nsamps_per_buffer = _dadaBufferLayout.sizeOfData() * 8 / nbits;
+  int batch = nsamps_per_pol / _fft_length;
+  int n[] = {static_cast<int>(_fft_length)};
+  BOOST_LOG_TRIVIAL(debug) << "Generating FFT plan: \n"
+      << "   fft_length = " << _fft_length << "\n"
+      << "   n[0] = " << n[0] << "\n"
+      << "   _nchans = " << _nchans << "\n"
+      << "   batch = " << batch << "\n";
+  CUFFT_ERROR_CHECK(cufftPlanMany(&_fft_plan, 1, n, NULL, 1, _fft_length, NULL,
+                                  1, _nchans, CUFFT_R2C, batch));
+
+
 
   // We unpack one pol at a time
   _unpacked_voltage_G0.resize(nsamps_per_pol);
@@ -328,8 +330,7 @@ bool GatedSpectrometer<HandlerType, InputType, OutputType>::operator()(RawBytes 
   {
     BOOST_LOG_TRIVIAL(debug) << "Starting new output block.";
     CUDA_ERROR_CHECK(cudaStreamSynchronize(_d2h_stream));
-    outputDataStream->swap();
-    outputDataStream->reset(_proc_stream);
+    outputDataStream->swap(_proc_stream);
   }
 
   BOOST_LOG_TRIVIAL(debug) << "Processing block.";
