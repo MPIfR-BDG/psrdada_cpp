@@ -26,7 +26,7 @@ struct computing_sk{
 
     __host__ __device__
     float operator() (const float &s1, const float &s2) const {
-	return  ((M + 1) / (M - 1)) * (((M * s2) / (s1 * s1)) - 1);
+        return  ((M + 1) / (M - 1)) * (((M * s2) / (s1 * s1)) - 1);
    }
 };
 
@@ -40,7 +40,7 @@ struct check_sk_thresholds{
 
     __host__ __device__
     int operator() (const float &sk) const {
-	return ((sk < sk_min) || (sk > sk_max)) ;
+        return ((sk < sk_min) || (sk > sk_max)) ;
    }
 };
 
@@ -73,7 +73,7 @@ void SpectralKurtosis::init()
 {
     if((_sample_size % _window_size) != 0){
         BOOST_LOG_TRIVIAL(error) << "Sample(data) size " << _sample_size <<" is not a multiple of _window_size "
-	                         << _window_size <<". Give different window size.\n";
+                                 << _window_size <<". Give different window size.\n";
         throw std::runtime_error("Data(sample) size is not a multiple of window_size. Give different window size\n");
     }
     _nwindows = _sample_size /_window_size;
@@ -95,15 +95,15 @@ void SpectralKurtosis::compute_sk(const thrust::device_vector<thrust::complex<fl
     thrust::transform(_d_p1.begin(), _d_p1.end(), _d_p2.begin(), square());
     //computing sum of _d_p1 for all windows
     thrust::reduce_by_key(thrust::device, 
-		          thrust::make_transform_iterator(thrust::counting_iterator<int> (0), set_indices(_window_size)),
-		          thrust::make_transform_iterator(thrust::counting_iterator<int> ((_sample_size - 1)), set_indices(_window_size)), 
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> (0), set_indices(_window_size)),
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> ((_sample_size - 1)), set_indices(_window_size)), 
                           _d_p1.begin(), 
                           thrust::discard_iterator<int>(), 
                           _d_s1.begin());
     //computing sum of _d_p2 for all windows
     thrust::reduce_by_key(thrust::device, 
                           thrust::make_transform_iterator(thrust::counting_iterator<int> (0), set_indices(_window_size)),
-		          thrust::make_transform_iterator(thrust::counting_iterator<int> ((_sample_size - 1)), set_indices(_window_size)), 
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> ((_sample_size - 1)), set_indices(_window_size)), 
                           _d_p2.begin(), 
                           thrust::discard_iterator<int>(), 
                           _d_s2.begin());
