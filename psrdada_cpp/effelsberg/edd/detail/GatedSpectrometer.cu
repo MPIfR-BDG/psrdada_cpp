@@ -144,8 +144,7 @@ GatedSpectrometer<HandlerType, InputType, OutputType>::GatedSpectrometer(
                                   1, _nchans, CUFFT_R2C, batch));
 
 
-
-  // We unpack one pol at a time
+  // We unpack and fft one pol at a time
   _unpacked_voltage_G0.resize(nsamps_per_pol);
   _unpacked_voltage_G1.resize(nsamps_per_pol);
   BOOST_LOG_TRIVIAL(debug) << "  Unpacked voltages size (in samples): " << _unpacked_voltage_G0.size();
@@ -322,7 +321,7 @@ bool GatedSpectrometer<HandlerType, InputType, OutputType>::operator()(RawBytes 
   // process data
 
   // check if new outblock is started:  _call_count -1 because this is the block number on the device
-  bool newBlock = ((((_call_count-1) * inputDataStream->getSamplesPerInputPolarization()) % (_fft_length * _naccumulate) ) == 0);
+  bool newBlock = (((_call_count-1)  % (_nBlocks)) == 0);
 
   // only if  a newblock is started the output buffer is swapped. Otherwise the
   // new data is added to it
@@ -406,7 +405,7 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::process(DualPolariza
           thrust::raw_pointer_cast(outputDataStream->G0.Q.a().data()),
           thrust::raw_pointer_cast(outputDataStream->G0.U.a().data()),
           thrust::raw_pointer_cast(outputDataStream->G0.V.a().data()),
-          _nchans, _naccumulate
+          _nchans, _naccumulate / _nBlocks
           );
 
   stokes_accumulate<<<1024, 1024, 0, _proc_stream>>>(
@@ -416,7 +415,7 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::process(DualPolariza
           thrust::raw_pointer_cast(outputDataStream->G1.Q.a().data()),
           thrust::raw_pointer_cast(outputDataStream->G1.U.a().data()),
           thrust::raw_pointer_cast(outputDataStream->G1.V.a().data()),
-          _nchans, _naccumulate
+          _nchans, _naccumulate / _nBlocks
           );
 
   //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G0.I.a().begin(), outputDataStream->G0.I.a().end(), _call_count);
