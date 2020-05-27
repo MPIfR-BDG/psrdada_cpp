@@ -21,7 +21,7 @@ struct RFIStatistics{
     float rfi_fraction;
 };
 
-class SpectralKurtosis{
+class SpectralKurtosisCuda{
 public:
     /**
      * @brief      constructor
@@ -31,9 +31,9 @@ public:
      * @param(in)  sk_min        minimum value of spectral kurtosis.
      * @param(in)  sk_max        maximum value of spectral kurtosis.
      */
-    SpectralKurtosis(std::size_t nchannels, std::size_t window_size, float sk_min = DEFAULT_SK_MIN,
-		     float sk_max = DEFAULT_SK_MAX);
-    ~SpectralKurtosis();
+    SpectralKurtosisCuda(std::size_t nchannels, std::size_t window_size, float sk_min = DEFAULT_SK_MIN,
+                         float sk_max = DEFAULT_SK_MAX);
+    ~SpectralKurtosisCuda();
 
     /**
      * @brief      computes spectral kurtosis for the given data and returns its rfi statistics.
@@ -55,9 +55,8 @@ private:
     std::size_t _nwindows; //number of windows
     std::size_t _sample_size; //size of input data
     float _sk_min, _sk_max;
-    thrust::device_vector<float> _d_p1, _d_p2, _d_s1, _d_s2, _d_sk;
+    thrust::device_vector<float> _d_p1, _d_s1, _d_s2;
 };
 } //edd
 } //effelsberg
 } //psrdada_cpp
-
