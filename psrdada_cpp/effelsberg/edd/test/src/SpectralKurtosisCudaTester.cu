@@ -79,6 +79,38 @@ TEST_F(SpectralKurtosisCudaTester, sk_withRFI)
     EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
 }
 
+TEST_F(SpectralKurtosisCudaTester, sk_RFIreplacement)
+{
+    std::size_t sample_size = 40000;
+    std::size_t window_size = 400;
+    //Test vector generation
+    std::vector<int> rfi_window_indices{3, 4, 6, 7, 8, 20, 30, 40, 45, 75};
+    std::vector<std::complex<float>> samples;
+    test_vector_generation(sample_size, window_size, 1, 30, 10, rfi_window_indices, samples);
+
+    //SK computation
+    thrust::host_vector<thrust::complex<float>> h_samples(samples);
+    thrust::device_vector<thrust::complex<float>> d_samples(h_samples);
+    float sk_min = 0.8;
+    float sk_max = 1.2;    
+    SpectralKurtosisCuda sk(1, window_size, sk_min, sk_max);
+    RFIStatistics stat;
+    sk.compute_sk(d_samples, stat);
+    float expected_rfi_fraction = (rfi_window_indices.size()/float(40000/400));
+    EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
+
+    //RFI replacement
+    BOOST_LOG_TRIVIAL(info) <<"RFI replacement..\n";
+    SKRfiReplacementCuda rr(stat.rfi_status);
+    rr.replace_rfi_data(d_samples);
+
+    //SK computation after RFI replacement
+    BOOST_LOG_TRIVIAL(info) <<"computing SK after replacing the RFI data..\n";
+    sk.compute_sk(d_samples, stat);
+    float expected_val_after_rfi_replacement = 0;
+    EXPECT_EQ(expected_val_after_rfi_replacement, stat.rfi_fraction);
+}
+
 } //test
 } //edd
 } //effelsberg

@@ -1,6 +1,7 @@
 #include "psrdada_cpp/common.hpp"
-#include "psrdada_cpp/effelsberg/edd/SpectralKurtosisCuda.cuh"
 #include "psrdada_cpp/effelsberg/edd/test/SKTestVector.hpp"
+#include "psrdada_cpp/effelsberg/edd/SpectralKurtosisCuda.cuh"
+#include "psrdada_cpp/effelsberg/edd/SKRfiReplacementCuda.cuh"
 #include "thrust/host_vector.h"
 #include "thrust/device_vector.h"
 #include <gtest/gtest.h>
