@@ -131,6 +131,7 @@ GatedSpectrometer<HandlerType, InputType, OutputType>::GatedSpectrometer(
   BOOST_LOG_TRIVIAL(debug) << "Integrating  " << nsamps_per_output_spectra <<
       " samples from " << _nBlocks << "blocks into one output spectrum.";
 
+
   // plan the FFT
   size_t nsamps_per_buffer = _dadaBufferLayout.sizeOfData() * 8 / nbits;
   int batch = nsamps_per_pol / _fft_length;
@@ -286,8 +287,8 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::gated_fft(
   CUFFT_ERROR_CHECK(cufftExecR2C(_fft_plan, (cufftReal *)_unpacked_voltage_ptr,
                                  (cufftComplex *)_channelised_voltage_ptr));
 
-  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
-  BOOST_LOG_TRIVIAL(debug) << "Exit processing";
+//  CUDA_ERROR_CHECK(cudaStreamSynchronize(_proc_stream));
+//  BOOST_LOG_TRIVIAL(debug) << "Exit processing";
 } // process
 
 
@@ -370,6 +371,8 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::process(SinglePolari
 {
   gated_fft(*inputDataStream, outputDataStream->G0._noOfBitSets.a(), outputDataStream->G1._noOfBitSets.a());
 
+
+
   kernels::detect_and_accumulate<IntegratedPowerType> <<<1024, 1024, 0, _proc_stream>>>(
             thrust::raw_pointer_cast(inputDataStream->_channelised_voltage_G0.data()),
             thrust::raw_pointer_cast(outputDataStream->G0.data.a().data()),
@@ -398,26 +401,31 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::process(DualPolariza
   gated_fft(inputDataStream->polarization0, outputDataStream->G0._noOfBitSets.a(), outputDataStream->G1._noOfBitSets.a());
   gated_fft(inputDataStream->polarization1, outputDataStream->G0._noOfBitSets.a(), outputDataStream->G1._noOfBitSets.a());
 
-  stokes_accumulate<<<1024, 1024, 0, _proc_stream>>>(
-          thrust::raw_pointer_cast(inputDataStream->polarization0._channelised_voltage_G0.data()),
-          thrust::raw_pointer_cast(inputDataStream->polarization1._channelised_voltage_G0.data()),
-          thrust::raw_pointer_cast(outputDataStream->G0.I.a().data()),
-          thrust::raw_pointer_cast(outputDataStream->G0.Q.a().data()),
-          thrust::raw_pointer_cast(outputDataStream->G0.U.a().data()),
-          thrust::raw_pointer_cast(outputDataStream->G0.V.a().data()),
-          _nchans, _naccumulate / _nBlocks
-          );
+  for(int output_block_number = 0; output_block_number < outputDataStream->G0._noOfBitSets.size(); output_block_number++)
+  {
+      size_t input_offset = output_block_number * inputDataStream->polarization0._channelised_voltage_G0.size() / outputDataStream->G0._noOfBitSets.size();
+      size_t output_offset = output_block_number * outputDataStream->G0.I.a().size() / outputDataStream->G0._noOfBitSets.size();
+      BOOST_LOG_TRIVIAL(debug) << "Accumulating data for output block " << output_block_number << " with input offset " << input_offset << " and output_offset " << output_offset;
+      stokes_accumulate<<<1024, 1024, 0, _proc_stream>>>(
+              thrust::raw_pointer_cast(inputDataStream->polarization0._channelised_voltage_G0.data() + input_offset),
+              thrust::raw_pointer_cast(inputDataStream->polarization1._channelised_voltage_G0.data() + input_offset),
+              thrust::raw_pointer_cast(outputDataStream->G0.I.a().data() + output_offset),
+              thrust::raw_pointer_cast(outputDataStream->G0.Q.a().data() + output_offset),
+              thrust::raw_pointer_cast(outputDataStream->G0.U.a().data() + output_offset),
+              thrust::raw_pointer_cast(outputDataStream->G0.V.a().data() + output_offset),
+              _nchans, _naccumulate / _nBlocks
+              );
 
-  stokes_accumulate<<<1024, 1024, 0, _proc_stream>>>(
-          thrust::raw_pointer_cast(inputDataStream->polarization0._channelised_voltage_G1.data()),
-          thrust::raw_pointer_cast(inputDataStream->polarization1._channelised_voltage_G1.data()),
-          thrust::raw_pointer_cast(outputDataStream->G1.I.a().data()),
-          thrust::raw_pointer_cast(outputDataStream->G1.Q.a().data()),
-          thrust::raw_pointer_cast(outputDataStream->G1.U.a().data()),
-          thrust::raw_pointer_cast(outputDataStream->G1.V.a().data()),
-          _nchans, _naccumulate / _nBlocks
-          );
-
+      stokes_accumulate<<<1024, 1024, 0, _proc_stream>>>(
+              thrust::raw_pointer_cast(inputDataStream->polarization0._channelised_voltage_G1.data() + input_offset),
+              thrust::raw_pointer_cast(inputDataStream->polarization1._channelised_voltage_G1.data() + input_offset),
+              thrust::raw_pointer_cast(outputDataStream->G1.I.a().data() + output_offset),
+              thrust::raw_pointer_cast(outputDataStream->G1.Q.a().data() + output_offset),
+              thrust::raw_pointer_cast(outputDataStream->G1.U.a().data() + output_offset),
+              thrust::raw_pointer_cast(outputDataStream->G1.V.a().data() + output_offset),
+              _nchans, _naccumulate / _nBlocks
+              );
+  }
   //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G0.I.a().begin(), outputDataStream->G0.I.a().end(), _call_count);
   //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G0.Q.a().begin(), outputDataStream->G0.Q.a().end(), _call_count);
   //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G0.U.a().begin(), outputDataStream->G0.U.a().end(), _call_count);
@@ -429,7 +437,7 @@ void GatedSpectrometer<HandlerType, InputType, OutputType>::process(DualPolariza
   //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G1.U.a().begin(), outputDataStream->G1.U.a().end(), _call_count);
   //thrust::fill(thrust::cuda::par.on(_proc_stream),outputDataStream->G1.V.a().begin(), outputDataStream->G1.V.a().end(), _call_count);
 
-    cudaDeviceSynchronize();
+  //  cudaDeviceSynchronize();
 }
 
 } // edd

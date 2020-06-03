@@ -80,12 +80,15 @@ with open(args.filename[0], 'rb') as inputfile:
 
         for i in range(n_rows):
             start = i * size_of_line
-            D0[i] = getSingleSpectrum(rawData[start: start + nChannels * bitDepth / 8], bitDepth)
-            D0N[i] = numpy.fromstring(rawData[start + nChannels * bitDepth / 8:][:8], dtype='uint64')
+            end = start + nChannels * bitDepth / 8
+            D0[i] = getSingleSpectrum(rawData[start:end], bitDepth)
 
-            start += size_of_line/2
-            D1[i] = getSingleSpectrum(rawData[start: start + nChannels * bitDepth / 8], bitDepth)
-            D1N[i] = numpy.fromstring(rawData[start + nChannels * bitDepth / 8:][:8], dtype='uint64')
+            start = end
+            end = start + nChannels * bitDepth / 8
+            D1[i] = getSingleSpectrum(rawData[start:end], bitDepth)
+
+            D0N[i] = numpy.fromstring(rawData[end:][:8], dtype='uint64')
+            D1N[i] = numpy.fromstring(rawData[end:][:8], dtype='uint64')
 
         fig = plt.figure()
         s1 = fig.add_subplot(121)
@@ -119,28 +122,25 @@ with open(args.filename[0], 'rb') as inputfile:
         N_off = numpy.zeros(n_rows)
 
         size_of_spectrum = nChannels * bitDepth / 8
-        start_of_spectrum = 0
-        end_of_spectrum = start_of_spectrum + size_of_spectrum
 
         for i in range(n_rows):
             log.debug("Line {}:".format(i))
             for j in range(4):
+                start_of_spectrum = i * (8 * (size_of_spectrum + 8)) + 2 * j * size_of_spectrum
+                end_of_spectrum = start_of_spectrum + size_of_spectrum
 
-                log.debug("  - j = {} off: [{}:{}]".format(j, start_of_spectrum, end_of_spectrum))
                 D_off[j,i] = getSingleSpectrum(rawData[start_of_spectrum:end_of_spectrum], bitDepth)
-                N_off[i] = numpy.fromstring(rawData[end_of_spectrum:end_of_spectrum+8], dtype='uint64')
-                log.debug("    P = {}, N = {}".format(sum(D_off[j,i]), N_off[i]))
 
-                start_of_spectrum = end_of_spectrum + 64/8
+                start_of_spectrum = end_of_spectrum
                 end_of_spectrum = start_of_spectrum + size_of_spectrum
-
-                log.debug("  - j = {}, on: [{}:{}]".format(j, start_of_spectrum, end_of_spectrum))
                 D_on[j,i] = getSingleSpectrum(rawData[start_of_spectrum:end_of_spectrum], bitDepth)
-                N_on[i] = numpy.fromstring(rawData[end_of_spectrum:end_of_spectrum+8], dtype='uint64')
-                log.debug("    P = {}, N = {}".format(sum(D_on[j,i]), N_on[i]))
 
-                start_of_spectrum = end_of_spectrum + 64/8
-                end_of_spectrum = start_of_spectrum + size_of_spectrum
+            start_of_data= i * (8 * (size_of_spectrum + 8)) + 8 * size_of_spectrum
+            end_of_data = start_of_data + 8*8
+            N = numpy.fromstring(rawData[start_of_data:end_of_data], dtype='uint64')
+            N_off[i] = N[0]
+            N_on[i] = N[1]
+            log.debug(" j = {} ::  ON:  P = {}, N = {}     OFF:  P = {}, N = {}".format(j, sum(D_on[j,i]), N_on[i], sum(D_off[j,i]), N_off[i]))
 
         fig = plt.figure()
         s1 = fig.add_subplot(241)
