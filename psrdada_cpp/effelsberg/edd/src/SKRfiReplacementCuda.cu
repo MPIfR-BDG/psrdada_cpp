@@ -56,7 +56,7 @@ void SKRfiReplacementCuda::get_rfi_window_indices()
     for(std::size_t index = 0; index < _nrfi_windows; index++){
         _rfi_window_indices[index] = thrust::distance(_rfi_status.begin(), 
                                      thrust::max_element((_rfi_status.begin() + iter), _rfi_status.end()));
-	iter = _rfi_window_indices[index] + 1;
+        iter = _rfi_window_indices[index] + 1;
     }
 }
 
@@ -68,7 +68,7 @@ void SKRfiReplacementCuda::get_clean_window_indices()
     for(std::size_t index = 0; index < DEFAULT_NUM_CLEAN_WINDOWS; index++){
         _clean_window_indices[index] = thrust::distance(_rfi_status.begin(), 
                                        thrust::min_element((_rfi_status.begin() + iter), _rfi_status.end()));
-	iter = _clean_window_indices[index] + 1;
+        iter = _clean_window_indices[index] + 1;
     }
 }
 
@@ -79,10 +79,10 @@ void SKRfiReplacementCuda::get_clean_data_statistics(const thrust::device_vector
     thrust::device_vector<thrust::complex<float>> clean_data(DEFAULT_NUM_CLEAN_WINDOWS * _window_size);
     for(std::size_t ii = 0; ii < DEFAULT_NUM_CLEAN_WINDOWS; ii++){
         std::size_t window_index = _clean_window_indices[ii];
-	std::size_t ibegin = window_index * _window_size;
-	std::size_t iend = ibegin + _window_size - 1;
-	std::size_t jj = ii * _window_size;
-	std::copy((data.begin() + ibegin), (data.begin() + iend), (clean_data.begin() + jj));
+        std::size_t ibegin = window_index * _window_size;
+        std::size_t iend = ibegin + _window_size - 1;
+        std::size_t jj = ii * _window_size;
+        std::copy((data.begin() + ibegin), (data.begin() + iend), (clean_data.begin() + jj));
         BOOST_LOG_TRIVIAL(debug) <<"clean_win_index = " << window_index
                                  << " ibegin = " << ibegin << " iend = " << iend;
     }
@@ -136,7 +136,7 @@ void SKRfiReplacementCuda::replace_rfi_data(thrust::device_vector<thrust::comple
 	for(std::size_t ii = 0; ii < _nrfi_windows; ii++){
             std::size_t index = _rfi_window_indices[ii] * _window_size;
 	    thrust::copy(replacement_data.begin(), replacement_data.end(), (data.begin() +index));
-	}
+        }
     }
 }
 
