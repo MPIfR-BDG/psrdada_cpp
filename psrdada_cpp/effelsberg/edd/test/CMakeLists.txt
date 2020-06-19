@@ -15,6 +15,7 @@ set(
     src/EDDPolnMergeTester.cpp
     src/SKTestVector.cpp
     src/SpectralKurtosisTester.cpp
+    src/SpectralKurtosisCudaTester.cu
 )
 cuda_add_executable(gtest_edd ${gtest_edd_src} )
 target_link_libraries(gtest_edd ${PSRDADA_CPP_EFFELSBERG_EDD_LIBRARIES} ${CUDA_CUFFT_LIBRARIES} -lcublas)

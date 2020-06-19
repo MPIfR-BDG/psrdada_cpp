@@ -25,11 +25,8 @@ class SKRfiReplacementCuda{
 public:
     /**
      * @brief    constructor
-     *
-     * @param(in)     rfi_status    rfi_status of input data
-     *
      */
-    SKRfiReplacementCuda(const thrust::device_vector<int> &rfi_status);
+    SKRfiReplacementCuda();
 
     /**
      * @brief    destructor
@@ -39,9 +36,11 @@ public:
     /**
      * @brief    Replaces data in rfi_windows with replacement data (generated using statistics of data from clean_windows).
      *
-     * @param(in & out)    data    Data on which RFI has to be replaced. Returns the same but with RFI replaced.   
+     * @param(in)          rfi_status    rfi_status of input data
+     * @param(in & out)    data          Data on which RFI has to be replaced. Returns the same but with RFI replaced.   
      */
-    void replace_rfi_data(thrust::device_vector<thrust::complex<float>> &data);
+    void replace_rfi_data(const thrust::device_vector<int> &rfi_status,
+                          thrust::device_vector<thrust::complex<float>> &data);
 
 private:
     /**
@@ -89,6 +88,7 @@ private:
     std::size_t _nwindows, _nrfi_windows, _nclean_windows;
     thrust::device_vector<int> _rfi_window_indices;
     thrust::device_vector<int> _clean_window_indices;
+    thrust::device_vector<float> _d_vreal, _d_vimag;
 };
 } //edd
 } //effelsberg

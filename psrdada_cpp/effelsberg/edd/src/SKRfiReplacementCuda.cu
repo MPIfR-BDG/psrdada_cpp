@@ -27,8 +27,21 @@ struct mean_subtraction_square{
     }
 };
 
-SKRfiReplacementCuda::SKRfiReplacementCuda(const thrust::device_vector<int> &rfi_status)
-    :  _rfi_status(rfi_status)
+struct equals_one{
+    __host__ __device__
+    float operator() (int val) const{
+        return (val == 1);
+    }
+};
+
+struct equals_zero{
+    __host__ __device__
+    float operator() (int val) const{
+        return (val == 0);
+    }
+};
+
+SKRfiReplacementCuda::SKRfiReplacementCuda()
 {
     BOOST_LOG_TRIVIAL(info) << "Creating new SKRfiReplacementCuda instance..\n";
 }
@@ -52,24 +65,22 @@ void SKRfiReplacementCuda::get_rfi_window_indices()
 {
     _nrfi_windows = thrust::count(_rfi_status.begin(), _rfi_status.end(), 1);
     _rfi_window_indices.resize(_nrfi_windows);
-    std::size_t iter = 0;
-    for(std::size_t index = 0; index < _nrfi_windows; index++){
-        _rfi_window_indices[index] = thrust::distance(_rfi_status.begin(), 
-                                     thrust::max_element((_rfi_status.begin() + iter), _rfi_status.end()));
-        iter = _rfi_window_indices[index] + 1;
-    }
+    thrust::copy_if(thrust::make_counting_iterator<int>(0),
+		    thrust::make_counting_iterator<int>(_nwindows),
+		    _rfi_status.begin(),
+		    _rfi_window_indices.begin(),
+		    equals_one());
 }
 
 void SKRfiReplacementCuda::get_clean_window_indices()
 {
     _nclean_windows = thrust::count(_rfi_status.begin(), _rfi_status.end(), 0);
     _clean_window_indices.resize(DEFAULT_NUM_CLEAN_WINDOWS);
-    std::size_t iter = 0;
-    for(std::size_t index = 0; index < DEFAULT_NUM_CLEAN_WINDOWS; index++){
-        _clean_window_indices[index] = thrust::distance(_rfi_status.begin(), 
-                                       thrust::min_element((_rfi_status.begin() + iter), _rfi_status.end()));
-        iter = _clean_window_indices[index] + 1;
-    }
+    thrust::copy_if(thrust::make_counting_iterator<int>(0),
+		    thrust::make_counting_iterator<int>(_nwindows),
+		    _rfi_status.begin(),
+		    _clean_window_indices.begin(),
+		    equals_zero());
 }
 
 void SKRfiReplacementCuda::get_clean_data_statistics(const thrust::device_vector<thrust::complex<float>> &data,
@@ -82,7 +93,7 @@ void SKRfiReplacementCuda::get_clean_data_statistics(const thrust::device_vector
         std::size_t ibegin = window_index * _window_size;
         std::size_t iend = ibegin + _window_size - 1;
         std::size_t jj = ii * _window_size;
-        std::copy((data.begin() + ibegin), (data.begin() + iend), (clean_data.begin() + jj));
+        thrust::copy((data.begin() + ibegin), (data.begin() + iend), (clean_data.begin() + jj));
         BOOST_LOG_TRIVIAL(debug) <<"clean_win_index = " << window_index
                                  << " ibegin = " << ibegin << " iend = " << iend;
     }
@@ -93,14 +104,15 @@ void SKRfiReplacementCuda::compute_data_statistics(const thrust::device_vector<t
                                                    DataStatistics &stats)
 {
     std::size_t length = data.size();
-    thrust::device_vector<float> d_vreal(length), d_vimag(length);
-    thrust::transform(data.begin(), data.end(), d_vreal.begin(), get_real());
-    thrust::transform(data.begin(), data.end(), d_vimag.begin(), get_imag());
-    stats.r_mean = thrust::reduce(d_vreal.begin(), d_vreal.end(), 0.0f) / length;
-    stats.i_mean = thrust::reduce(d_vimag.begin(), d_vimag.end(), 0.0f) / length;
-    stats.r_sd = std::sqrt(thrust::transform_reduce(d_vreal.begin(), d_vreal.end(), mean_subtraction_square(stats.r_mean),
+    _d_vreal.resize(length);
+    _d_vimag.resize(length);
+    thrust::transform(data.begin(), data.end(), _d_vreal.begin(), get_real());
+    thrust::transform(data.begin(), data.end(), _d_vimag.begin(), get_imag());
+    stats.r_mean = thrust::reduce(_d_vreal.begin(), _d_vreal.end(), 0.0f) / length;
+    stats.i_mean = thrust::reduce(_d_vimag.begin(), _d_vimag.end(), 0.0f) / length;
+    stats.r_sd = std::sqrt(thrust::transform_reduce(_d_vreal.begin(), _d_vreal.end(), mean_subtraction_square(stats.r_mean),
                            0.0f, thrust::plus<float> ()) / length);
-    stats.i_sd = std::sqrt(thrust::transform_reduce(d_vimag.begin(), d_vimag.end(), mean_subtraction_square(stats.i_mean),
+    stats.i_sd = std::sqrt(thrust::transform_reduce(_d_vimag.begin(), _d_vimag.end(), mean_subtraction_square(stats.i_mean),
                            0.0f, thrust::plus<float> ()) / length);
     BOOST_LOG_TRIVIAL(debug) << "DataStatistics r_mean = " << stats.r_mean
                              << " r_sd =  " << stats.r_sd
@@ -122,8 +134,10 @@ void SKRfiReplacementCuda::generate_replacement_data(const DataStatistics &stats
     }
 }
 
-void SKRfiReplacementCuda::replace_rfi_data(thrust::device_vector<thrust::complex<float>> &data)
+void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rfi_status,
+                                            thrust::device_vector<thrust::complex<float>> &data)
 {
+    _rfi_status = rfi_status;
     DataStatistics stats;
     thrust::device_vector<thrust::complex<float>> replacement_data;
     //initialize data members of the class
