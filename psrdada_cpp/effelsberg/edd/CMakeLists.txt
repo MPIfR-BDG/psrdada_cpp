@@ -21,7 +21,33 @@ set(psrdada_cpp_effelsberg_edd_src
     src/VLBI.cu
     )
 
+
+set(psrdada_cpp_effelsberg_edd_inc
+    Channeliser.cuh
+    DadaBufferLayout.hpp
+    DetectorAccumulator.cuh
+    EDDPolnMerge.hpp
+    EDDRoach.hpp
+    EDDRoach_merge.hpp
+    FftSpectrometer.cuh
+    GatedSpectrometer.cuh
+    Packer.cuh
+    ScaledTransposeTFtoTFT.cuh
+    Tools.cuh
+    Unpacker.cuh
+    VLBI.cuh
+    )
+
+install(FILES ${psrdada_cpp_effelsberg_edd_inc} DESTINATION include/psrdada_cpp/effelsberg/edd)
+install(DIRECTORY detail DESTINATION include/psrdada_cpp/effelsberg/edd)
+
 cuda_add_library(${CMAKE_PROJECT_NAME}_effelsberg_edd ${psrdada_cpp_effelsberg_edd_src})
+install (TARGETS ${CMAKE_PROJECT_NAME}_effelsberg_edd
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
+
+
 
 #simple FFT spectrometer interface
 cuda_add_executable(fft_spectrometer src/fft_spectrometer_cli.cu)

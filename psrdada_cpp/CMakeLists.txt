@@ -8,38 +8,44 @@ set(psrdada_cpp_src
     src/cli_utils.cpp
     src/dada_client_base.cpp
     src/dada_db.cpp
-    src/dada_write_client.cpp
-    src/dada_null_sink.cpp
     src/dada_disk_sink.cpp
+    src/dada_null_sink.cpp
     src/dada_output_stream.cpp
     src/dada_read_client.cpp
     src/dada_write_client.cpp
-    src/multilog.cpp
-    src/raw_bytes.cpp
-    src/simple_file_writer.cpp
-    src/sigprocheader.cpp
-    src/psrdadaheader.cpp
     src/file_to_dada_cli.cpp
+    src/multilog.cpp
+    src/psrdadaheader.cpp
+    src/raw_bytes.cpp
+    src/sigprocheader.cpp
+    src/simple_file_writer.cpp
    )
 
 set(psrdada_cpp_inc
-  cli_utils.hpp
-  dada_client_base.hpp
-  dada_input_stream.hpp
-  dada_output_stream.hpp
-  dada_read_client.hpp
-  dada_junk_source.hpp
-  dada_null_sink.hpp
-  multilog.hpp
-  common.hpp
-  dada_write_client.hpp
-  raw_bytes.hpp
-  cuda_utils.hpp
-  simple_file_writer.hpp
-  sigprocheader.hpp
-  psrdadaheader.hpp
-  psrdada_to_sigproc_header.hpp
-  file_input_stream.hpp
+    cli_utils.hpp
+    common.hpp
+    cuda_utils.hpp
+    dada_client_base.hpp
+    dada_db.hpp
+    dada_disk_sink.hpp
+    dada_input_stream.hpp
+    dada_junk_source.hpp
+    dada_null_sink.hpp
+    dada_output_stream.hpp
+    dada_read_client.hpp
+    dada_sync_source.hpp
+    dada_write_client.hpp
+    double_buffer.cuh
+    double_buffer.hpp
+    double_device_buffer.cuh
+    double_host_buffer.cuh
+    file_input_stream.hpp
+    multilog.hpp
+    psrdada_to_sigproc_header.hpp
+    psrdadaheader.hpp
+    raw_bytes.hpp
+    sigprocheader.hpp
+    simple_file_writer.hpp
   )
 
 # -- the main library target
