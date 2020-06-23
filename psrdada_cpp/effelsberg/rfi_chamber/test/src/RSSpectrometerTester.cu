@@ -103,6 +103,7 @@ void RSSpectrometerTester::run_dc_power_test(std::size_t input_nchans, std::size
 
         }
     }
+    EXPECT_EQ(0, remove("/tmp/dc_power_test.bin")) << "Error deleting file '/tmp/dc_power_test.bin'";
 }
 
 TEST_F(RSSpectrometerTester, test_dc_power_1024_chan)
