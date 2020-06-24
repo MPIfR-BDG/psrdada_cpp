@@ -55,7 +55,7 @@ private:
     std::size_t _nwindows; //number of windows
     std::size_t _sample_size; //size of input data
     float _sk_min, _sk_max;
-    thrust::device_vector<float> _d_p1, _d_s1, _d_s2;
+    thrust::device_vector<float> _d_s1, _d_s2;
 };
 } //edd
 } //effelsberg

@@ -12,11 +12,13 @@ struct compute_power{
     }
 };
 
-struct square{
+struct power_square{
     __host__ __device__
-    float operator()(float z)
+    float operator()(thrust::complex<float> z)
     {
-        return (z * z);
+        float abs = thrust::abs(z);
+	float power = abs * abs;
+        return (power * power);
     }
 };
 
@@ -70,7 +72,6 @@ void SpectralKurtosisCuda::init()
         throw std::runtime_error("Data(sample) size is not a multiple of window_size. Give different window size. \n");
     }
     _nwindows = _sample_size /_window_size;
-    _d_p1.resize(_sample_size);
     _d_s1.resize(_nwindows);
     _d_s2.resize(_nwindows);
 }
@@ -81,19 +82,18 @@ void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::comple
                              << " and window_size " << _window_size <<".\n";
     //initializing class variables
     init();
-    thrust::transform(data.begin(), data.end(), _d_p1.begin(), compute_power());
-    //computing sum of _d_p1 for all windows
+    //computing _d_s1 for all windows
     thrust::reduce_by_key(thrust::device, 
                           thrust::make_transform_iterator(thrust::counting_iterator<int> (0), set_indices(_window_size)),
                           thrust::make_transform_iterator(thrust::counting_iterator<int> ((_sample_size - 1)), set_indices(_window_size)), 
-                          _d_p1.begin(), 
+                          thrust::make_transform_iterator(data.begin(), compute_power()), 
                           thrust::discard_iterator<int>(), 
                           _d_s1.begin());
-    //computing sum of square of _d_p1 for all windows
+    //computing _d_s2  for all windows
     thrust::reduce_by_key(thrust::device, 
                           thrust::make_transform_iterator(thrust::counting_iterator<int> (0), set_indices(_window_size)),
                           thrust::make_transform_iterator(thrust::counting_iterator<int> ((_sample_size - 1)), set_indices(_window_size)), 
-                          thrust::make_transform_iterator(_d_p1.begin(), square()), 
+                          thrust::make_transform_iterator(data.begin(), power_square()), 
                           thrust::discard_iterator<int>(), 
                           _d_s2.begin());
     //computes SK and checks the threshold to detect RFI.
