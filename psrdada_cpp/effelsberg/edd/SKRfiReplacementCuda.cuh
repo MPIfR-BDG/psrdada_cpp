@@ -54,11 +54,10 @@ private:
     void get_rfi_window_indices();
 
     /**
-     * @brief    Computes statistics for the given input data. Here it is the data from few clean windows.
+     * @brief    Computes statistics of clean (rfi free) data.
      *
-     * @param(in)     data          data from default number of clean windows.
      */
-    void compute_data_statistics(const thrust::device_vector<thrust::complex<float>> &data);
+    void compute_clean_data_statistics();
 
     /**
      * @brief    Gathers data from DEFAULT_NUM_CLEAN_WINDOW number of clean windows and computes its statistics
@@ -79,6 +78,7 @@ private:
     std::size_t _nwindows, _nrfi_windows, _nclean_windows;
     thrust::device_vector<int> _rfi_window_indices;
     thrust::device_vector<int> _clean_window_indices;
+    thrust::device_vector<thrust::complex <float>> _clean_data;
     float _ref_mean, _ref_sd;
 };
 } //edd
