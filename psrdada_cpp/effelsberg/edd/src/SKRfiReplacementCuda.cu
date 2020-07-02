@@ -14,6 +14,21 @@ struct mean_subtraction_square{
     }
 };
 
+struct generate_replacement_data{
+    float normal_dist_mean, normal_dist_std;
+    generate_replacement_data(float mean, float std) 
+        : normal_dist_mean(mean),
+          normal_dist_std(std)
+    {};
+    __host__ __device__
+    thrust::complex<float> operator() (unsigned int n) const{
+        thrust::minstd_rand gen;
+	thrust::random::normal_distribution<float> dist(normal_dist_mean, normal_dist_std);
+	gen.discard(n);
+	return thrust::complex<float> (dist(gen), dist(gen));
+    }
+};
+
 SKRfiReplacementCuda::SKRfiReplacementCuda()
 {
     BOOST_LOG_TRIVIAL(info) << "Creating new SKRfiReplacementCuda instance..\n";
@@ -82,17 +97,6 @@ void SKRfiReplacementCuda::compute_clean_data_statistics()
                              << " sd =  " << _ref_sd;
 }
 
-void SKRfiReplacementCuda::generate_replacement_data(thrust::device_vector<thrust::complex<float>> &replacement_data)
-{
-    BOOST_LOG_TRIVIAL(info) << "generating replacement data..\n";
-    replacement_data.resize(_window_size);
-    thrust::minstd_rand gen;
-    thrust::random::normal_distribution<float> ndist(_ref_mean, _ref_sd);
-    for(std::size_t index = 0; index < _window_size; index++){
-        replacement_data[index] = thrust::complex<float>(ndist(gen), ndist(gen));
-    }
-}
-
 void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rfi_status,
                                             thrust::device_vector<thrust::complex<float>> &data)
 {
@@ -103,15 +107,15 @@ void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rf
     //RFI present and not in all windows
     if((_nrfi_windows > 0) && (_nrfi_windows < _nwindows)){
         get_clean_data_statistics(data);
-        generate_replacement_data(replacement_data);
 	//Replacing RFI
+	thrust::counting_iterator<unsigned int> sequence_index_begin(0);
 	for(std::size_t ii = 0; ii < _nrfi_windows; ii++){
             std::size_t index = _rfi_window_indices[ii] * _window_size;
-	    thrust::copy(replacement_data.begin(), replacement_data.end(), (data.begin() +index));
+            thrust::transform(sequence_index_begin, (sequence_index_begin + _window_size), 
+                              (data.begin() + index), generate_replacement_data(_ref_mean, _ref_sd));
         }
     }
 }
-
 } //edd
 } //effelsberg
 } //psrdada_cpp

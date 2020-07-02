@@ -66,13 +66,6 @@ private:
      */
     void get_clean_data_statistics(const thrust::device_vector<thrust::complex<float>> &data);
 
-    /**
-     * @brief    Generates replacement data using clean window data statistics
-     *
-     * @param(out)    replacement_data       replacement data of size = _window_size generated using input stats.
-     */
-    void generate_replacement_data(thrust::device_vector<thrust::complex<float>> &replacement_data);
-
     thrust::device_vector<int> _rfi_status;
     std::size_t _window_size;
     std::size_t _nwindows, _nrfi_windows, _nclean_windows;
