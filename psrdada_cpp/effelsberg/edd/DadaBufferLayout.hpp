@@ -24,12 +24,18 @@ class DadaBufferLayout
 
 
   public:
+    // input key of the dadad buffer
+    // size of spead heaps in bytes
+    //  number of side channels
+    DadaBufferLayout();
     DadaBufferLayout(key_t input_key , size_t heapSize, size_t nSideChannels);
+    void intitialize(key_t input_key , size_t heapSize, size_t nSideChannels);
 
     key_t getInputkey() const;
 
     size_t getBufferSize() const;
 
+    // get size of heaps in bytes
     size_t getHeapSize() const;
 
     size_t getNSideChannels() const;

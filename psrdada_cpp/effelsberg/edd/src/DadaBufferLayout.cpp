@@ -7,9 +7,19 @@ namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
 
+DadaBufferLayout::DadaBufferLayout() {};
 
-DadaBufferLayout::DadaBufferLayout(key_t input_key, size_t heapSize, size_t nSideChannels) : _input_key(input_key), _heapSize(heapSize), _nSideChannels(nSideChannels)
+DadaBufferLayout::DadaBufferLayout(key_t input_key, size_t heapSize, size_t nSideChannels)
 {
+  intitialize(input_key, heapSize, nSideChannels);
+}
+
+void DadaBufferLayout::intitialize(key_t input_key, size_t heapSize, size_t nSideChannels)
+{
+    _input_key = input_key;
+    _heapSize = heapSize;
+    _nSideChannels = nSideChannels;
+
   MultiLog log("DadaBufferLayout");
   DadaClientBase client(input_key, log);
   _bufferSize = client.data_buffer_size();
@@ -20,10 +30,12 @@ DadaBufferLayout::DadaBufferLayout(key_t input_key, size_t heapSize, size_t nSid
   _gapSize = (_bufferSize - _nHeaps * totalHeapSize);
   _dataBlockBytes = _nHeaps * _heapSize;
 
-  BOOST_LOG_TRIVIAL(debug) << "Memory configuration of dada buffer: \n"
+  BOOST_LOG_TRIVIAL(debug) << "Memory configuration of dada buffer '" << _input_key << "' with " << nSideChannels << " side channels items and heapsize " << heapSize << " byte: \n"
+                           << "  total size of buffer: " << _bufferSize << " byte\n"
                            << "  number of heaps per buffer: " << _nHeaps << "\n"
+                           << "  datablock size in buffer: " << _dataBlockBytes << " byte\n"
                            << "  resulting gap: " << _gapSize << " byte\n"
-                           << "  datablock size in buffer: " << _dataBlockBytes << " byte\n";
+                           << "  size of sidechannel data: " << _sideChannelSize << " byte\n";
 }
 
 key_t DadaBufferLayout::getInputkey() const

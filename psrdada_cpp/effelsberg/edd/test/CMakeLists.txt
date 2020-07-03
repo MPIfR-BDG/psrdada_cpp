@@ -2,9 +2,8 @@ include_directories(${GTEST_INCLUDE_DIR})
 
 link_directories(${GTEST_LIBRARY_DIR})
 
-set(
-    gtest_edd_src
-    src/ChanneliserTester.cu
+set(gtest_edd_src
+    gtest_edd_src.cu
     src/DetectorAccumulatorTester.cu
     src/FftSpectrometerTester.cu
     src/GatedSpectrometerTest.cu

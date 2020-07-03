@@ -1,4 +1,4 @@
-#include "psrdada_cpp/effelsberg/edd/GatedSpectrometer.cuh"
+#include "psrdada_cpp/effelsberg/edd/GatedStokesSpectrometer.cuh"
 
 #include "psrdada_cpp/dada_null_sink.hpp"
 #include "psrdada_cpp/multilog.hpp"
@@ -8,7 +8,7 @@
 #include "thrust/extrema.h"
 
 
-TEST(GatedSpectrometer, BitManipulationMacros) {
+TEST(GatedStokesSpectrometer, BitManipulationMacros) {
   for (int i = 0; i < 64; i++) {
     uint64_t v = 0;
     SET_BIT(v, i);
@@ -23,7 +23,7 @@ TEST(GatedSpectrometer, BitManipulationMacros) {
 }
 
 
-TEST(GatedSpectrometer, stokes_IQUV)
+TEST(GatedStokesSpectrometer, stokes_IQUV)
 {
     float I,Q,U,V;
     // No field
@@ -78,7 +78,7 @@ TEST(GatedSpectrometer, stokes_IQUV)
 }
 
 
-TEST(GatedSpectrometer, stokes_accumulate)
+TEST(GatedStokesSpectrometer, stokes_accumulate)
 {
     CUDA_ERROR_CHECK(cudaDeviceSynchronize());
     size_t nchans = 8 * 1024 * 1024 + 1;
@@ -139,7 +139,7 @@ TEST(GatedSpectrometer, stokes_accumulate)
 
 
 
-TEST(GatedSpectrometer, GatingKernel)
+TEST(GatedStokesSpectrometer, GatingKernel)
 {
   const size_t blockSize = 1024;
   const size_t nBlocks = 16 * 1024;
@@ -239,7 +239,7 @@ TEST(GatedSpectrometer, GatingKernel)
   }
 }
 
-TEST(GatedSpectrometer, array_sum) {
+TEST(GatedStokesSpectrometer, array_sum) {
 
   const size_t NBLOCKS = 16 * 32;
   const size_t NTHREADS = 1024;

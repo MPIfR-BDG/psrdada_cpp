@@ -24,35 +24,76 @@ const size_t ERROR_UNHANDLED_EXCEPTION = 2;
 } // namespace
 
 
-template<typename T>
-void launchSpectrometer(const effelsberg::edd::DadaBufferLayout &dadaBufferLayout, const std::string &output_type, const std::string &filename, size_t selectedSideChannel, size_t selectedBit, size_t fft_length, size_t naccumulate, unsigned int nbits,  float input_level,  float output_level)
+struct GatedSpectrometerInputParameters
+{
+    effelsberg::edd::DadaBufferLayout dadaBufferLayout;
+    size_t selectedSideChannel;
+    size_t speadHeapSize;
+    size_t nSideChannels;
+    size_t selectedBit;
+    size_t fft_length;
+    size_t naccumulate;
+    unsigned int nbits;
+    float input_level;
+    float output_level;
+    std::string filename;
+    std::string output_type;
+};
+
+
+
+template<typename T,
+         class InputType,
+         class OutputType
+    >
+void launchSpectrometer(const GatedSpectrometerInputParameters &i)
 {
 
     MultiLog log("DadaBufferLayout");
-    std::cout << "Running with output_type: " << output_type << std::endl;
-    if (output_type == "file")
+    std::cout << "Running with output_type: " << i.output_type << std::endl;
+    if (i.output_type == "file")
     {
-      SimpleFileWriter sink(filename);
-      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(dadaBufferLayout,
-          selectedSideChannel, selectedBit,
-          fft_length, naccumulate, nbits, input_level,
-          output_level, sink);
+      SimpleFileWriter sink(i.filename);
+      effelsberg::edd::GatedSpectrometer<decltype(sink), InputType, OutputType>
+          spectrometer(i.dadaBufferLayout,
+          i.selectedSideChannel, i.selectedBit,
+          i.fft_length, i.naccumulate, i.nbits, i.input_level,
+          i.output_level, sink);
 
-      DadaInputStream<decltype(spectrometer)> istream(dadaBufferLayout.getInputkey(), log,
+      DadaInputStream<decltype(spectrometer)> istream(i.dadaBufferLayout.getInputkey(), log,
                                                       spectrometer);
       istream.start();
     }
-    else if (output_type == "dada")
+    else if (i.output_type == "dada")
     {
-      DadaOutputStream sink(string_to_key(filename), log);
-      effelsberg::edd::GatedSpectrometer<decltype(sink), T> spectrometer(dadaBufferLayout,
-          selectedSideChannel, selectedBit,
-          fft_length, naccumulate, nbits, input_level,
-          output_level, sink);
+      DadaOutputStream sink(string_to_key(i.filename), log);
+      effelsberg::edd::GatedSpectrometer<decltype(sink), InputType, OutputType> spectrometer(i.dadaBufferLayout,
+          i.selectedSideChannel, i.selectedBit,
+          i.fft_length, i.naccumulate, i.nbits, i.input_level,
+          i.output_level, sink);
 
-      DadaInputStream<decltype(spectrometer)> istream(dadaBufferLayout.getInputkey(), log,
+      DadaInputStream<decltype(spectrometer)> istream(i.dadaBufferLayout.getInputkey(), log,
       spectrometer);
       istream.start();
+    }
+     else if (i.output_type == "profile")
+    {
+      NullSink sink;
+      effelsberg::edd::GatedSpectrometer<decltype(sink),  InputType, OutputType> spectrometer(i.dadaBufferLayout,
+          i.selectedSideChannel, i.selectedBit,
+          i.fft_length, i.naccumulate, i.nbits, i.input_level,
+          i.output_level, sink);
+
+      std::vector<char> buffer(i.dadaBufferLayout.getBufferSize());
+      cudaHostRegister(buffer.data(), buffer.size(), cudaHostRegisterPortable);
+      RawBytes ib(buffer.data(), buffer.size(), buffer.size());
+      spectrometer.init(ib);
+      for (int i =0; i< 10; i++)
+      {
+        std::cout << "Profile Block: "<< i +1 << std::endl;
+        spectrometer(ib);
+      }
+
     }
     else
     {
@@ -61,25 +102,45 @@ void launchSpectrometer(const effelsberg::edd::DadaBufferLayout &dadaBufferLayou
 }
 
 
+template<typename T> void io_eval(const GatedSpectrometerInputParameters &inputParameters, const std::string &input_polarizations, const std::string &output_format)
+{
+    if (input_polarizations == "Single" && output_format == "Power")
+    {
+        launchSpectrometer<T, effelsberg::edd::SinglePolarizationInput,
+            effelsberg::edd::GatedPowerSpectrumOutput>(inputParameters);
+    }
+    else if (input_polarizations == "Dual" && output_format == "Power")
+    {
+       throw std::runtime_error("Not implemented yet.");
+    }
+    else if (input_polarizations == "Dual" && output_format == "Stokes")
+    {
+        launchSpectrometer<T, effelsberg::edd::DualPolarizationInput,
+            effelsberg::edd::GatedFullStokesOutput>(inputParameters);
+    }
+    else
+    {
+       throw std::runtime_error("Not implemented yet.");
+    }
+
+}
+
+
+
+
 
 int main(int argc, char **argv) {
   try {
     key_t input_key;
-    int fft_length;
-    int naccumulate;
-    unsigned int nbits;
-    size_t nSideChannels;
-    size_t selectedSideChannel;
-    size_t selectedBit;
-    size_t speadHeapSize;
-    float input_level;
-    float output_level;
+
+    GatedSpectrometerInputParameters ip;
     std::time_t now = std::time(NULL);
     std::tm *ptm = std::localtime(&now);
-    char buffer[32];
-    std::strftime(buffer, 32, "%Y-%m-%d-%H:%M:%S.bp", ptm);
-    std::string filename(buffer);
-    std::string output_type = "file";
+    char default_filename[32];
+    std::strftime(default_filename, 32, "%Y-%m-%d-%H:%M:%S.bp", ptm);
+
+    std::string input_polarizations = "Single";
+    std::string output_format = "Power";
     unsigned int output_bit_depth;
 
     /** Define and parse the program options
@@ -95,54 +156,62 @@ int main(int argc, char **argv) {
         "The shared memory key for the dada buffer to connect to (hex "
         "string)");
     desc.add_options()(
-        "output_type", po::value<std::string>(&output_type)->default_value(output_type),
-        "output type [dada, file]. Default is file."
+        "output_type", po::value<std::string>(&ip.output_type)->default_value("file"),
+        "output type [dada, file, profile]. Default is file. Profile executes the spectrometer 10x on random data and passes the ouput to a null sink."
         );
     desc.add_options()(
-        "output_bit_depth", po::value<unsigned int>(&output_bit_depth)->default_value(8),
+        "output_bit_depth", po::value<unsigned int>(&output_bit_depth)->default_value(32),
         "output_bit_depth [8, 32]. Default is 32."
         );
     desc.add_options()(
-        "output_key,o", po::value<std::string>(&filename)->default_value(filename),
+        "output_key,o", po::value<std::string>(&ip.filename)->default_value(default_filename),
         "The key of the output bnuffer / name of the output file to write spectra "
         "to");
 
+    desc.add_options()(
+        "input_polarizations,p", po::value<std::string>(&input_polarizations)->default_value(input_polarizations),
+        "Single, Dual");
+    desc.add_options()(
+        "output_format,f", po::value<std::string>(&output_format)->default_value(output_format),
+        "Power, Stokes (requires dual poalriation input)");
+
+
     desc.add_options()("nsidechannelitems,s",
                        po::value<size_t>()->default_value(1)->notifier(
-                           [&nSideChannels](size_t in) { nSideChannels = in; }),
+                           [&ip](size_t in) { ip.nSideChannels = in; }),
                        "Number of side channel items ( s >= 1)");
     desc.add_options()(
         "selected_sidechannel,e",
         po::value<size_t>()->default_value(0)->notifier(
-            [&selectedSideChannel](size_t in) { selectedSideChannel = in; }),
+            [&ip](size_t in) { ip.selectedSideChannel = in; }),
         "Side channel selected for evaluation.");
     desc.add_options()("selected_bit,B",
                        po::value<size_t>()->default_value(0)->notifier(
-                           [&selectedBit](size_t in) { selectedBit = in; }),
+                           [&ip](size_t in) { ip.selectedBit = in; }),
                        "Side channel selected for evaluation.");
     desc.add_options()("speadheap_size",
                        po::value<size_t>()->default_value(4096)->notifier(
-                           [&speadHeapSize](size_t in) { speadHeapSize = in; }),
+                           [&ip](size_t in) { ip.speadHeapSize = in; }),
                        "size of the spead data heaps. The number of the "
                        "heaps in the dada block depends on the number of "
                        "side channel items.");
-    desc.add_options()("nbits,b", po::value<unsigned int>(&nbits)->required(),
+
+    desc.add_options()("nbits,b", po::value<unsigned int>(&ip.nbits)->required(),
                        "The number of bits per sample in the "
                        "packetiser output (8 or 12)");
-
-
-
-    desc.add_options()("fft_length,n", po::value<int>(&fft_length)->required(),
+    desc.add_options()("fft_length,n", po::value<size_t>(&ip.fft_length)->required(),
                        "The length of the FFT to perform on the data");
     desc.add_options()("naccumulate,a",
-                       po::value<int>(&naccumulate)->required(),
+                       po::value<size_t>(&ip.naccumulate)->required(),
                        "The number of samples to integrate in each channel");
     desc.add_options()("input_level",
-                       po::value<float>(&input_level)->required(),
+                       po::value<float>()->default_value(100.)->notifier(
+                           [&ip](float in) { ip.input_level = in; }),
                        "The input power level (standard "
                        "deviation, used for 8-bit conversion)");
     desc.add_options()("output_level",
-                       po::value<float>(&output_level)->required(),
+                       po::value<float>()->default_value(100.)->notifier(
+                           [&ip](float in) { ip.output_level = in; }),
                        "The output power level (standard "
                        "deviation, used for 8-bit "
                        "conversion)");
@@ -167,12 +236,22 @@ int main(int argc, char **argv) {
       }
 
       po::notify(vm);
-      if (vm.count("output_type") && (!(output_type == "dada" || output_type == "file") ))
+      if (vm.count("output_type") && (!(ip.output_type == "dada" || ip.output_type == "file" || ip.output_type== "profile") ))
       {
-        throw po::validation_error(po::validation_error::invalid_option_value, "output_type", output_type);
+        throw po::validation_error(po::validation_error::invalid_option_value, "output_type", ip.output_type);
       }
 
-      if (!(nSideChannels >= 1))
+      if (vm.count("input_polarizations") && (!(input_polarizations == "Single" || input_polarizations == "Dual") ))
+      {
+        throw po::validation_error(po::validation_error::invalid_option_value, "input_polarizations", input_polarizations);
+      }
+
+      if (vm.count("output_format") && (!(output_format == "Power" || output_format == "Stokes") ))
+      {
+        throw po::validation_error(po::validation_error::invalid_option_value, "output_format", output_format);
+      }
+
+      if (!(ip.nSideChannels >= 1))
       {
         throw po::validation_error(po::validation_error::invalid_option_value, "Number of side channels must be 1 or larger!");
       }
@@ -183,19 +262,18 @@ int main(int argc, char **argv) {
       return ERROR_IN_COMMAND_LINE;
     }
 
-    effelsberg::edd::DadaBufferLayout bufferLayout(input_key, speadHeapSize, nSideChannels);
-
-    if (output_bit_depth == 8)
+    if ((output_format ==  "Stokes") && (input_polarizations != "Dual"))
     {
-      launchSpectrometer<int8_t>(bufferLayout, output_type, filename,
-          selectedSideChannel, selectedBit,
-       fft_length, naccumulate, nbits, input_level, output_level);
+        throw po::validation_error(po::validation_error::invalid_option_value, "Stokes output requires dual polarization input!");
     }
-    else if (output_bit_depth == 32)
+
+    ip.dadaBufferLayout.intitialize(input_key, ip.speadHeapSize, ip.nSideChannels);
+
+    // ToDo: Supprot only single output depth
+    if (output_bit_depth == 32)
     {
-      launchSpectrometer<float>(bufferLayout, output_type, filename,
-          selectedSideChannel, selectedBit,
-       fft_length, naccumulate, nbits, input_level, output_level);
+
+      io_eval<float>(ip, input_polarizations, output_format);
     }
     else
     {
