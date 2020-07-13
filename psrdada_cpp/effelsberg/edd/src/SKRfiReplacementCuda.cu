@@ -51,6 +51,7 @@ void SKRfiReplacementCuda::init()
 
 void SKRfiReplacementCuda::get_rfi_window_indices()
 {
+    nvtxRangePushA("get_rfi_window_indices");
     _nrfi_windows = thrust::count(_rfi_status.begin(), _rfi_status.end(), 1);
     _rfi_window_indices.resize(_nrfi_windows);
     thrust::copy_if(thrust::make_counting_iterator<int>(0),
@@ -58,10 +59,12 @@ void SKRfiReplacementCuda::get_rfi_window_indices()
                     _rfi_status.begin(),
                     _rfi_window_indices.begin(),
                     thrust::placeholders::_1 == 1);
+    nvtxRangePop();
 }
 
 void SKRfiReplacementCuda::get_clean_window_indices()
 {
+    nvtxRangePushA("get_clean_window_indices");
     _nclean_windows = thrust::count(_rfi_status.begin(), _rfi_status.end(), 0);
     _clean_window_indices.resize(DEFAULT_NUM_CLEAN_WINDOWS);
     thrust::copy_if(thrust::make_counting_iterator<int>(0),
@@ -69,10 +72,12 @@ void SKRfiReplacementCuda::get_clean_window_indices()
                     _rfi_status.begin(),
                     _clean_window_indices.begin(),
                     thrust::placeholders::_1 == 0);
+    nvtxRangePop();
 }
 
 void SKRfiReplacementCuda::get_clean_data_statistics(const thrust::device_vector<thrust::complex<float>> &data)
 {
+    nvtxRangePushA("get_clean_data_statistics");
     _window_size = data.size() / _nwindows;
     _clean_data.resize(DEFAULT_NUM_CLEAN_WINDOWS * _window_size);
     for(std::size_t ii = 0; ii < DEFAULT_NUM_CLEAN_WINDOWS; ii++){
@@ -84,15 +89,18 @@ void SKRfiReplacementCuda::get_clean_data_statistics(const thrust::device_vector
         BOOST_LOG_TRIVIAL(debug) <<"clean_win_index = " << window_index
                                  << " ibegin = " << ibegin << " iend = " << iend;
     }
+    nvtxRangePop();
     compute_clean_data_statistics();
 }
 
 void SKRfiReplacementCuda::compute_clean_data_statistics() 
 {
+    nvtxRangePushA("compute_clean_data_statistics");
     std::size_t length = _clean_data.size();
     _ref_mean = (thrust::reduce(_clean_data.begin(), _clean_data.end(), thrust::complex<float> (0.0f, 0.0f))). real() / length;
     _ref_sd = std::sqrt(thrust::transform_reduce(_clean_data.begin(), _clean_data.end(), mean_subtraction_square(_ref_mean),
                         0.0f, thrust::plus<float> ()) / length);
+    nvtxRangePop();
     BOOST_LOG_TRIVIAL(debug) << "DataStatistics mean = " << _ref_mean
                              << " sd =  " << _ref_sd;
 }
@@ -100,6 +108,7 @@ void SKRfiReplacementCuda::compute_clean_data_statistics()
 void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rfi_status,
                                             thrust::device_vector<thrust::complex<float>> &data)
 {
+    nvtxRangePushA("replace_rfi_data");
     _rfi_status = rfi_status;
     thrust::device_vector<thrust::complex<float>> replacement_data;
     //initialize data members of the class
@@ -109,12 +118,15 @@ void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rf
         get_clean_data_statistics(data);
 	//Replacing RFI
 	thrust::counting_iterator<unsigned int> sequence_index_begin(0);
+        nvtxRangePushA("replace_rfi_datai_loop");
 	for(std::size_t ii = 0; ii < _nrfi_windows; ii++){
             std::size_t index = _rfi_window_indices[ii] * _window_size;
             thrust::transform(sequence_index_begin, (sequence_index_begin + _window_size), 
                               (data.begin() + index), generate_replacement_data(_ref_mean, _ref_sd));
         }
+        nvtxRangePop();
     }
+    nvtxRangePop();
 }
 } //edd
 } //effelsberg

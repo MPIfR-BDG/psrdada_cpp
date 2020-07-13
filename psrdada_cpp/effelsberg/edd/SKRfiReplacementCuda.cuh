@@ -9,6 +9,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/random/normal_distribution.h>
 #include <thrust/random/linear_congruential_engine.h>
+#include <nvToolsExt.h>
 
 namespace psrdada_cpp {
 namespace effelsberg {

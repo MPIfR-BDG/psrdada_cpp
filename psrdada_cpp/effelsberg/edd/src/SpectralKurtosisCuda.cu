@@ -39,17 +39,6 @@ struct check_rfi{
    }
 };
 
-struct set_indices{
-    const std::size_t M; //window_size
-    set_indices(std::size_t m) : M(m) {}
-    
-    __host__ __device__
-    int operator()(int z)
-    {
-        return (z / M);
-    }
-};
-
 SpectralKurtosisCuda::SpectralKurtosisCuda(std::size_t nchannels, std::size_t window_size, float sk_min, float sk_max)
     : _nchannels(nchannels),
       _window_size(window_size),
@@ -77,6 +66,7 @@ void SpectralKurtosisCuda::init()
 }
 
 void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
+    nvtxRangePushA("compute_sk");
     _sample_size = data.size();
     BOOST_LOG_TRIVIAL(debug) << "Computing SK for sample_size " << _sample_size
                              << " and window_size " << _window_size <<".\n";
@@ -84,15 +74,15 @@ void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::comple
     init();
     //computing _d_s1 for all windows
     thrust::reduce_by_key(thrust::device, 
-                          thrust::make_transform_iterator(thrust::counting_iterator<int> (0), set_indices(_window_size)),
-                          thrust::make_transform_iterator(thrust::counting_iterator<int> ((_sample_size - 1)), set_indices(_window_size)), 
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> (0), (thrust::placeholders::_1 / _window_size)),
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> (_sample_size - 1), (thrust::placeholders::_1 / _window_size)), 
                           thrust::make_transform_iterator(data.begin(), compute_power()), 
                           thrust::discard_iterator<int>(), 
                           _d_s1.begin());
     //computing _d_s2  for all windows
     thrust::reduce_by_key(thrust::device, 
-                          thrust::make_transform_iterator(thrust::counting_iterator<int> (0), set_indices(_window_size)),
-                          thrust::make_transform_iterator(thrust::counting_iterator<int> ((_sample_size - 1)), set_indices(_window_size)), 
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> (0), (thrust::placeholders::_1 / _window_size)),
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> (_sample_size - 1), (thrust::placeholders::_1 / _window_size)), 
                           thrust::make_transform_iterator(data.begin(), power_square()), 
                           thrust::discard_iterator<int>(), 
                           _d_s2.begin());
@@ -101,6 +91,7 @@ void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::comple
     thrust::transform(_d_s1.begin(), _d_s1.end(), _d_s2.begin(), stats.rfi_status.begin(), check_rfi(_window_size, _sk_min, _sk_max));
     stats.rfi_fraction = thrust::reduce(stats.rfi_status.begin(), stats.rfi_status.end(), 0.0f) / _nwindows;
     BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << stats.rfi_fraction;
+    nvtxRangePop();
 }
 } //edd
 } //effelsberg

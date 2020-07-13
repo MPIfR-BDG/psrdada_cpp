@@ -8,6 +8,7 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/execution_policy.h>
+#include <nvToolsExt.h>
 
 namespace psrdada_cpp {
 namespace effelsberg {
