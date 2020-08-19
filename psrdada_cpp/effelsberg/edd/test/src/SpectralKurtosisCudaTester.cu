@@ -81,7 +81,6 @@ TEST_F(SpectralKurtosisCudaTester, sk_withRFI)
 
 TEST_F(SpectralKurtosisCudaTester, sk_RFIreplacement)
 {
-    //std::size_t sample_size = (1 * 1024 * 1024 * 1024) / 8;
     std::size_t sample_size = 1024 * 1024;
     //std::size_t sample_size = 160000000;
     std::size_t window_size = 1024 * 2;
@@ -115,7 +114,6 @@ TEST_F(SpectralKurtosisCudaTester, sk_RFIreplacement)
 
 TEST_F(SpectralKurtosisCudaTester, sk_kernel)
 {
-    //std::size_t sample_size = (1 * 1024 * 1024 * 1024) / 8;
     std::size_t sample_size = 1024 * 1024;
     //std::size_t sample_size = 160000000;
     std::size_t window_size = 1024 * 2;

@@ -45,6 +45,15 @@ public:
      */
     void compute_sk(thrust::device_vector<thrust::complex<float>> const& data, RFIStatistics &stats);
 
+    /**
+     * @brief      computes spectral kurtosis (using optimized kernel fucntion) for the given data and returns its rfi statistics.
+     *
+     * @param(in)  data          input data
+     * @param(out) stats         RFI statistics
+     *
+     */
+    void compute_sk_k(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats);
+
 private:
     /**
      * @brief     initializes the data members of the class.
