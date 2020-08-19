@@ -39,6 +39,24 @@ struct check_rfi{
    }
 };
 
+__global__ void compute_sk_kernel(thrust::complex<float> *data, std::size_t sample_size, std::size_t window_size,
+                                  float sk_max, float sk_min, int *rfi_status)
+{
+    std::size_t id = blockIdx.x * blockDim.x + threadIdx.x;
+    float s1, s2, sk;
+
+    int ibegin = id * window_size;
+    int iend = ibegin + window_size;
+    for(std::size_t i = ibegin; i < iend; i++){
+        float power = thrust::abs(data[i]) * thrust::abs(data[i]);
+	float power_sq = power * power;
+	s1 = s1 + power;
+	s2 = s2 + power_sq;
+    }
+    sk = ((window_size + 1) / (window_size - 1)) *(((window_size * s2) / (s1 * s1)) - 1);
+    rfi_status[id] = (int) ((sk < sk_min) || (sk > sk_max));
+}
+
 SpectralKurtosisCuda::SpectralKurtosisCuda(std::size_t nchannels, std::size_t window_size, float sk_min, float sk_max)
     : _nchannels(nchannels),
       _window_size(window_size),
@@ -63,6 +81,7 @@ void SpectralKurtosisCuda::init()
     _nwindows = _sample_size /_window_size;
     _d_s1.resize(_nwindows);
     _d_s2.resize(_nwindows);
+    _rfi_status.resize(_nwindows);
 }
 
 void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
@@ -93,6 +112,24 @@ void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::comple
     BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << stats.rfi_fraction;
     nvtxRangePop();
 }
+
+void SpectralKurtosisCuda::compute_sk_k(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
+    nvtxRangePushA("compute_sk_kernel");
+    _sample_size = data.size();
+    BOOST_LOG_TRIVIAL(debug) << "Computing SK_k for sample_size " << _sample_size
+                             << " and window_size " << _window_size <<".\n";
+    //initializing class variables
+    init();
+
+    thrust::complex<float> *k_data = thrust::raw_pointer_cast(data.data());
+    int *k_rfi_status = thrust::raw_pointer_cast(_rfi_status.data());
+    //compute_sk_kernel<<<1, 1>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
+    compute_sk_kernel<<<1, _nwindows>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
+    float rfi_fraction = thrust::reduce(_rfi_status.begin(), _rfi_status.end(), 0.0f) / _nwindows;
+    BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << rfi_fraction;
+    nvtxRangePop();
+}
+
 } //edd
 } //effelsberg
 } //psrdada_cpp
