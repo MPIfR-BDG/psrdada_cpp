@@ -81,7 +81,7 @@ TEST_F(SpectralKurtosisCudaTester, sk_withRFI)
 
 TEST_F(SpectralKurtosisCudaTester, sk_RFIreplacement)
 {
-    std::size_t sample_size = 1024 * 1024;
+    std::size_t sample_size = 128* 1024 * 1024;
     //std::size_t sample_size = 160000000;
     std::size_t window_size = 1024 * 2;
     //Test vector generation
@@ -114,9 +114,10 @@ TEST_F(SpectralKurtosisCudaTester, sk_RFIreplacement)
 
 TEST_F(SpectralKurtosisCudaTester, sk_kernel)
 {
-    std::size_t sample_size = 1024 * 1024;
+    std::size_t sample_size = 128 * 1024 * 1024;
     //std::size_t sample_size = 160000000;
     std::size_t window_size = 1024 * 2;
+    std::size_t nwindows = sample_size / window_size;
     //Test vector generation
     std::vector<int> rfi_window_indices{3, 4, 6, 7, 8, 20, 30, 40, 45, 75};
     std::vector<std::complex<float>> samples;
@@ -128,8 +129,13 @@ TEST_F(SpectralKurtosisCudaTester, sk_kernel)
     float sk_min = 0.8;
     float sk_max = 1.2;    
     SpectralKurtosisCuda sk(1, window_size, sk_min, sk_max);
-    RFIStatistics stat;
-    sk.compute_sk_k(d_samples, stat);
+    RFIStatistics stat, stat_k;
+    sk.compute_sk(d_samples, stat);
+    sk.compute_sk_k(d_samples, stat_k);
+    for (int ii = 0; ii < nwindows; ii++){
+        EXPECT_EQ(stat.rfi_status[ii], stat_k.rfi_status[ii]);
+    }
+    EXPECT_EQ(stat.rfi_fraction, stat_k.rfi_fraction);
 }
 
 } //test

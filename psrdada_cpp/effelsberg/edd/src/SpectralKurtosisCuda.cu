@@ -122,8 +122,9 @@ void SpectralKurtosisCuda::compute_sk_k(thrust::device_vector<thrust::complex<fl
     stats.rfi_status.resize(_nwindows);
     thrust::complex<float> *k_data = thrust::raw_pointer_cast(data.data());
     int *k_rfi_status = thrust::raw_pointer_cast(stats.rfi_status.data());
-    
-    compute_sk_kernel<<<1, _nwindows>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
+    int blockSize = 1024;
+    int gridSize = _nwindows / blockSize; 
+    compute_sk_kernel<<<gridSize, blockSize>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
     //compute_sk_kernel<<<_nwindows, 1>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status); //works.
     stats.rfi_fraction = thrust::reduce(stats.rfi_status.begin(), stats.rfi_status.end(), 0.0f) / _nwindows;
     BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << stats.rfi_fraction;
