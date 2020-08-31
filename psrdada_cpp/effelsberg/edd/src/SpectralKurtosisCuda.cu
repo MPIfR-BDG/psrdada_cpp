@@ -54,11 +54,10 @@ __global__ void compute_sk_kernel(thrust::complex<float> *data, std::size_t samp
     }
     __syncthreads();
 
-    for(int s = 1; s < blockDim.x; s *= 2){
-        int index = 2 * s * l_index;
-	if(index < blockDim.x){
-            s1[index] += s1[index + s];
-            s2[index] += s2[index + s];
+    for(int s = blockDim.x / 2; s > 0; s >>= 1){
+	if(l_index < s){
+            s1[l_index] += s1[l_index + s];
+            s2[l_index] += s2[l_index + s];
 	}
 	__syncthreads();
     }
