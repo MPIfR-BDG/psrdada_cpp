@@ -17,7 +17,7 @@ struct power_square{
     float operator()(thrust::complex<float> z)
     {
         float abs = thrust::abs(z);
-	float power = abs * abs;
+        float power = abs * abs;
         return (power * power);
     }
 };
@@ -42,19 +42,32 @@ struct check_rfi{
 __global__ void compute_sk_kernel(thrust::complex<float> *data, std::size_t sample_size, std::size_t window_size,
                                   float sk_max, float sk_min, int *rfi_status)
 {
-    std::size_t id = blockIdx.x * blockDim.x + threadIdx.x;
-    float s1, s2, sk;
+    extern __shared__ float buffer[];
+    float *s1 = &buffer[0];
+    float *s2 = &buffer[blockDim.x];
+    int g_index = threadIdx.x + blockIdx.x * blockDim.x;
+    int l_index = threadIdx.x;
 
-    int ibegin = id * window_size;
-    int iend = ibegin + window_size;
-    for(std::size_t i = ibegin; i < iend; i++){
-        float power = thrust::abs(data[i]) * thrust::abs(data[i]);
-        float power_sq = power * power;
-        s1 = s1 + power;
-        s2 = s2 + power_sq;
+    if(l_index < blockDim.x){
+        s1[l_index] = thrust::abs(data[g_index]) * thrust::abs(data[g_index]);
+        s2[l_index] = s1[l_index] * s1[l_index];
     }
-    sk = ((window_size + 1) / (window_size - 1)) *(((window_size * s2) / (s1 * s1)) - 1);
-    rfi_status[id] = (int) ((sk < sk_min) || (sk > sk_max));
+    __syncthreads();
+
+    for(int s = 1; s < blockDim.x; s *= 2){
+        int index = 2 * s * l_index;
+	if(index < blockDim.x){
+            s1[index] += s1[index + s];
+            s2[index] += s2[index + s];
+	}
+	__syncthreads();
+    }
+
+    float sk;
+    if(l_index == 0){
+        sk = ((window_size + 1) / (window_size - 1)) *(((window_size * s2[0]) / (s1[0] * s1[0])) - 1);
+        rfi_status[blockIdx.x] = (int) ((sk < sk_min) || (sk > sk_max));
+    }
 }
 
 SpectralKurtosisCuda::SpectralKurtosisCuda(std::size_t nchannels, std::size_t window_size, float sk_min, float sk_max)
@@ -86,7 +99,7 @@ void SpectralKurtosisCuda::init()
 void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
     nvtxRangePushA("compute_sk");
     _sample_size = data.size();
-    BOOST_LOG_TRIVIAL(debug) << "Computing SK for sample_size " << _sample_size
+    BOOST_LOG_TRIVIAL(debug) << "Computing SK (thrust version) for sample_size " << _sample_size
                              << " and window_size " << _window_size <<".\n";
     //initializing class variables
     init();
@@ -115,17 +128,17 @@ void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::comple
 void SpectralKurtosisCuda::compute_sk_k(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
     nvtxRangePushA("compute_sk_kernel");
     _sample_size = data.size();
-    BOOST_LOG_TRIVIAL(debug) << "Computing SK_k for sample_size " << _sample_size
+    BOOST_LOG_TRIVIAL(debug) << "Computing SK (kernel version) for sample_size " << _sample_size
                              << " and window_size " << _window_size <<".\n";
 
     _nwindows = _sample_size / _window_size;
     stats.rfi_status.resize(_nwindows);
     thrust::complex<float> *k_data = thrust::raw_pointer_cast(data.data());
     int *k_rfi_status = thrust::raw_pointer_cast(stats.rfi_status.data());
-    int blockSize = 1024;
-    int gridSize = _nwindows / blockSize; 
-    compute_sk_kernel<<<gridSize, blockSize>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
-    //compute_sk_kernel<<<_nwindows, 1>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status); //works.
+    int blockSize = _window_size;
+    int gridSize = _sample_size / blockSize;
+    int sh_mem_size = 2 * blockSize * sizeof(float); 
+    compute_sk_kernel<<<gridSize, blockSize, sh_mem_size>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
     stats.rfi_fraction = thrust::reduce(stats.rfi_status.begin(), stats.rfi_status.end(), 0.0f) / _nwindows;
     BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << stats.rfi_fraction;
     nvtxRangePop();

@@ -116,7 +116,7 @@ TEST_F(SpectralKurtosisCudaTester, sk_kernel)
 {
     std::size_t sample_size = 128 * 1024 * 1024;
     //std::size_t sample_size = 160000000;
-    std::size_t window_size = 1024 * 2;
+    std::size_t window_size = 1024;
     std::size_t nwindows = sample_size / window_size;
     //Test vector generation
     std::vector<int> rfi_window_indices{3, 4, 6, 7, 8, 20, 30, 40, 45, 75};
@@ -126,6 +126,7 @@ TEST_F(SpectralKurtosisCudaTester, sk_kernel)
     //SK computation
     thrust::host_vector<thrust::complex<float>> h_samples(samples);
     thrust::device_vector<thrust::complex<float>> d_samples(h_samples);
+
     float sk_min = 0.8;
     float sk_max = 1.2;    
     SpectralKurtosisCuda sk(1, window_size, sk_min, sk_max);
