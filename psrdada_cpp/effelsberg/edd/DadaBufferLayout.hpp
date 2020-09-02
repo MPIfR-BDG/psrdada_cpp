@@ -1,3 +1,6 @@
+#ifndef DADABUFFERLAYOUT_H
+#define DADABUFFERLAYOUT_H
+
 #include "dada_hdu.h"
 
 namespace psrdada_cpp {
@@ -57,3 +60,6 @@ class DadaBufferLayout
 } // edd
 } // effelsberg
 } // psrdada_cpp
+
+
+#endif
