@@ -16,6 +16,7 @@ namespace edd {
 
 #define DEFAULT_SK_MIN 0.9
 #define DEFAULT_SK_MAX 1.1
+#define BLOCK_DIM 1024
 
 struct RFIStatistics{
     thrust::device_vector<int> rfi_status;

@@ -39,21 +39,28 @@ struct check_rfi{
    }
 };
 
-__global__ void compute_sk_kernel(thrust::complex<float> *data, std::size_t sample_size, std::size_t window_size,
-                                  float sk_max, float sk_min, int *rfi_status)
+__device__ int rfi_count = 0;
+__global__ void compute_sk_kernel(const thrust::complex<float>* __restrict__ data, std::size_t sample_size, std::size_t window_size,
+                                  float sk_max, float sk_min, int* __restrict__ rfi_status)
 {
-    extern __shared__ float buffer[];
-    float *s1 = &buffer[0];
-    float *s2 = &buffer[blockDim.x];
-    int g_index = threadIdx.x + blockIdx.x * blockDim.x;
+    volatile __shared__ float s1[BLOCK_DIM];
+    volatile __shared__ float s2[BLOCK_DIM];
     int l_index = threadIdx.x;
+    float pow = 0.0f;
+    float pow_sq = 0.0f;
+    s1[l_index] = 0.0f;
+    s2[l_index] = 0.0f;
 
-    if(l_index < blockDim.x){
-        s1[l_index] = thrust::abs(data[g_index]) * thrust::abs(data[g_index]);
-        s2[l_index] = s1[l_index] * s1[l_index];
+    for(int thread_offset = l_index; thread_offset < window_size; thread_offset += blockDim.x){
+        int g_index = thread_offset + blockIdx.x * window_size;
+        pow = thrust::abs(data[g_index]) * thrust::abs(data[g_index]);
+	pow_sq = pow * pow;
+        if(l_index < blockDim.x){
+            s1[l_index] += pow; 
+            s2[l_index] += pow_sq;
+        }
+        __syncthreads();
     }
-    __syncthreads();
-
     for(int s = blockDim.x / 2; s > 0; s >>= 1){
 	if(l_index < s){
             s1[l_index] += s1[l_index + s];
@@ -61,11 +68,11 @@ __global__ void compute_sk_kernel(thrust::complex<float> *data, std::size_t samp
 	}
 	__syncthreads();
     }
-
     float sk;
     if(l_index == 0){
         sk = ((window_size + 1) / (window_size - 1)) *(((window_size * s2[0]) / (s1[0] * s1[0])) - 1);
         rfi_status[blockIdx.x] = (int) ((sk < sk_min) || (sk > sk_max));
+        if (rfi_status[blockIdx.x] == 1) atomicAdd(&rfi_count, 1);
     }
 }
 
@@ -103,6 +110,7 @@ void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::comple
     //initializing class variables
     init();
     //computing _d_s1 for all windows
+    nvtxRangePushA("compute_sk_reduce_by_key_call");
     thrust::reduce_by_key(thrust::device, 
                           thrust::make_transform_iterator(thrust::counting_iterator<int> (0), (thrust::placeholders::_1 / _window_size)),
                           thrust::make_transform_iterator(thrust::counting_iterator<int> (_sample_size - 1), (thrust::placeholders::_1 / _window_size)), 
@@ -116,10 +124,13 @@ void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::comple
                           thrust::make_transform_iterator(data.begin(), power_square()), 
                           thrust::discard_iterator<int>(), 
                           _d_s2.begin());
+    nvtxRangePop();
     //computes SK and checks the threshold to detect RFI.
     stats.rfi_status.resize(_nwindows);
+    nvtxRangePushA("compute_sk_thrust_transform_reduce");
     thrust::transform(_d_s1.begin(), _d_s1.end(), _d_s2.begin(), stats.rfi_status.begin(), check_rfi(_window_size, _sk_min, _sk_max));
     stats.rfi_fraction = thrust::reduce(stats.rfi_status.begin(), stats.rfi_status.end(), 0.0f) / _nwindows;
+    nvtxRangePop();
     BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << stats.rfi_fraction;
     nvtxRangePop();
 }
@@ -134,11 +145,17 @@ void SpectralKurtosisCuda::compute_sk_k(thrust::device_vector<thrust::complex<fl
     stats.rfi_status.resize(_nwindows);
     thrust::complex<float> *k_data = thrust::raw_pointer_cast(data.data());
     int *k_rfi_status = thrust::raw_pointer_cast(stats.rfi_status.data());
-    int blockSize = _window_size;
-    int gridSize = _sample_size / blockSize;
-    int sh_mem_size = 2 * blockSize * sizeof(float); 
-    compute_sk_kernel<<<gridSize, blockSize, sh_mem_size>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
-    stats.rfi_fraction = thrust::reduce(stats.rfi_status.begin(), stats.rfi_status.end(), 0.0f) / _nwindows;
+    int blockSize = BLOCK_DIM;
+    int gridSize = _nwindows; 
+    nvtxRangePushA("compute_sk_kernel_call");
+    compute_sk_kernel<<<gridSize, blockSize>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
+    cudaDeviceSynchronize();
+    nvtxRangePop();
+    nvtxRangePushA("compute_sk_kernel_rfi_fraction");
+    int nrfiwindows = 0;
+    cudaMemcpyFromSymbol(&nrfiwindows, rfi_count, sizeof(int));
+    stats.rfi_fraction = (float)nrfiwindows / _nwindows;
+    nvtxRangePop();
     BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << stats.rfi_fraction;
     nvtxRangePop();
 }
