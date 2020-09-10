@@ -114,9 +114,8 @@ TEST_F(SpectralKurtosisCudaTester, sk_RFIreplacement)
 
 TEST_F(SpectralKurtosisCudaTester, sk_kernel)
 {
-    std::size_t sample_size = 128 * 1024 * 1024;
-    //std::size_t sample_size = 160000000;
-    std::size_t window_size = 2*1024;
+    std::size_t sample_size = 160000000;
+    std::size_t window_size = 2000;
     std::size_t nwindows = sample_size / window_size;
     //Test vector generation
     std::vector<int> rfi_window_indices{3, 4, 6, 7, 8, 20, 30, 40, 45, 75};

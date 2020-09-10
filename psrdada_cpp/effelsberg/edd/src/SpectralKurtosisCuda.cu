@@ -40,6 +40,22 @@ struct check_rfi{
 };
 
 __device__ int rfi_count = 0;
+
+__device__ void warpReduce(volatile float *shmem_ptr1, volatile float *shmem_ptr2, int tid){
+    shmem_ptr1[tid] += shmem_ptr1[tid + 32];
+    shmem_ptr2[tid] += shmem_ptr2[tid + 32];
+    shmem_ptr1[tid] += shmem_ptr1[tid + 16];
+    shmem_ptr2[tid] += shmem_ptr2[tid + 16];
+    shmem_ptr1[tid] += shmem_ptr1[tid + 8];
+    shmem_ptr2[tid] += shmem_ptr2[tid + 8];
+    shmem_ptr1[tid] += shmem_ptr1[tid + 4];
+    shmem_ptr2[tid] += shmem_ptr2[tid + 4];
+    shmem_ptr1[tid] += shmem_ptr1[tid + 2];
+    shmem_ptr2[tid] += shmem_ptr2[tid + 2];
+    shmem_ptr1[tid] += shmem_ptr1[tid + 1];
+    shmem_ptr2[tid] += shmem_ptr2[tid + 1];
+}
+
 __global__ void compute_sk_kernel(const thrust::complex<float>* __restrict__ data, std::size_t sample_size, std::size_t window_size,
                                   float sk_max, float sk_min, int* __restrict__ rfi_status)
 {
@@ -54,23 +70,23 @@ __global__ void compute_sk_kernel(const thrust::complex<float>* __restrict__ dat
     for(int thread_offset = l_index; thread_offset < window_size; thread_offset += blockDim.x){
         int g_index = thread_offset + blockIdx.x * window_size;
         pow = thrust::abs(data[g_index]) * thrust::abs(data[g_index]);
-	pow_sq = pow * pow;
+        pow_sq = pow * pow;
         if(l_index < blockDim.x){
             s1[l_index] += pow; 
             s2[l_index] += pow_sq;
         }
-        __syncthreads();
     }
-    for(int s = blockDim.x / 2; s > 0; s >>= 1){
-	if(l_index < s){
+    __syncthreads();
+    for(int s = blockDim.x / 2; s > 32; s >>= 1){
+        if(l_index < s){
             s1[l_index] += s1[l_index + s];
             s2[l_index] += s2[l_index + s];
-	}
-	__syncthreads();
+        }
+        __syncthreads();
     }
-    float sk;
+    if(l_index < 32) warpReduce(s1, s2, l_index);
     if(l_index == 0){
-        sk = ((window_size + 1) / (window_size - 1)) *(((window_size * s2[0]) / (s1[0] * s1[0])) - 1);
+        float sk = ((window_size + 1) / (window_size - 1)) *(((window_size * s2[0]) / (s1[0] * s1[0])) - 1);
         rfi_status[blockIdx.x] = (int) ((sk < sk_min) || (sk > sk_max));
         if (rfi_status[blockIdx.x] == 1) atomicAdd(&rfi_count, 1);
     }
@@ -159,7 +175,6 @@ void SpectralKurtosisCuda::compute_sk_k(thrust::device_vector<thrust::complex<fl
     BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << stats.rfi_fraction;
     nvtxRangePop();
 }
-
 } //edd
 } //effelsberg
 } //psrdada_cpp
