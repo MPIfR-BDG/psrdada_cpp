@@ -136,6 +136,17 @@ TEST_F(SpectralKurtosisCudaTester, sk_kernel)
         EXPECT_EQ(stat.rfi_status[ii], stat_k.rfi_status[ii]);
     }
     EXPECT_EQ(stat.rfi_fraction, stat_k.rfi_fraction);
+    
+    //RFI replacement
+    BOOST_LOG_TRIVIAL(info) <<"RFI replacement..\n";
+    SKRfiReplacementCuda rr;
+    rr.replace_rfi_data(stat_k.rfi_status, d_samples);
+
+    //SK computation after RFI replacement
+    BOOST_LOG_TRIVIAL(info) <<"computing SK after replacing the RFI data..\n";
+    sk.compute_sk_k(d_samples, stat_k);
+    float expected_val_after_rfi_replacement = 0;
+    EXPECT_EQ(expected_val_after_rfi_replacement, stat_k.rfi_fraction);
 }
 
 } //test

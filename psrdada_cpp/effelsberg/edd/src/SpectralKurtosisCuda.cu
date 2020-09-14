@@ -171,6 +171,8 @@ void SpectralKurtosisCuda::compute_sk_k(thrust::device_vector<thrust::complex<fl
     int nrfiwindows = 0;
     cudaMemcpyFromSymbol(&nrfiwindows, rfi_count, sizeof(int));
     stats.rfi_fraction = (float)nrfiwindows / _nwindows;
+    int reset_rfi_count = 0;
+    cudaMemcpyToSymbol(rfi_count, &reset_rfi_count, sizeof(int));
     nvtxRangePop();
     BOOST_LOG_TRIVIAL(info) << "RFI fraction: " << stats.rfi_fraction;
     nvtxRangePop();
