@@ -116,10 +116,10 @@ void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rf
     //RFI present and not in all windows
     if((_nrfi_windows > 0) && (_nrfi_windows < _nwindows)){
         get_clean_data_statistics(data);
-	//Replacing RFI
-	thrust::counting_iterator<unsigned int> sequence_index_begin(0);
+        //Replacing RFI
+        thrust::counting_iterator<unsigned int> sequence_index_begin(0);
         nvtxRangePushA("replace_rfi_datai_loop");
-	for(std::size_t ii = 0; ii < _nrfi_windows; ii++){
+        for(std::size_t ii = 0; ii < _nrfi_windows; ii++){
             std::size_t index = _rfi_window_indices[ii] * _window_size;
             thrust::transform(sequence_index_begin, (sequence_index_begin + _window_size), 
                               (data.begin() + index), generate_replacement_data(_ref_mean, _ref_sd));
