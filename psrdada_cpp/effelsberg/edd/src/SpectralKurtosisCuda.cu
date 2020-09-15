@@ -71,10 +71,8 @@ __global__ void compute_sk_kernel(const thrust::complex<float>* __restrict__ dat
         int g_index = thread_offset + blockIdx.x * window_size;
         pow = thrust::abs(data[g_index]) * thrust::abs(data[g_index]);
         pow_sq = pow * pow;
-        if(l_index < blockDim.x){
-            s1[l_index] += pow; 
-            s2[l_index] += pow_sq;
-        }
+        s1[l_index] += pow; 
+        s2[l_index] += pow_sq;
     }
     __syncthreads();
     for(int s = blockDim.x / 2; s > 32; s >>= 1){
