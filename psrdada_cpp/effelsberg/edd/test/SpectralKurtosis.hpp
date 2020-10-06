@@ -1,3 +1,6 @@
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSIS_HPP
+#define PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSIS_HPP
+
 #include "psrdada_cpp/common.hpp"
 #include <complex>
 #include <vector>
@@ -6,9 +9,6 @@
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
-
-#define DEFAULT_SK_MIN 0.9
-#define DEFAULT_SK_MAX 1.1
 
 struct RFIStatistics{
     std::vector<int>  rfi_status;
@@ -25,8 +25,8 @@ public:
      *            sk_min        minimum value of spectral kurtosis.
      *            sk_max        maximum value of spectral kurtosis.
      */
-    SpectralKurtosis(std::size_t nchannels, std::size_t window_size, float sk_min = DEFAULT_SK_MIN,
-		     float sk_max = DEFAULT_SK_MAX);
+    SpectralKurtosis(std::size_t nchannels, std::size_t window_size, float sk_min = 0.9,
+		     float sk_max = 1.1);
     ~SpectralKurtosis();
 
     /**
@@ -56,3 +56,4 @@ private:
 } //effelsberg
 } //psrdada_cpp
 
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSIS_HPP

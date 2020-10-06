@@ -66,7 +66,13 @@ void SKRfiReplacementCuda::get_clean_window_indices()
 {
     nvtxRangePushA("get_clean_window_indices");
     _nclean_windows = thrust::count(_rfi_status.begin(), _rfi_status.end(), 0);
-    _clean_window_indices.resize(DEFAULT_NUM_CLEAN_WINDOWS);
+    if (_nclean_windows > _nclean_windows_stat) _clean_window_indices.resize(_nclean_windows_stat);
+    else{
+        BOOST_LOG_TRIVIAL(info) << "Total number of clean windows is less than number of clean windows (_nclean_windows_stat)"
+                                << "chosen to compute data statistics.\n"
+                                <<" Therefore choosing total clean windows for statistics computation.\n";
+        _clean_window_indices.resize(_nclean_windows);
+    }
     thrust::copy_if(thrust::make_counting_iterator<int>(0),
                     thrust::make_counting_iterator<int>(_nwindows),
                     _rfi_status.begin(),
@@ -79,8 +85,8 @@ void SKRfiReplacementCuda::get_clean_data_statistics(const thrust::device_vector
 {
     nvtxRangePushA("get_clean_data_statistics");
     _window_size = data.size() / _nwindows;
-    _clean_data.resize(DEFAULT_NUM_CLEAN_WINDOWS * _window_size);
-    for(std::size_t ii = 0; ii < DEFAULT_NUM_CLEAN_WINDOWS; ii++){
+    _clean_data.resize(_nclean_windows_stat * _window_size);
+    for(std::size_t ii = 0; ii < _nclean_windows_stat; ii++){
         std::size_t window_index = _clean_window_indices[ii];
         std::size_t ibegin = window_index * _window_size;
         std::size_t iend = ibegin + _window_size - 1;
@@ -97,6 +103,8 @@ void SKRfiReplacementCuda::compute_clean_data_statistics()
 {
     nvtxRangePushA("compute_clean_data_statistics");
     std::size_t length = _clean_data.size();
+    //The distribution of both real and imag have same mean and standard deviation. 
+    //Therefore computing _ref_mean, _ref_sd for real distribution only.  
     _ref_mean = (thrust::reduce(_clean_data.begin(), _clean_data.end(), thrust::complex<float> (0.0f, 0.0f))). real() / length;
     _ref_sd = std::sqrt(thrust::transform_reduce(_clean_data.begin(), _clean_data.end(), mean_subtraction_square(_ref_mean),
                         0.0f, thrust::plus<float> ()) / length);
@@ -106,15 +114,17 @@ void SKRfiReplacementCuda::compute_clean_data_statistics()
 }
 
 void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rfi_status,
-                                            thrust::device_vector<thrust::complex<float>> &data)
+                                            thrust::device_vector<thrust::complex<float>> &data, 
+                                            std::size_t clean_windows)
 {
     nvtxRangePushA("replace_rfi_data");
     _rfi_status = rfi_status;
     thrust::device_vector<thrust::complex<float>> replacement_data;
     //initialize data members of the class
+    _nclean_windows_stat = clean_windows; //no. of clean windows used for computing statistics
     init();
     //RFI present and not in all windows
-    if((_nrfi_windows > 0) && (_nrfi_windows < _nwindows)){
+    if(_nclean_windows < _nwindows){
         get_clean_data_statistics(data);
         //Replacing RFI
         thrust::counting_iterator<unsigned int> sequence_index_begin(0);

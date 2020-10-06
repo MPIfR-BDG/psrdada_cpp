@@ -14,6 +14,8 @@ set(
     src/VLBITest.cu
     src/EDDPolnMergeTester.cpp
     src/SKTestVector.cpp
+    src/SpectralKurtosis.cpp
+    src/SKRfiReplacement.cpp
     src/SpectralKurtosisTester.cpp
     src/SpectralKurtosisCudaTester.cu
 )

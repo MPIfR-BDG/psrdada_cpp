@@ -1,4 +1,4 @@
-#include "psrdada_cpp/effelsberg/edd/SpectralKurtosis.hpp"
+#include "psrdada_cpp/effelsberg/edd/test/SpectralKurtosis.hpp"
 
 namespace psrdada_cpp {
 namespace effelsberg {

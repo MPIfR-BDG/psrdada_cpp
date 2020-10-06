@@ -47,21 +47,27 @@ TEST_F(SpectralKurtosisTester, sk_window_size_check)
 {
     std::vector<int> rfi_window_indices{};
     std::vector<std::complex<float>> samples;
-    test_vector_generation(4000, 150, 0, 0, 0, rfi_window_indices, samples);
+    std::size_t sample_size = 4000;
+    std::size_t window_size = 150;
+    test_vector_generation(sample_size, window_size, 0, 0, 0, rfi_window_indices, samples);
 
     RFIStatistics stat;
-    EXPECT_THROW(sk_computation(1, 150, samples, stat), std::runtime_error);
+    std::size_t nch = 1;
+    EXPECT_THROW(sk_computation(nch, window_size, samples, stat), std::runtime_error);
 }
 
 TEST_F(SpectralKurtosisTester, sk_withoutRFI)
 {
     std::vector<int> rfi_window_indices{};
     std::vector<std::complex<float>> samples;
-    test_vector_generation(40000, 400, 0, 0, 0, rfi_window_indices, samples);
+    std::size_t sample_size = 4000;
+    std::size_t window_size = 400;
+    test_vector_generation(sample_size, window_size, 0, 0, 0, rfi_window_indices, samples);
 
     RFIStatistics stat;
-    sk_computation(1, 400, samples, stat);
-    float expected_rfi_fraction = 0.01;
+    std::size_t nch = 1;
+    sk_computation(nch, window_size, samples, stat);
+    float expected_rfi_fraction = 0;
     EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
 }
 
@@ -69,11 +75,14 @@ TEST_F(SpectralKurtosisTester, sk_withRFI)
 {
     std::vector<int> rfi_window_indices{3, 4, 6, 7, 8, 20, 30, 40};
     std::vector<std::complex<float>> samples;
-    test_vector_generation(40000, 400, 1, 30, 10, rfi_window_indices, samples);
+    std::size_t sample_size = 40000;
+    std::size_t window_size = 400;
+    test_vector_generation(sample_size, window_size, 1, 10, 30, rfi_window_indices, samples);
 
     RFIStatistics stat;
-    sk_computation(1, 400, samples, stat);
-    float expected_rfi_fraction = (rfi_window_indices.size()/float(40000/400)) + 0.01;
+    std::size_t nch = 1;
+    sk_computation(nch, window_size, samples, stat);
+    float expected_rfi_fraction = (rfi_window_indices.size()/float(sample_size/window_size)) + 0.01;
     EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction); //To check: fails inspite of actual and expected values being same.
 }
 
@@ -99,7 +108,7 @@ TEST_F(SpectralKurtosisTester, sk_replacement)
     RFIStatistics stat;
     SpectralKurtosis sk(nch, window_size, sk_min, sk_max);
     sk.compute_sk(samples, stat); //computing SK
-    float expected_rfi_fraction = (rfi_window_indices.size()/float(40000/400)) + 0.01;
+    float expected_rfi_fraction = (rfi_window_indices.size()/float(sample_size/window_size)) + 0.01;
     EXPECT_EQ(expected_rfi_fraction, stat.rfi_fraction);
 
     //RFI replacement

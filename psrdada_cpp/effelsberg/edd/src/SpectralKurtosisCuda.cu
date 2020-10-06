@@ -97,11 +97,13 @@ SpectralKurtosisCuda::SpectralKurtosisCuda(std::size_t nchannels, std::size_t wi
       _sk_max(sk_max)
 {
     BOOST_LOG_TRIVIAL(debug) << "Creating new SpectralKurtosisCuda instance... \n";
+    cudaStreamCreate(&_stream);
 }
 
 SpectralKurtosisCuda::~SpectralKurtosisCuda()
 {
     BOOST_LOG_TRIVIAL(debug) << "Destroying SpectralKurtosisCuda instance... \n";
+    cudaStreamDestroy(_stream);
 }
 
 void SpectralKurtosisCuda::init()
@@ -112,17 +114,17 @@ void SpectralKurtosisCuda::init()
         throw std::runtime_error("Data(sample) size is not a multiple of window_size. Give different window size. \n");
     }
     _nwindows = _sample_size /_window_size;
-    _d_s1.resize(_nwindows);
-    _d_s2.resize(_nwindows);
 }
 
-void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
+void SpectralKurtosisCuda::compute_sk_thrust(const thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
     nvtxRangePushA("compute_sk");
     _sample_size = data.size();
     BOOST_LOG_TRIVIAL(debug) << "Computing SK (thrust version) for sample_size " << _sample_size
                              << " and window_size " << _window_size <<".\n";
     //initializing class variables
     init();
+    _d_s1.resize(_nwindows);
+    _d_s2.resize(_nwindows);
     //computing _d_s1 for all windows
     nvtxRangePushA("compute_sk_reduce_by_key_call");
     thrust::reduce_by_key(thrust::device, 
@@ -149,20 +151,18 @@ void SpectralKurtosisCuda::compute_sk(const thrust::device_vector<thrust::comple
     nvtxRangePop();
 }
 
-void SpectralKurtosisCuda::compute_sk_k(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
+void SpectralKurtosisCuda::compute_sk(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
     nvtxRangePushA("compute_sk_kernel");
     _sample_size = data.size();
     BOOST_LOG_TRIVIAL(debug) << "Computing SK (kernel version) for sample_size " << _sample_size
                              << " and window_size " << _window_size <<".\n";
-
-    _nwindows = _sample_size / _window_size;
+    //initializing variables
+    init();
     stats.rfi_status.resize(_nwindows);
-    thrust::complex<float> *k_data = thrust::raw_pointer_cast(data.data());
     int *k_rfi_status = thrust::raw_pointer_cast(stats.rfi_status.data());
-    int blockSize = BLOCK_DIM;
-    int gridSize = _nwindows; 
+    thrust::complex<float> *k_data = thrust::raw_pointer_cast(data.data());
     nvtxRangePushA("compute_sk_kernel_call");
-    compute_sk_kernel<<<gridSize, blockSize>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
+    compute_sk_kernel<<<_nwindows, BLOCK_DIM, 0, _stream>>> (k_data, _sample_size, _window_size, _sk_max, _sk_min, k_rfi_status);
     cudaDeviceSynchronize();
     nvtxRangePop();
     nvtxRangePushA("compute_sk_kernel_rfi_fraction");

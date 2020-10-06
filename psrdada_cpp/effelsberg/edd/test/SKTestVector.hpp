@@ -1,3 +1,6 @@
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_SKTESTVECTOR_HPP
+#define PSRDADA_CPP_EFFELSBERG_EDD_SKTESTVECTOR_HPP
+
 #include "psrdada_cpp/common.hpp"
 
 #include <complex>
@@ -67,3 +70,4 @@ private:
 } //effelsberg
 } //psrdada_cpp
 
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_SKTESTVECTOR_HPP

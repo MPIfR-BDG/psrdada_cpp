@@ -1,6 +1,9 @@
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSISTESTER_HPP
+#define PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSISTESTER_HPP
+
 #include "psrdada_cpp/common.hpp"
-#include "psrdada_cpp/effelsberg/edd/SKRfiReplacement.hpp"
-#include "psrdada_cpp/effelsberg/edd/SpectralKurtosis.hpp"
+#include "psrdada_cpp/effelsberg/edd/test/SKRfiReplacement.hpp"
+#include "psrdada_cpp/effelsberg/edd/test/SpectralKurtosis.hpp"
 #include "psrdada_cpp/effelsberg/edd/test/SKTestVector.hpp"
 #include <gtest/gtest.h>
 
@@ -38,6 +41,4 @@ protected:
 } //effelsberg
 } //psrdada_cpp
 
-
-
-
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSISTESTER_HPP

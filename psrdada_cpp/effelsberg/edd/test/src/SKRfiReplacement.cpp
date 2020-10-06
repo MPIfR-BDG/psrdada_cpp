@@ -1,4 +1,4 @@
-#include "psrdada_cpp/effelsberg/edd/SKRfiReplacement.hpp"
+#include "psrdada_cpp/effelsberg/edd/test/SKRfiReplacement.hpp"
 
 namespace psrdada_cpp {
 namespace effelsberg {

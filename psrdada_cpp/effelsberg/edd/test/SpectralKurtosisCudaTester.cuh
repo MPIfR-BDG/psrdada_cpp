@@ -1,3 +1,6 @@
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSISCUDATESTER_CUH
+#define PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSISCUDATESTER_CUH
+
 #include "psrdada_cpp/common.hpp"
 #include "psrdada_cpp/effelsberg/edd/test/SKTestVector.hpp"
 #include "psrdada_cpp/effelsberg/edd/SpectralKurtosisCuda.cuh"
@@ -40,6 +43,4 @@ protected:
 } //effelsberg
 } //psrdada_cpp
 
-
-
-
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_SPECTRALKURTOSISCUDATESTER_CUH

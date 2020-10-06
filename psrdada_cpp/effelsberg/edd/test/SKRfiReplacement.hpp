@@ -1,3 +1,6 @@
+#ifndef PSRDADA_CPP_EFFELSBERG_EDD_SKRFIREPLACEMENT_HPP
+#define PSRDADA_CPP_EFFELSBERG_EDD_SKRFIREPLACEMENT_HPP
+
 #include "psrdada_cpp/common.hpp"
 #include <vector>
 #include <complex>
@@ -89,3 +92,5 @@ private:
 } //edd
 } //effelsberg
 } //psrdada_cpp
+
+#endif //PSRDADA_CPP_EFFELSBERG_EDD_SKRFIREPLACEMENT_HPP
