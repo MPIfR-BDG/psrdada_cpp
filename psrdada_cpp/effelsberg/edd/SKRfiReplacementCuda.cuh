@@ -31,9 +31,9 @@ public:
     ~SKRfiReplacementCuda();
 
     /**
-     * @brief    Replaces data in rfi_windows with replacement data (generated using statistics of data from clean_windows).
+     * @brief    Replaces RFI data with data generated using statistics of data from chosen number of clean_windows.
      *
-     * @param(in)          rfi_status      rfi_status of input data
+     * @param(in)          rfi_status      rfi_status of input data stream
      * @param(in & out)    data            Data on which RFI has to be replaced. Returns the same but with RFI replaced.   
      * @param(in)          clean_windows   number of clean windows used for computing data statistics.
      */
@@ -43,32 +43,11 @@ public:
 
 private:
     /**
-     * @brief    Initializes data members of the class
-     */
-    void init();
-
-    /**
-     * @brief    Gets indices of clean windows, _clean_window_indices    
-     */
-    void get_clean_window_indices();
-
-    /**
-     * @brief    Gets indices of RFI windows, _rfi_window_indices    
-     */
-    void get_rfi_window_indices();
-
-    /**
-     * @brief    Computes statistics of clean (rfi free) data.
+     * @brief    Initializes the states of the class members for the given data to be processed.
      *
+     * @param(in)          data            Data stream that has to be processed.
      */
-    void compute_clean_data_statistics();
-
-    /**
-     * @brief    Gathers data from DEFAULT_NUM_CLEAN_WINDOW number of clean windows and computes its statistics
-     *
-     * @param(in)     data                   actual data
-     */
-    void get_clean_data_statistics(const thrust::device_vector<thrust::complex<float>> &data);
+    void init(const thrust::device_vector<thrust::complex<float>> &data);
 
     thrust::device_vector<int> _rfi_status;
     std::size_t _window_size;
