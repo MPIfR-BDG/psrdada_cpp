@@ -2,17 +2,8 @@
 #define PSRDADA_CPP_EFFELSBERG_EDD_SKRFIREPLACEMENTCUDA_CUH
 
 #include "psrdada_cpp/common.hpp"
-#include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/complex.h>
-#include <thrust/reduce.h>
-#include <thrust/transform.h>
-#include <thrust/copy.h>
-#include <thrust/functional.h>
-#include <thrust/execution_policy.h>
-#include <thrust/random/normal_distribution.h>
-#include <thrust/random/linear_congruential_engine.h>
-#include <nvToolsExt.h>
 
 namespace psrdada_cpp {
 namespace effelsberg {

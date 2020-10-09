@@ -1,5 +1,12 @@
 #include "psrdada_cpp/effelsberg/edd/SpectralKurtosisCuda.cuh"
 
+#include <thrust/transform.h>
+#include <thrust/iterator/discard_iterator.h>
+#include <nvToolsExt.h>
+
+
+
+
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
@@ -71,7 +78,7 @@ __global__ void compute_sk_kernel(const thrust::complex<float>* __restrict__ dat
         int g_index = thread_offset + blockIdx.x * window_size;
         pow = thrust::abs(data[g_index]) * thrust::abs(data[g_index]);
         pow_sq = pow * pow;
-        s1[l_index] += pow; 
+        s1[l_index] += pow;
         s2[l_index] += pow_sq;
     }
     __syncthreads();
@@ -127,18 +134,18 @@ void SpectralKurtosisCuda::compute_sk_thrust(const thrust::device_vector<thrust:
     _d_s2.resize(_nwindows);
     //computing _d_s1 for all windows
     nvtxRangePushA("compute_sk_reduce_by_key_call");
-    thrust::reduce_by_key(thrust::device, 
+    thrust::reduce_by_key(thrust::device,
                           thrust::make_transform_iterator(thrust::counting_iterator<int> (0), (thrust::placeholders::_1 / _window_size)),
-                          thrust::make_transform_iterator(thrust::counting_iterator<int> (_sample_size - 1), (thrust::placeholders::_1 / _window_size)), 
-                          thrust::make_transform_iterator(data.begin(), compute_power()), 
-                          thrust::discard_iterator<int>(), 
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> (_sample_size - 1), (thrust::placeholders::_1 / _window_size)),
+                          thrust::make_transform_iterator(data.begin(), compute_power()),
+                          thrust::discard_iterator<int>(),
                           _d_s1.begin());
     //computing _d_s2  for all windows
-    thrust::reduce_by_key(thrust::device, 
+    thrust::reduce_by_key(thrust::device,
                           thrust::make_transform_iterator(thrust::counting_iterator<int> (0), (thrust::placeholders::_1 / _window_size)),
-                          thrust::make_transform_iterator(thrust::counting_iterator<int> (_sample_size - 1), (thrust::placeholders::_1 / _window_size)), 
-                          thrust::make_transform_iterator(data.begin(), power_square()), 
-                          thrust::discard_iterator<int>(), 
+                          thrust::make_transform_iterator(thrust::counting_iterator<int> (_sample_size - 1), (thrust::placeholders::_1 / _window_size)),
+                          thrust::make_transform_iterator(data.begin(), power_square()),
+                          thrust::discard_iterator<int>(),
                           _d_s2.begin());
     nvtxRangePop();
     //computes SK and checks the threshold to detect RFI.

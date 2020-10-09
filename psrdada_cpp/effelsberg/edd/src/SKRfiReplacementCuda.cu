@@ -1,8 +1,18 @@
 #include "psrdada_cpp/effelsberg/edd/SKRfiReplacementCuda.cuh"
 
+#include <thrust/reduce.h>
+#include <thrust/transform.h>
+#include <thrust/copy.h>
+#include <thrust/random/normal_distribution.h>
+#include <thrust/random/linear_congruential_engine.h>
+#include <nvToolsExt.h>
+
+
+
 namespace psrdada_cpp {
 namespace effelsberg {
 namespace edd {
+
 
 struct mean_subtraction_square{
     const float mean;
@@ -13,6 +23,7 @@ struct mean_subtraction_square{
         return (x * x);
     }
 };
+
 
 struct generate_replacement_data{
     float normal_dist_mean, normal_dist_std;
@@ -29,21 +40,20 @@ struct generate_replacement_data{
     }
 };
 
-SKRfiReplacementCuda::SKRfiReplacementCuda()
-{
+
+SKRfiReplacementCuda::SKRfiReplacementCuda() {
     BOOST_LOG_TRIVIAL(debug) << "Creating new SKRfiReplacementCuda instance..\n";
 }
 
-SKRfiReplacementCuda::~SKRfiReplacementCuda()
-{
+
+SKRfiReplacementCuda::~SKRfiReplacementCuda() {
     BOOST_LOG_TRIVIAL(debug) << "Destroying SKRfiReplacementCuda instance..\n";
 }
 
 
 void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rfi_status,
                                             thrust::device_vector<thrust::complex<float>> &data,
-                                            std::size_t clean_windows)
-{
+                                            std::size_t clean_windows) {
     nvtxRangePushA("replace_rfi_data");
     thrust::device_vector<thrust::complex<float>> replacement_data;
     //initialize data members of the class
