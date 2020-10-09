@@ -16,7 +16,7 @@ struct mean_subtraction_square{
 
 struct generate_replacement_data{
     float normal_dist_mean, normal_dist_std;
-    generate_replacement_data(float mean, float std) 
+    generate_replacement_data(float mean, float std)
         : normal_dist_mean(mean),
           normal_dist_std(std)
     {};
@@ -39,9 +39,18 @@ SKRfiReplacementCuda::~SKRfiReplacementCuda()
     BOOST_LOG_TRIVIAL(info) << "Destroying SKRfiReplacementCuda instance..\n";
 }
 
-void SKRfiReplacementCuda::init(const thrust::device_vector<thrust::complex<float>> &data)
+
+void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rfi_status,
+                                            thrust::device_vector<thrust::complex<float>> &data,
+                                            std::size_t clean_windows)
 {
-    BOOST_LOG_TRIVIAL(info) << "initializing the states of SKRfiReplacementCuda" 
+    nvtxRangePushA("replace_rfi_data");
+    _rfi_status = rfi_status;
+    thrust::device_vector<thrust::complex<float>> replacement_data;
+    //initialize data members of the class
+    _nclean_windows_stat = clean_windows; //no. of clean windows used for computing statistics
+
+    BOOST_LOG_TRIVIAL(info) << "initializing the states of SKRfiReplacementCuda"
                             << " class members for the data to be processed..\n";
     _nwindows = _rfi_status.size();
     //get_rfi_window_indices();
@@ -62,7 +71,7 @@ void SKRfiReplacementCuda::init(const thrust::device_vector<thrust::complex<floa
                     _rfi_status.begin(),
                     _clean_window_indices.begin(),
                     thrust::placeholders::_1 == 0);
-    
+
     if(_nclean_windows < _nwindows){ //if RFI is present
        //Getting clean data statistics of chosen number of clean windows
         if (_nclean_windows < _nclean_windows_stat) _nclean_windows_stat = _nclean_windows;
@@ -80,8 +89,8 @@ void SKRfiReplacementCuda::init(const thrust::device_vector<thrust::complex<floa
         }
         //computing clean data statistics
         BOOST_LOG_TRIVIAL(debug) << "computing statistics of clean data..\n";
-        //The distribution of both real and imag have same mean and standard deviation. 
-        //Therefore computing _ref_mean, _ref_sd for real distribution only.  
+        //The distribution of both real and imag have same mean and standard deviation.
+        //Therefore computing _ref_mean, _ref_sd for real distribution only.
         std::size_t length = _clean_data.size();
         _ref_mean = (thrust::reduce(_clean_data.begin(), _clean_data.end(), thrust::complex<float> (0.0f, 0.0f))). real() / length;
         _ref_sd = std::sqrt(thrust::transform_reduce(_clean_data.begin(), _clean_data.end(), mean_subtraction_square(_ref_mean),
@@ -89,18 +98,7 @@ void SKRfiReplacementCuda::init(const thrust::device_vector<thrust::complex<floa
         BOOST_LOG_TRIVIAL(debug) << "DataStatistics mean = " << _ref_mean
                                  << " sd =  " << _ref_sd;
     }
-}
 
-void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rfi_status,
-                                            thrust::device_vector<thrust::complex<float>> &data, 
-                                            std::size_t clean_windows)
-{
-    nvtxRangePushA("replace_rfi_data");
-    _rfi_status = rfi_status;
-    thrust::device_vector<thrust::complex<float>> replacement_data;
-    //initialize data members of the class
-    _nclean_windows_stat = clean_windows; //no. of clean windows used for computing statistics
-    init(data);
     //RFI present and not in all windows
     if(_nclean_windows < _nwindows){
         //Replacing RFI
@@ -108,7 +106,7 @@ void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rf
         nvtxRangePushA("replace_rfi_datai_loop");
         for(std::size_t ii = 0; ii < _nrfi_windows; ii++){
             std::size_t index = _rfi_window_indices[ii] * _window_size;
-            thrust::transform(sequence_index_begin, (sequence_index_begin + _window_size), 
+            thrust::transform(sequence_index_begin, (sequence_index_begin + _window_size),
                               (data.begin() + index), generate_replacement_data(_ref_mean, _ref_sd));
         }
         nvtxRangePop();
