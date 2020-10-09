@@ -43,14 +43,9 @@ public:
 
 private:
 
-    thrust::device_vector<int> _rfi_status;
-    std::size_t _window_size;
-    std::size_t _nwindows, _nrfi_windows, _nclean_windows;
-    std::size_t _nclean_windows_stat; //number of clean windows used for computing DataStatistics
     thrust::device_vector<int> _rfi_window_indices;
     thrust::device_vector<int> _clean_window_indices;
     thrust::device_vector<thrust::complex <float>> _clean_data;
-    float _ref_mean, _ref_sd;
 };
 } //edd
 } //effelsberg
