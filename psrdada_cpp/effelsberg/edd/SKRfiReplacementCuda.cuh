@@ -30,7 +30,7 @@ public:
      */
     void replace_rfi_data(const thrust::device_vector<int> &rfi_status,
                           thrust::device_vector<thrust::complex<float>> &data,
-                          std::size_t clean_windows = 5);
+                          std::size_t clean_windows = 5, cudaStream_t stream=0);
 
 private:
 

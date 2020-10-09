@@ -53,8 +53,9 @@ SKRfiReplacementCuda::~SKRfiReplacementCuda() {
 
 void SKRfiReplacementCuda::replace_rfi_data(const thrust::device_vector<int> &rfi_status,
                                             thrust::device_vector<thrust::complex<float>> &data,
-                                            std::size_t clean_windows) {
+                                            std::size_t clean_windows, cudaStream_t stream) {
     nvtxRangePushA("replace_rfi_data");
+    thrust::cuda::par.on(stream);
     thrust::device_vector<thrust::complex<float>> replacement_data;
     //initialize data members of the class
 

@@ -19,6 +19,7 @@ struct compute_power{
     }
 };
 
+
 struct power_square{
     __host__ __device__
     float operator()(thrust::complex<float> z)
@@ -28,6 +29,7 @@ struct power_square{
         return (power * power);
     }
 };
+
 
 struct check_rfi{
     const std::size_t M; //_window_size
@@ -46,7 +48,9 @@ struct check_rfi{
    }
 };
 
+
 __device__ int rfi_count = 0;
+
 
 __device__ void warpReduce(volatile float *shmem_ptr1, volatile float *shmem_ptr2, int tid){
     shmem_ptr1[tid] += shmem_ptr1[tid + 32];
@@ -62,6 +66,7 @@ __device__ void warpReduce(volatile float *shmem_ptr1, volatile float *shmem_ptr
     shmem_ptr1[tid] += shmem_ptr1[tid + 1];
     shmem_ptr2[tid] += shmem_ptr2[tid + 1];
 }
+
 
 __global__ void compute_sk_kernel(const thrust::complex<float>* __restrict__ data, std::size_t sample_size, std::size_t window_size,
                                   float sk_max, float sk_min, int* __restrict__ rfi_status)
@@ -97,6 +102,7 @@ __global__ void compute_sk_kernel(const thrust::complex<float>* __restrict__ dat
     }
 }
 
+
 SpectralKurtosisCuda::SpectralKurtosisCuda(std::size_t nchannels, std::size_t window_size, float sk_min, float sk_max)
     : _nchannels(nchannels),
       _window_size(window_size),
@@ -104,14 +110,14 @@ SpectralKurtosisCuda::SpectralKurtosisCuda(std::size_t nchannels, std::size_t wi
       _sk_max(sk_max)
 {
     BOOST_LOG_TRIVIAL(debug) << "Creating new SpectralKurtosisCuda instance... \n";
-    cudaStreamCreate(&_stream);
 }
+
 
 SpectralKurtosisCuda::~SpectralKurtosisCuda()
 {
     BOOST_LOG_TRIVIAL(debug) << "Destroying SpectralKurtosisCuda instance... \n";
-    cudaStreamDestroy(_stream);
 }
+
 
 void SpectralKurtosisCuda::init()
 {
@@ -123,8 +129,10 @@ void SpectralKurtosisCuda::init()
     _nwindows = _sample_size /_window_size;
 }
 
-void SpectralKurtosisCuda::compute_sk_thrust(const thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
+
+void SpectralKurtosisCuda::compute_sk_thrust(const thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats, cudaStream_t _stream){
     nvtxRangePushA("compute_sk");
+    thrust::cuda::par.on(_stream);
     _sample_size = data.size();
     BOOST_LOG_TRIVIAL(debug) << "Computing SK (thrust version) for sample_size " << _sample_size
                              << " and window_size " << _window_size <<".\n";
@@ -158,7 +166,7 @@ void SpectralKurtosisCuda::compute_sk_thrust(const thrust::device_vector<thrust:
     nvtxRangePop();
 }
 
-void SpectralKurtosisCuda::compute_sk(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats){
+void SpectralKurtosisCuda::compute_sk(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats, cudaStream_t _stream){
     nvtxRangePushA("compute_sk_kernel");
     _sample_size = data.size();
     BOOST_LOG_TRIVIAL(debug) << "Computing SK (kernel version) for sample_size " << _sample_size

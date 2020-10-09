@@ -38,7 +38,7 @@ public:
      * @param(out) stats         RFI statistics
      *
      */
-    void compute_sk_thrust(thrust::device_vector<thrust::complex<float>> const& data, RFIStatistics &stats);
+    void compute_sk_thrust(thrust::device_vector<thrust::complex<float>> const& data, RFIStatistics &stats, cudaStream_t _stream = 0);
 
     /**
      * @brief      computes spectral kurtosis (using optimized kernel function) for the given data and returns its rfi statistics.
@@ -47,7 +47,7 @@ public:
      * @param(out) stats         RFI statistics
      *
      */
-    void compute_sk(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats);
+    void compute_sk(thrust::device_vector<thrust::complex<float>> &data, RFIStatistics &stats, cudaStream_t _stream = 0);
 
 private:
     /**
@@ -61,7 +61,6 @@ private:
     std::size_t _sample_size; //size of input data
     float _sk_min, _sk_max;
     thrust::device_vector<float> _d_s1, _d_s2;
-    cudaStream_t _stream;
 };
 } //edd
 } //effelsberg
